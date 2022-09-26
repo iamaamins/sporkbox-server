@@ -1,6 +1,7 @@
+import express from "express";
 import * as dotenv from "dotenv";
+import cors from "cors";
 dotenv.config();
-import express, { Application } from "express";
 import connectDB from "./config/db";
 import User from "./routes/customer";
 import Admin from "./routes/admin";
@@ -12,10 +13,12 @@ const PORT = process.env.PORT || 5100;
 connectDB();
 
 // App
-const app: Application = express();
+const app = express();
 
-// Use express json
+// Middleware
+app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // User route
 app.use("/api/customer", User);
