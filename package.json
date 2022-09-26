@@ -2,10 +2,11 @@
   "name": "spork-bytes-server",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node dist/app.js",
+    "dev": "nodemon src/app.ts",
+    "build": "tsc -p ."
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +14,10 @@
     "express": "^4.18.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "@types/express": "^4.17.14",
+    "@types/node": "^18.7.21",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.3"
   }
 }
