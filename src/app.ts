@@ -1,4 +1,9 @@
-import express, { Application, Request, Response, NextFunction } from "express";
+import * as dotenv from "dotenv";
+dotenv.config();
+import express, { Application } from "express";
+import connectDB from "./config/db";
+
+connectDB();
 
 const app: Application = express();
 
