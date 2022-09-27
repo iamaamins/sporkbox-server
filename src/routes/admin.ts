@@ -2,7 +2,6 @@ import express from "express";
 import bcrypt from "bcrypt";
 import Admin from "../models/admin";
 import generateToken from "../utils";
-import cookie from "cookie";
 import adminAuth from "../middleware/adminAuth";
 
 // Initialize router
@@ -23,17 +22,6 @@ router.post("/login", async (req, res) => {
 
   // If admin exists and password matches
   if (admin && (await bcrypt.compare(password, admin.password))) {
-    // Set response header
-    res.setHeader(
-      "Set-Cookie",
-      cookie.serialize("token", JSON.stringify(generateToken(admin.id)), {
-        httpOnly: true,
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: "strict",
-        path: "/",
-      })
-    );
-
     // Send admin data with the response
     res.json({
       id: admin.id,
@@ -50,7 +38,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/me", adminAuth, (req, res) => {
-  res.json(req.admin);
+  res.json({ mes: "Success" });
 });
 
 export default router;
