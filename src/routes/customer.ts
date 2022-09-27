@@ -38,7 +38,7 @@ router.post("/register", async (req, res) => {
 
   if (customer) {
     res.status(201).json({
-      _id: customer.id,
+      id: customer.id,
       name: customer.name,
       email: customer.email,
     });
@@ -64,7 +64,7 @@ router.post("/login", async (req, res) => {
   // If customer exists and password matches
   if (customer && (await bcrypt.compare(password, customer.password))) {
     res.json({
-      _id: customer.id,
+      id: customer.id,
       name: customer.name,
       email: customer.email,
     });
