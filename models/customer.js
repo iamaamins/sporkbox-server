@@ -1,6 +1,6 @@
-import { Schema, model } from "mongoose";
+const { Schema, model } = require("mongoose");
 
-const adminSchema = new Schema(
+const customerSchema = new Schema(
   {
     name: {
       type: String,
@@ -10,10 +10,6 @@ const adminSchema = new Schema(
       type: String,
       required: [true, "Please add an email"],
       unique: true,
-    },
-    role: {
-      type: String,
-      required: [true, "Please add an email"],
     },
     password: {
       type: String,
@@ -25,4 +21,4 @@ const adminSchema = new Schema(
   }
 );
 
-export default model("Admin", adminSchema);
+module.exports = model("Customer", customerSchema);

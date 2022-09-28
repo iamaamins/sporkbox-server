@@ -1,6 +1,4 @@
-import { ErrorRequestHandler } from "express";
-
-const handler: ErrorRequestHandler = (err, req, res, next) => {
+const handler = (err, req, res, next) => {
   res.status(res.statusCode || 500);
 
   res.json({
@@ -9,4 +7,4 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
   });
 };
 
-export default handler;
+module.exports = handler;

@@ -1,9 +1,9 @@
-import express from "express";
-import bcrypt from "bcrypt";
-import Admin from "../models/admin";
-import { serialize } from "cookie";
-import generateToken from "../utils";
-import adminAuth from "../middleware/adminAuth";
+const express = require("express");
+const bcrypt = require("bcrypt");
+const Admin = require("../models/admin");
+const { serialize } = require("cookie");
+const generateToken = require("../utils");
+const authAdmin = require("../middleware/authAdmin");
 
 // Initialize router
 const router = express.Router();
@@ -26,6 +26,7 @@ router.post("/login", async (req, res) => {
     // Generate token
     const jwtToken = generateToken(admin.id);
 
+    // Set response header cookie with jwt token
     res.setHeader(
       "Set-Cookie",
       serialize("token", jwtToken, {
@@ -51,8 +52,8 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/me", adminAuth, (req, res) => {
-  res.json({ mes: "Success" });
+router.get("/me", authAdmin, (req, res) => {
+  res.json(req.admin);
 });
 
-export default router;
+module.exports = router;

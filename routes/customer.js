@@ -1,8 +1,7 @@
-import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import Customer from "../models/customer";
-require("express-async-errors");
+const express = require("express");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const Customer = require("../models/customer");
 
 // Initialize router
 const router = express.Router();
@@ -80,4 +79,4 @@ router.get("/me", async (req, res) => {
   res.json({ message: "Get customer data" });
 });
 
-export default router;
+module.exports = router;

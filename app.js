@@ -1,12 +1,11 @@
-import express from "express";
-import * as dotenv from "dotenv";
-import cors from "cors";
-import error from "./middleware/error";
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const error = require("./middleware/error");
+require("dotenv").config();
 require("express-async-errors");
-import connectDB from "./config/db";
-import User from "./routes/customer";
-import Admin from "./routes/admin";
+const connectDB = require("./config/db");
+const User = require("./routes/customer");
+const Admin = require("./routes/admin");
 
 // Port
 const PORT = process.env.PORT || 5100;
