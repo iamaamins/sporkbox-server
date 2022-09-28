@@ -18,7 +18,7 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({ credentials: true, origin: process.env.SITE_URL }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import Admin from "../models/admin";
+import { serialize } from "cookie";
 import generateToken from "../utils";
 import adminAuth from "../middleware/adminAuth";
 
@@ -22,13 +23,26 @@ router.post("/login", async (req, res) => {
 
   // If admin exists and password matches
   if (admin && (await bcrypt.compare(password, admin.password))) {
+    // Generate token
+    const jwtToken = generateToken(admin.id);
+
+    res.setHeader(
+      "Set-Cookie",
+      serialize("token", jwtToken, {
+        httpOnly: true,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 1 week
+        sameSite: "strict",
+        secure: process.env.NODE_ENV !== "development",
+      })
+    );
+
     // Send admin data with the response
     res.json({
       id: admin.id,
       name: admin.name,
       email: admin.email,
       role: admin.role,
-      token: generateToken(admin.id),
     });
   } else {
     // If admin doesn't exist or password doesn't match
