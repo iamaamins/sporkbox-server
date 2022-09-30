@@ -10,9 +10,13 @@ const restaurantSchema = new Schema(
       },
       name: {
         type: String,
+        ref: "User",
+        required: true,
       },
       email: {
         type: String,
+        ref: "User",
+        required: true,
       },
     },
     name: {

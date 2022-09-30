@@ -23,7 +23,7 @@ router.post("/register", async (req, res) => {
   // Throw error if vendor already exists
   if (vendorExists) {
     res.status(400);
-    throw new Error("User already exists");
+    throw new Error("Vendor already exists");
   }
 
   // Hash password
@@ -43,6 +43,7 @@ router.post("/register", async (req, res) => {
     // to the response header
     setCookie(vendor.id, res, "vendor");
 
+    // Create restaurant with vendor data
     const restaurant = await Restaurant.create({
       owner: {
         id: vendor.id,
@@ -61,14 +62,6 @@ router.post("/register", async (req, res) => {
       res.status(400);
       throw new Error("Invalid restaurant data");
     }
-
-    // Send the data with response
-    // res.json({
-    //   id: vendor._id,
-    //   name: vendor.name,
-    //   email: vendor.email,
-    //   role: vendor.role,
-    // });
   } else {
     res.status(400);
     throw new Error("Invalid vendor data");
