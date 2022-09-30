@@ -1,8 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const { serialize } = require("cookie");
-const generateToken = require("../utils");
 const authUser = require("../middleware/authUser");
 const setCookie = require("../utils");
 

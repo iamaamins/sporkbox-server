@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const setCookie = require("../utils");
+const Restaurant = require("../models/restaurant");
 
 // Initialize router
 const router = express.Router();
@@ -42,16 +43,35 @@ router.post("/register", async (req, res) => {
     // to the response header
     setCookie(vendor.id, res, "vendor");
 
-    // Send the data with response
-    res.json({
-      id: vendor._id,
-      name: vendor.name,
-      email: vendor.email,
-      role: vendor.role,
+    const restaurant = await Restaurant.create({
+      owner: {
+        id: vendor.id,
+        name: vendor.name,
+        email: vendor.email,
+      },
+      name: restaurantName,
+      address: restaurantAddress,
     });
+
+    // If restaurant is created
+    if (restaurant) {
+      // Send the data with response
+      res.json(restaurant);
+    } else {
+      res.status(400);
+      throw new Error("Invalid restaurant data");
+    }
+
+    // Send the data with response
+    // res.json({
+    //   id: vendor._id,
+    //   name: vendor.name,
+    //   email: vendor.email,
+    //   role: vendor.role,
+    // });
   } else {
     res.status(400);
-    throw new Error("Invalid user data");
+    throw new Error("Invalid vendor data");
   }
 });
 
