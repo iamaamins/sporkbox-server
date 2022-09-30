@@ -43,7 +43,7 @@ router.post("/register", async (req, res) => {
 
     // Send the data with response
     res.json({
-      id: customer._id,
+      id: customer.id,
       name: customer.name,
       email: customer.email,
       role: customer.role,

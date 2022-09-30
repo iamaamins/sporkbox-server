@@ -34,7 +34,7 @@ async function handler(req, res, next) {
 
     // Create new User
     const user = {
-      id: response?._id,
+      id: response?.id,
       name: response?.name,
       email: response?.email,
       role: response?.role,

@@ -57,7 +57,12 @@ router.post("/register", async (req, res) => {
     // If restaurant is created
     if (restaurant) {
       // Send the data with response
-      res.json(restaurant);
+      res.json({
+        owner: restaurant.owner,
+        id: restaurant.id,
+        name: restaurant.name,
+        address: restaurant.address,
+      });
     } else {
       res.status(400);
       throw new Error("Invalid restaurant data");
