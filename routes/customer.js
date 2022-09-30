@@ -1,12 +1,12 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const Customer = require("../models/customer");
+const User = require("../models/user");
+const setCookie = require("../utils");
 
 // Initialize router
 const router = express.Router();
 
-// Register customer
+// Register user
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -17,11 +17,11 @@ router.post("/register", async (req, res) => {
   }
 
   // Check if user exists
-  const userExists = await Customer.findOne({ email });
+  const userExists = await User.findOne({ email });
 
   if (userExists) {
     res.status(400);
-    throw new Error("Customer already exists");
+    throw new Error("User already exists");
   }
 
   // Hash password
@@ -29,25 +29,32 @@ router.post("/register", async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   // Create user
-  const customer = await Customer.create({
+  const customer = await User.create({
     name,
     email,
     password: hashedPassword,
+    role: "customer",
   });
 
   if (customer) {
-    res.status(201).json({
-      id: customer.id,
+    // Generate jwt token and set cookie
+    // to the response header
+    setCookie(customer.id, res);
+
+    // Send the data with response
+    res.json({
+      id: customer._id,
       name: customer.name,
       email: customer.email,
+      role: customer.role,
     });
   } else {
     res.status(400);
-    throw new Error("Invalid customer data");
+    throw new Error("Invalid user data");
   }
 });
 
-// Login customer
+// Login user
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -58,25 +65,25 @@ router.post("/login", async (req, res) => {
   }
 
   // Find the user
-  const customer = await Customer.findOne({ email });
+  const user = await user.findOne({ email });
 
-  // If customer exists and password matches
-  if (customer && (await bcrypt.compare(password, customer.password))) {
+  // If user exists and password matches
+  if (user && (await bcrypt.compare(password, user.password))) {
     res.json({
-      id: customer.id,
-      name: customer.name,
-      email: customer.email,
+      id: user.id,
+      name: user.name,
+      email: user.email,
     });
   } else {
-    // If customer doesn't exist or password doesn't match
+    // If user doesn't exist or password doesn't match
     res.status(400);
     throw new Error("Invalid credentials");
   }
 });
 
-// Get customer data
+// Get user data
 router.get("/me", async (req, res) => {
-  res.json({ message: "Get customer data" });
+  res.json({ message: "Get user data" });
 });
 
 module.exports = router;

@@ -4,8 +4,8 @@ const error = require("./middleware/error");
 require("dotenv").config();
 require("express-async-errors");
 const connectDB = require("./config/db");
-const User = require("./routes/customer");
-const Admin = require("./routes/admin");
+const User = require("./routes/user");
+const Customer = require("./routes/customer");
 
 // Port
 const PORT = process.env.PORT || 5100;
@@ -22,8 +22,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Routes
-app.use("/api/customer", User);
-app.use("/api/admin", Admin);
+app.use("/api/user", User);
+app.use("/api/customer", Customer);
 
 // Error middleware
 app.use(error);

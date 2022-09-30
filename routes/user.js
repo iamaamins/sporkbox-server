@@ -1,14 +1,14 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
-const Admin = require("../models/admin");
+const User = require("../models/user");
 const { serialize } = require("cookie");
 const generateToken = require("../utils");
-const authAdmin = require("../middleware/authAdmin");
+const authUser = require("../middleware/authUser");
 
 // Initialize router
 const router = express.Router();
 
-// Admin login
+// user login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -18,13 +18,13 @@ router.post("/login", async (req, res) => {
     throw new Error("Please fill all the fields");
   }
 
-  // Find the admin
-  const admin = await Admin.findOne({ email });
+  // Find the user
+  const user = await User.findOne({ email });
 
-  // If admin exists and password matches
-  if (admin && (await bcrypt.compare(password, admin.password))) {
+  // If user exists and password matches
+  if (user && (await bcrypt.compare(password, user.password))) {
     // Generate token
-    const jwtToken = generateToken(admin.id);
+    const jwtToken = generateToken(user.id);
 
     // Set response header cookie with jwt token
     res.setHeader(
@@ -38,22 +38,22 @@ router.post("/login", async (req, res) => {
       })
     );
 
-    // Send admin data with the response
+    // Send user data with the response
     res.json({
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      role: admin.role,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
     });
   } else {
-    // If admin doesn't exist or password doesn't match
+    // If user doesn't exist or password doesn't match
     res.status(400);
     throw new Error("Invalid credentials");
   }
 });
 
-router.get("/me", authAdmin, (req, res) => {
-  res.json(req.admin);
+router.get("/me", authUser, (req, res) => {
+  res.json(req.user);
 });
 
 module.exports = router;

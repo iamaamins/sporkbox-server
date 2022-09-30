@@ -1,4 +1,4 @@
-const Admin = require("../models/admin");
+const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const { parse } = require("cookie");
 
@@ -22,27 +22,27 @@ async function handler(req, res, next) {
     // Decode the token
     const decoded = jwt.verify(cookie.token, process.env.JWT_SECRET);
 
-    // Get the admin data from DB
-    const response = await Admin.findById(decoded.id).select(
+    // Get the User data from DB
+    const response = await User.findById(decoded.id).select(
       "-password -__v -updatedAt -createdAt"
     );
 
-    // Create new admin
-    const admin = {
+    // Create new User
+    const user = {
       id: response?._id,
       name: response?.name,
       email: response?.email,
       role: response?.role,
     };
 
-    // Send admin data to the next middleware
-    req.admin = admin;
+    // Send User data to the next middleware
+    req.user = user;
 
     // Call the next middleware
     next();
   } catch (err) {
     // If the token is invalid or failed to
-    // get admin data from DB
+    // get User data from DB
     console.log(err);
     res.status(401);
     throw new Error("Not authorized");
