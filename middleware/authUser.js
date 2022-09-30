@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken");
 const { parse } = require("cookie");
 
 async function handler(req, res, next) {
-  // If no cookie in the headers
+  // Return not authorized in there
+  // is no cookie in the headers
   if (!req.headers.cookie) {
     res.status(401);
     throw new Error("Not Authorized");
@@ -12,7 +13,11 @@ async function handler(req, res, next) {
   // If there is no token in the cookie
   const cookie = parse(req.headers.cookie);
 
-  if (!cookie.token) {
+  // Get the token from cookie
+  const token = cookie.admin || cookie.vendor || cookie.customer;
+
+  // Return not authorized in there is no token
+  if (!token) {
     res.status(401);
     throw new Error("Not Authorized");
   }
@@ -20,7 +25,7 @@ async function handler(req, res, next) {
   // If there is a token in the cookie
   try {
     // Decode the token
-    const decoded = jwt.verify(cookie.token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Get the User data from DB
     const response = await User.findById(decoded.id).select(

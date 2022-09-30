@@ -32,14 +32,14 @@ router.post("/register", async (req, res) => {
   const customer = await User.create({
     name,
     email,
-    password: hashedPassword,
     role: "customer",
+    password: hashedPassword,
   });
 
   if (customer) {
     // Generate jwt token and set cookie
     // to the response header
-    setCookie(customer.id, res);
+    setCookie(customer.id, res, "customer");
 
     // Send the data with response
     res.json({
@@ -51,33 +51,6 @@ router.post("/register", async (req, res) => {
   } else {
     res.status(400);
     throw new Error("Invalid user data");
-  }
-});
-
-// Login user
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  // If a value isn't provided
-  if (!email || !password) {
-    res.status(400);
-    throw new Error("Please fill all the fields");
-  }
-
-  // Find the user
-  const user = await user.findOne({ email });
-
-  // If user exists and password matches
-  if (user && (await bcrypt.compare(password, user.password))) {
-    res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    });
-  } else {
-    // If user doesn't exist or password doesn't match
-    res.status(400);
-    throw new Error("Invalid credentials");
   }
 });
 

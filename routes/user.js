@@ -4,6 +4,7 @@ const User = require("../models/user");
 const { serialize } = require("cookie");
 const generateToken = require("../utils");
 const authUser = require("../middleware/authUser");
+const setCookie = require("../utils");
 
 // Initialize router
 const router = express.Router();
@@ -23,24 +24,13 @@ router.post("/login", async (req, res) => {
 
   // If user exists and password matches
   if (user && (await bcrypt.compare(password, user.password))) {
-    // Generate token
-    const jwtToken = generateToken(user.id);
-
-    // Set response header cookie with jwt token
-    res.setHeader(
-      "Set-Cookie",
-      serialize("token", jwtToken, {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 1 week
-        sameSite: "strict",
-        secure: process.env.NODE_ENV !== "development",
-      })
-    );
+    // Generate jwt token and set cookie
+    // to the response header
+    setCookie(user.id, res, user.role);
 
     // Send user data with the response
     res.json({
-      id: user.id,
+      id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
