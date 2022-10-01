@@ -97,4 +97,25 @@ router.get("/", authUser, async (req, res) => {
   }
 });
 
+// Get a single restaurants
+router.get("/:id", authUser, async (req, res) => {
+  // Get the role from req
+  const { role } = req.user;
+
+  // If role is admin
+  if (role === "admin") {
+    // Fetch all the restaurants
+    const restaurant = await Restaurant.findById(req.params.id).select(
+      "-__v -updatedAt"
+    );
+
+    // Return the restaurants
+    res.status(200).json(restaurant);
+  } else {
+    // Return not authorized if role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 module.exports = router;
