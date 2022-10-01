@@ -6,8 +6,7 @@ require("express-async-errors");
 const connectDB = require("./config/db");
 const User = require("./routes/user");
 const Customer = require("./routes/customer");
-const Vendor = require("./routes/vendor");
-const Restaurants = require("./routes/restaurants");
+const Restaurant = require("./routes/restaurant");
 
 // Port
 const PORT = process.env.PORT || 5100;
@@ -26,8 +25,7 @@ app.use(express.urlencoded({ extended: false }));
 // Routes
 app.use("/api/user", User);
 app.use("/api/customer", Customer);
-app.use("/api/vendor", Vendor);
-app.use("/api/restaurants", Restaurants);
+app.use("/api/restaurant", Restaurant);
 
 // Error middleware
 app.use(error);

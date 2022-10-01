@@ -27,6 +27,10 @@ const restaurantSchema = new Schema(
       type: String,
       required: [true, "Please add an email"],
     },
+    status: {
+      type: String,
+      enum: ["Active", "Pending"],
+    },
   },
   {
     timestamps: true,
