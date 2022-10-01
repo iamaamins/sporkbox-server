@@ -7,6 +7,7 @@ const connectDB = require("./config/db");
 const User = require("./routes/user");
 const Customer = require("./routes/customer");
 const Vendor = require("./routes/vendor");
+const Restaurants = require("./routes/restaurants");
 
 // Port
 const PORT = process.env.PORT || 5100;
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api/user", User);
 app.use("/api/customer", Customer);
 app.use("/api/vendor", Vendor);
+app.use("/api/restaurants", Restaurants);
 
 // Error middleware
 app.use(error);
