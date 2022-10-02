@@ -13,7 +13,8 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      required: [true, "Please add an email"],
+      enum: ["admin", "vendor", "customer"],
+      required: [true, "Please provide a role"],
     },
     password: {
       type: String,

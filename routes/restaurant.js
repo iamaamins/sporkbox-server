@@ -8,6 +8,7 @@ const authUser = require("../middleware/authUser");
 // Initialize router
 const router = express.Router();
 
+// Register a restaurant
 router.post("/register", async (req, res) => {
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
@@ -78,6 +79,45 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// Add items to a restaurant
+
+router.post("/add-item", authUser, async (req, res) => {
+  const { role } = req.user;
+  const { name, description, tags, price, restaurantId } = req.body;
+
+  // If the role is either admin or vendor
+  if (role === "admin" || role === "vendor") {
+    // Find the restaurant and add the item
+    const response = await Restaurant.findOneAndUpdate(
+      { _id: restaurantId },
+      {
+        $addToSet: { items: { name, description, tags, price } },
+      },
+      {
+        returnDocument: "after",
+      }
+    );
+
+    if (response) {
+      res.status(201).json({
+        owner: response.owner,
+        name: response.name,
+        address: response.address,
+        status: response.status,
+        _id: response.id,
+        items: response.items,
+      });
+    } else {
+      res.status(500);
+      throw new Error("Something went wrong!");
+    }
+  } else {
+    // Return not authorized if role isn't admin or vendor
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 // Get all the restaurants
 router.get("/", authUser, async (req, res) => {
   // Get the role from req
@@ -85,8 +125,11 @@ router.get("/", authUser, async (req, res) => {
 
   // If role is admin
   if (role === "admin") {
-    // Fetch all the restaurants
-    const restaurants = await Restaurant.find().select("-__v -updatedAt");
+    // Fetch 10 latest restaurants
+    const restaurants = await Restaurant.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("-__v -updatedAt");
 
     // Return the restaurants
     res.status(200).json(restaurants);
@@ -98,24 +141,24 @@ router.get("/", authUser, async (req, res) => {
 });
 
 // Get a single restaurants
-router.get("/:id", authUser, async (req, res) => {
-  // Get the role from req
-  const { role } = req.user;
+// router.get("/:id", authUser, async (req, res) => {
+//   // Get the role from req
+//   const { role } = req.user;
 
-  // If role is admin
-  if (role === "admin") {
-    // Fetch all the restaurants
-    const restaurant = await Restaurant.findById(req.params.id).select(
-      "-__v -updatedAt"
-    );
+//   // If role is admin
+//   if (role === "admin") {
+//     // Fetch all the restaurants
+//     const restaurant = await Restaurant.findById(req.params.id).select(
+//       "-__v -updatedAt"
+//     );
 
-    // Return the restaurants
-    res.status(200).json(restaurant);
-  } else {
-    // Return not authorized if role isn't admin
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-});
+//     // Return the restaurants
+//     res.status(200).json(restaurant);
+//   } else {
+//     // Return not authorized if role isn't admin
+//     res.status(401);
+//     throw new Error("Not authorized");
+//   }
+// });
 
 module.exports = router;

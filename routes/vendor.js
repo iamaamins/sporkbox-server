@@ -57,7 +57,7 @@ router.post("/register", async (req, res) => {
     // If restaurant is created
     if (restaurant) {
       // Send the data with response
-      res.json({
+      res.status(201).json({
         owner: restaurant.owner,
         id: restaurant.id,
         name: restaurant.name,

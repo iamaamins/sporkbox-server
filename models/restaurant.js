@@ -6,31 +6,51 @@ const restaurantSchema = new Schema(
       id: {
         type: Schema.Types.ObjectId,
         ref: "User",
-        required: true,
+        required: [true, "Please provide owner id"],
       },
       name: {
         type: String,
         ref: "User",
-        required: true,
+        required: [true, "Please provide owner name"],
       },
       email: {
         type: String,
         ref: "User",
-        required: true,
+        required: [true, "Please provide owner email"],
       },
     },
     name: {
       type: String,
-      required: [true, "Please add a name"],
+      required: [true, "Please provide a name"],
     },
     address: {
       type: String,
-      required: [true, "Please add an email"],
+      required: [true, "Please provide an email"],
     },
     status: {
       type: String,
       enum: ["Active", "Pending"],
     },
+    items: [
+      {
+        name: {
+          type: String,
+          required: [true, "Please provide item name"],
+        },
+        tags: {
+          type: String,
+          required: [true, "Please provide item tags"],
+        },
+        price: {
+          type: String,
+          required: [true, "Please provide item price"],
+        },
+        description: {
+          type: String,
+          required: [true, "Please provide item description"],
+        },
+      },
+    ],
   },
   {
     timestamps: true,
