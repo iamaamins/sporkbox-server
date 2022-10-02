@@ -8,8 +8,8 @@ const userSchema = new Schema(
     },
     email: {
       type: String,
-      required: [true, "Please add an email"],
       unique: true,
+      required: [true, "Please add an email"],
     },
     role: {
       type: String,
