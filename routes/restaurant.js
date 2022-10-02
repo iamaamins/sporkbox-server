@@ -8,7 +8,7 @@ const authUser = require("../middleware/authUser");
 // Initialize router
 const router = express.Router();
 
-// Register a restaurant
+// Register a vendor and a restaurant
 router.post("/register", async (req, res) => {
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
@@ -31,7 +31,7 @@ router.post("/register", async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Create user
+  // Create a vendor
   const vendor = await User.create({
     name,
     email,
@@ -39,18 +39,15 @@ router.post("/register", async (req, res) => {
     password: hashedPassword,
   });
 
+  // If vendor is created successfully
   if (vendor) {
     // Generate jwt token and set cookie
     // to the response header
     setCookie(vendor.id, res, "vendor");
 
-    // Create restaurant with vendor data
+    // Create restaurant with vendor id
     const response = await Restaurant.create({
-      owner: {
-        id: vendor.id,
-        name: vendor.name,
-        email: vendor.email,
-      },
+      owner: vendor.id,
       name: restaurantName,
       address: restaurantAddress,
       status: "Pending",
@@ -58,17 +55,13 @@ router.post("/register", async (req, res) => {
 
     // If restaurant is created
     if (response) {
-      // Create restaurant
-      const restaurant = {
-        owner: response.owner,
-        name: response.name,
-        address: response.address,
-        status: response.status,
-        _id: response.id,
-      };
+      // Fetch the restaurant with owner data
+      const restaurant = await Restaurant.findById(response.id)
+        .select("-__v -updatedAt")
+        .populate("owner", "-__v -password -createdAt -updatedAt");
 
       // Send the data with response
-      res.json(restaurant);
+      res.status(201).json(restaurant);
     } else {
       res.status(400);
       throw new Error("Invalid restaurant data");
@@ -80,7 +73,6 @@ router.post("/register", async (req, res) => {
 });
 
 // Add items to a restaurant
-
 router.post("/add-item", authUser, async (req, res) => {
   const { role } = req.user;
   const { name, description, tags, price, restaurantId } = req.body;
@@ -88,26 +80,22 @@ router.post("/add-item", authUser, async (req, res) => {
   // If the role is either admin or vendor
   if (role === "admin" || role === "vendor") {
     // Find the restaurant and add the item
-    const response = await Restaurant.findOneAndUpdate(
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
       { _id: restaurantId },
       {
-        $addToSet: { items: { name, description, tags, price } },
+        $push: { items: { name, description, tags, price } },
       },
       {
         returnDocument: "after",
       }
-    );
+    ).select("-__v -updatedAt");
 
-    if (response) {
-      res.status(201).json({
-        owner: response.owner,
-        name: response.name,
-        address: response.address,
-        status: response.status,
-        _id: response.id,
-        items: response.items,
-      });
+    // If item is successfully added to db
+    if (updatedRestaurant) {
+      // Return the updated restaurant
+      res.status(201).json(updatedRestaurant);
     } else {
+      // If item isn't successfully add to db
       res.status(500);
       throw new Error("Something went wrong!");
     }
@@ -125,11 +113,12 @@ router.get("/", authUser, async (req, res) => {
 
   // If role is admin
   if (role === "admin") {
-    // Fetch 10 latest restaurants
+    // Fetch 10 latest restaurants with owner data
     const restaurants = await Restaurant.find()
-      .sort({ createdAt: -1 })
       .limit(10)
-      .select("-__v -updatedAt");
+      .select("-__v -updatedAt")
+      .sort({ createdAt: -1 })
+      .populate("owner", "-__v -password -createdAt -updatedAt");
 
     // Return the restaurants
     res.status(200).json(restaurants);
@@ -140,7 +129,7 @@ router.get("/", authUser, async (req, res) => {
   }
 });
 
-// Get a single restaurants
+// Update restaurant status
 router.post("/status", authUser, async (req, res) => {
   // Get the role from req
   const { role } = req.user;
@@ -149,7 +138,7 @@ router.post("/status", authUser, async (req, res) => {
   // If role is admin
   if (role === "admin") {
     // Find the restaurant and update the status
-    const restaurant = await Restaurant.findByIdAndUpdate(
+    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       restaurantId,
       {
         status: action === "Approve" ? "Approved" : "Pending",
@@ -157,10 +146,10 @@ router.post("/status", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    );
+    ).select("-__v -updatedAt");
 
     // Return the updated restaurant
-    res.status(200).json(restaurant);
+    res.status(200).json(updatedRestaurant);
   } else {
     // Return not authorized if role isn't admin
     res.status(401);

@@ -3,21 +3,9 @@ const { Schema, model } = require("mongoose");
 const restaurantSchema = new Schema(
   {
     owner: {
-      id: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: [true, "Please provide owner id"],
-      },
-      name: {
-        type: String,
-        ref: "User",
-        required: [true, "Please provide owner name"],
-      },
-      email: {
-        type: String,
-        ref: "User",
-        required: [true, "Please provide owner email"],
-      },
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "Please provide owner id"],
     },
     name: {
       type: String,
