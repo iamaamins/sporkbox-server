@@ -73,9 +73,10 @@ router.post("/register", async (req, res) => {
 });
 
 // Add items to a restaurant
-router.post("/add-item", authUser, async (req, res) => {
+router.post("/:restaurantId/add-item", authUser, async (req, res) => {
   const { role } = req.user;
-  const { name, description, tags, price, restaurantId } = req.body;
+  const { restaurantId } = req.params;
+  const { name, description, tags, price } = req.body;
 
   // If the role is either admin or vendor
   if (role === "admin" || role === "vendor") {
@@ -130,10 +131,11 @@ router.get("/", authUser, async (req, res) => {
 });
 
 // Update restaurant status
-router.post("/status", authUser, async (req, res) => {
+router.post("/:restaurantId/status", authUser, async (req, res) => {
   // Get the role from req
   const { role } = req.user;
-  const { restaurantId, action } = req.body;
+  const { action } = req.body;
+  const { restaurantId } = req.params;
 
   // If role is admin
   if (role === "admin") {
