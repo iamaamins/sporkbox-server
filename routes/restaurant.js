@@ -72,7 +72,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Add items to a restaurant
+// Add an item to a restaurant
 router.post("/:restaurantId/add-item", authUser, async (req, res) => {
   const { role } = req.user;
   const { restaurantId } = req.params;
@@ -158,5 +158,46 @@ router.post("/:restaurantId/status", authUser, async (req, res) => {
     throw new Error("Not authorized");
   }
 });
+
+// Edit an item
+router.put("/:restaurantId/itemId/edit-item", authUser, (req, res) => {
+  res.json("Hello");
+});
+
+// Delete an item
+router.delete(
+  "/:restaurantId/:itemId/delete-item",
+  authUser,
+  async (req, res) => {
+    const { role } = req.user;
+    const { restaurantId, itemId } = req.params;
+
+    // If role is admin or vendor
+    if (role === "admin" || role === "vendor") {
+      // Find the restaurant and remove the item
+      const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+        { _id: restaurantId },
+        {
+          $pull: {
+            items: { _id: itemId },
+          },
+        },
+        {
+          returnDocument: "after",
+        }
+      );
+
+      // If the item is removed successfully
+      if (updatedRestaurant) {
+        // Send the updated restaurant with response
+        res.status(200).json(updatedRestaurant);
+      }
+    } else {
+      // Return not authorized if role isn't admin
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 module.exports = router;
