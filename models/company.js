@@ -12,6 +12,7 @@ const companySchema = new Schema(
     },
     code: {
       type: String,
+      unique: true,
       required: [true, "Please provide a code"],
     },
     budget: {

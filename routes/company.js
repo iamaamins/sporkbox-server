@@ -27,7 +27,17 @@ router.post("/register", authUser, async (req, res) => {
 
     // If company is created successfully
     if (response) {
-      res.status(201).json(response);
+      // Create company
+      const company = {
+        _id: response.id,
+        name: response.name,
+        code: response.code,
+        budget: response.budget,
+        createdAt: response.createdAt,
+      };
+
+      // Send the company with response
+      res.status(201).json(company);
     } else {
       // If company isn't created successfully
       res.status(500);
