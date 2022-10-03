@@ -22,32 +22,24 @@ async function handler(req, res, next) {
     throw new Error("Not Authorized");
   }
 
-  // If there is a token in the cookie
-  try {
-    // Decode the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  // Decode the token
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Get the User data from DB
-    const response = await User.findById(decoded.id).select(
-      "-password -__v -updatedAt -createdAt"
-    );
+  // Get the User data from DB
+  const user = await User.findById(decoded.id).select(
+    "-password -__v -updatedAt -createdAt"
+  );
 
-    // Create new User
-    const user = {
-      id: response?.id,
-      name: response?.name,
-      email: response?.email,
-      role: response?.role,
-    };
-
+  // If there is a user in db
+  if (user) {
     // Send User data to the next middleware
     req.user = user;
 
     // Call the next middleware
     next();
-  } catch (err) {
-    // If the token is invalid or failed to
-    // get User data from DB
+  } else {
+    // If the token is invalid or
+    // failed to get User data from DB
     console.log(err);
     res.status(401);
     throw new Error("Not authorized");

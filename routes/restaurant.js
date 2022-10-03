@@ -10,6 +10,7 @@ const router = express.Router();
 
 // Register a vendor and a restaurant
 router.post("/register", async (req, res) => {
+  // Get data from req body
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
   // If a value isn't provided
@@ -61,14 +62,16 @@ router.post("/register", async (req, res) => {
         .populate("owner", "-__v -password -createdAt -updatedAt");
 
       // Send the data with response
-      res.status(201).json(restaurant);
+      res.status(200).json(restaurant);
     } else {
+      // If the restaurant isn't found
       res.status(400);
       throw new Error("Invalid restaurant data");
     }
   } else {
-    res.status(400);
-    throw new Error("Invalid vendor data");
+    // If vendor isn't created successfully
+    res.status(500);
+    throw new Error("Something went wrong");
   }
 });
 
@@ -108,21 +111,29 @@ router.post("/:restaurantId/add-item", authUser, async (req, res) => {
 });
 
 // Get all the restaurants
-router.get("/", authUser, async (req, res) => {
+router.get("/:limit", authUser, async (req, res) => {
   // Get the role from req
   const { role } = req.user;
+  const { limit } = req.params;
 
   // If role is admin
   if (role === "admin") {
-    // Fetch 10 latest restaurants with owner data
+    // Fetch 20 latest restaurants with owner data
     const restaurants = await Restaurant.find()
-      .limit(10)
+      .limit(limit)
       .select("-__v -updatedAt")
       .sort({ createdAt: -1 })
       .populate("owner", "-__v -password -createdAt -updatedAt");
 
-    // Return the restaurants
-    res.status(200).json(restaurants);
+    // If restaurants are fetched successfully
+    if (restaurants) {
+      // Return the restaurants
+      res.status(200).json(restaurants);
+    } else {
+      // If restaurants are not fetched successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
   } else {
     // Return not authorized if role isn't admin
     res.status(401);
@@ -131,7 +142,7 @@ router.get("/", authUser, async (req, res) => {
 });
 
 // Update restaurant status
-router.post("/:restaurantId/status", authUser, async (req, res) => {
+router.put("/:restaurantId/status", authUser, async (req, res) => {
   // Get the role from req
   const { role } = req.user;
   const { action } = req.body;
@@ -150,8 +161,15 @@ router.post("/:restaurantId/status", authUser, async (req, res) => {
       }
     ).select("-__v -updatedAt");
 
-    // Return the updated restaurant
-    res.status(200).json(updatedRestaurant);
+    // If status is updated successfully
+    if (updatedRestaurant) {
+      // Return the updated restaurant
+      res.status(200).json(updatedRestaurant);
+    } else {
+      // If status isn't updated successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
   } else {
     // Return not authorized if role isn't admin
     res.status(401);
@@ -191,9 +209,13 @@ router.delete(
       if (updatedRestaurant) {
         // Send the updated restaurant with response
         res.status(200).json(updatedRestaurant);
+      } else {
+        // If the item isn't removed successfully
+        res.status(500);
+        throw new Error("Something went wrong");
       }
     } else {
-      // Return not authorized if role isn't admin
+      // If role isn't admin or vendor
       res.status(401);
       throw new Error("Not authorized");
     }

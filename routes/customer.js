@@ -17,9 +17,10 @@ router.post("/register", async (req, res) => {
   }
 
   // Check if user exists
-  const userExists = await User.findOne({ email });
+  const customerExists = await User.findOne({ email });
 
-  if (userExists) {
+  // If user exists
+  if (customerExists) {
     res.status(400);
     throw new Error("User already exists");
   }
@@ -36,21 +37,23 @@ router.post("/register", async (req, res) => {
     password: hashedPassword,
   });
 
+  // If customer is created successfully
   if (customer) {
     // Generate jwt token and set cookie
     // to the response header
     setCookie(customer.id, res, "customer");
 
     // Send the data with response
-    res.json({
+    res.status(201).json({
       id: customer.id,
       name: customer.name,
       email: customer.email,
       role: customer.role,
     });
   } else {
-    res.status(400);
-    throw new Error("Invalid user data");
+    // If customer isn't created successfully
+    res.status(500);
+    throw new Error("Something went wrong");
   }
 });
 

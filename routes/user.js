@@ -27,7 +27,7 @@ router.post("/login", async (req, res) => {
     setCookie(user.id, res, user.role);
 
     // Send user data with the response
-    res.json({
+    res.status(200).json({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -35,7 +35,7 @@ router.post("/login", async (req, res) => {
     });
   } else {
     // If user doesn't exist or password doesn't match
-    res.status(400);
+    res.status(401);
     throw new Error("Invalid credentials");
   }
 });
