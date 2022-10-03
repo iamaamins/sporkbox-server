@@ -10,6 +10,10 @@ const companySchema = new Schema(
       type: String,
       required: [true, "Please provide a website"],
     },
+    address: {
+      type: String,
+      required: [true, "Please provide an address"],
+    },
     code: {
       type: String,
       unique: true,

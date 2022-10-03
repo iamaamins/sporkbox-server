@@ -8,7 +8,7 @@ const router = express.Router();
 // Create a company
 router.post("/register", authUser, async (req, res) => {
   const { role } = req.user;
-  const { name, website, code, budget } = req.body;
+  const { name, website, address, code, budget } = req.body;
 
   // If all the fields aren't provided
   if (!name || !website || !code || !budget) {
@@ -21,6 +21,7 @@ router.post("/register", authUser, async (req, res) => {
     const response = await Company.create({
       name,
       website,
+      address,
       code,
       budget,
     });
@@ -32,6 +33,7 @@ router.post("/register", authUser, async (req, res) => {
         _id: response.id,
         name: response.name,
         website: response.website,
+        address: response.address,
         code: response.code,
         budget: response.budget,
         createdAt: response.createdAt,
@@ -77,6 +79,30 @@ router.get("/", authUser, async (req, res) => {
 });
 
 // Delete a company
+router.delete("/:companyId", authUser, async (req, res) => {
+  const { role } = req.user;
+
+  const { companyId } = req.params;
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Find and delete the company
+    const deleted = await Company.findByIdAndDelete(companyId);
+
+    // If successfully deleted
+    if (deleted) {
+      res.status(200).json({ message: "Successfully deleted" });
+    } else {
+      // If not deleted successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
 
 // Edit a company
 
