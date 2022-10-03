@@ -219,7 +219,7 @@ router.put("/:restaurantId/schedule", authUser, async (req, res) => {
         scheduledAt: ISOString,
       },
       {
-        returnDocument: "After",
+        returnDocument: "after",
       }
     ).select("-__v -updatedAt -createdAt -owner");
 
