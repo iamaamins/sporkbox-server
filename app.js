@@ -6,6 +6,7 @@ require("express-async-errors");
 const connectDB = require("./config/db");
 const User = require("./routes/user");
 const Customer = require("./routes/customer");
+const Company = require("./routes/company");
 const Restaurant = require("./routes/restaurant");
 
 // Port
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 // Routes
 app.use("/api/user", User);
 app.use("/api/customer", Customer);
+app.use("/api/company", Company);
 app.use("/api/restaurant", Restaurant);
 
 // Error middleware
