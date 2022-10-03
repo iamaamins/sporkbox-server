@@ -17,8 +17,13 @@ const restaurantSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Approved", "Pending"],
+      enum: ["APPROVED", "PENDING"],
       required: [true, "Please provide a status"],
+    },
+    scheduledAt: {
+      type: Date,
+      default: Date.now,
+      required: [true, "Please provide a schedule date"],
     },
     items: [
       {

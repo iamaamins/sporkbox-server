@@ -36,7 +36,7 @@ router.post("/register", async (req, res) => {
   const vendor = await User.create({
     name,
     email,
-    role: "vendor",
+    role: "VENDOR",
     password: hashedPassword,
   });
 
@@ -51,7 +51,7 @@ router.post("/register", async (req, res) => {
       owner: vendor.id,
       name: restaurantName,
       address: restaurantAddress,
-      status: "Pending",
+      status: "PENDING",
     });
 
     // If restaurant is created
@@ -81,8 +81,14 @@ router.post("/:restaurantId/add-item", authUser, async (req, res) => {
   const { restaurantId } = req.params;
   const { name, description, tags, price } = req.body;
 
+  // If restaurant id, name, description, tags, price aren't provided
+  if (!name || !description || !tags || !price) {
+    res.status(400);
+    throw new Error("Please provide all the fields");
+  }
+
   // If the role is either admin or vendor
-  if (role === "admin" || role === "vendor") {
+  if (role === "ADMIN" || role === "VENDOR") {
     // Find the restaurant and add the item
     const updatedRestaurant = await Restaurant.findOneAndUpdate(
       { _id: restaurantId },
@@ -116,8 +122,14 @@ router.get("/:limit", authUser, async (req, res) => {
   const { role } = req.user;
   const { limit } = req.params;
 
+  // If limit isn't provided
+  if (!limit) {
+    res.status(400);
+    throw new Error("Please provide all the fields");
+  }
+
   // If role is admin
-  if (role === "admin") {
+  if (role === "ADMIN") {
     // Fetch 20 latest restaurants with owner data
     const restaurants = await Restaurant.find()
       .limit(limit)
@@ -148,13 +160,19 @@ router.put("/:restaurantId/status", authUser, async (req, res) => {
   const { action } = req.body;
   const { restaurantId } = req.params;
 
+  // If action or restaurant id aren't provided
+  if (!action) {
+    res.status(400);
+    throw new Error("Please provide all the fields");
+  }
+
   // If role is admin
-  if (role === "admin") {
+  if (role === "ADMIN") {
     // Find the restaurant and update the status
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       restaurantId,
       {
-        status: action === "Approve" ? "Approved" : "Pending",
+        status: action === "Approve" ? "APPROVED" : "PENDING",
       },
       {
         returnDocument: "after",
@@ -177,6 +195,49 @@ router.put("/:restaurantId/status", authUser, async (req, res) => {
   }
 });
 
+// Schedule a restaurant
+router.put("/:restaurantId/schedule", authUser, async (req, res) => {
+  const { role } = req.user;
+  const { date } = req.body;
+  const { restaurantId } = req.params;
+
+  // If date isn't provided
+  if (!date) {
+    res.status(400);
+    throw new Error("Please fill all the fields");
+  }
+
+  // Convert date to ISO string
+  const ISOString = new Date(date).toISOString();
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Get the updated restaurant
+    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+      restaurantId,
+      {
+        scheduledAt: ISOString,
+      },
+      {
+        returnDocument: "After",
+      }
+    ).select("-__v -updatedAt -createdAt -owner");
+
+    // If schedule date is updates successfully
+    if (updatedRestaurant) {
+      res.status(200).json(updatedRestaurant);
+    } else {
+      // If schedule date isn't updated successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 // Edit an item
 router.put("/:restaurantId/itemId/edit-item", authUser, (req, res) => {
   res.json("Hello");
@@ -191,7 +252,7 @@ router.delete(
     const { restaurantId, itemId } = req.params;
 
     // If role is admin or vendor
-    if (role === "admin" || role === "vendor") {
+    if (role === "ADMIN" || role === "VENDOR") {
       // Find the restaurant and remove the item
       const updatedRestaurant = await Restaurant.findByIdAndUpdate(
         { _id: restaurantId },

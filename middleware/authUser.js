@@ -40,7 +40,6 @@ async function handler(req, res, next) {
   } else {
     // If the token is invalid or
     // failed to get User data from DB
-    console.log(err);
     res.status(401);
     throw new Error("Not authorized");
   }
