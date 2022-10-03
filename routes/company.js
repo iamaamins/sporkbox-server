@@ -81,7 +81,6 @@ router.get("/", authUser, async (req, res) => {
 // Delete a company
 router.delete("/:companyId", authUser, async (req, res) => {
   const { role } = req.user;
-
   const { companyId } = req.params;
 
   // If role is admin
