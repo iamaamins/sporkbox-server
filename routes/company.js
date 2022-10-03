@@ -31,6 +31,7 @@ router.post("/register", authUser, async (req, res) => {
       const company = {
         _id: response.id,
         name: response.name,
+        website: response.website,
         code: response.code,
         budget: response.budget,
         createdAt: response.createdAt,
