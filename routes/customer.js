@@ -6,7 +6,7 @@ const setCookie = require("../utils");
 // Initialize router
 const router = express.Router();
 
-// Register user
+// Register customer
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -16,10 +16,10 @@ router.post("/register", async (req, res) => {
     throw new Error("Please fill all the fields");
   }
 
-  // Check if user exists
+  // Check if customer exists
   const customerExists = await User.findOne({ email });
 
-  // If user exists
+  // If customer exists
   if (customerExists) {
     res.status(400);
     throw new Error("User already exists");
@@ -29,7 +29,7 @@ router.post("/register", async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Create user
+  // Create customer
   const customer = await User.create({
     name,
     email,
@@ -57,7 +57,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Get user data
+// Get customer data
 router.get("/me", async (req, res) => {
   res.json({ message: "Get user data" });
 });

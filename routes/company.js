@@ -5,8 +5,8 @@ const authUser = require("../middleware/authUser");
 // Initialize router
 const router = express.Router();
 
-// Create a company
-router.post("/register", authUser, async (req, res) => {
+// Add a company
+router.post("/add", authUser, async (req, res) => {
   const { role } = req.user;
   const { name, website, address, code, budget } = req.body;
 

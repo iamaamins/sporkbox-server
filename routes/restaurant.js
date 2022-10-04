@@ -1,15 +1,14 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const setCookie = require("../utils");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
 
 // Initialize router
 const router = express.Router();
 
-// Register a vendor and a restaurant
-router.post("/register", async (req, res) => {
+// Add a vendor and a restaurant
+router.post("/add", async (req, res) => {
   // Get data from req body
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
@@ -42,10 +41,6 @@ router.post("/register", async (req, res) => {
 
   // If vendor is created successfully
   if (vendor) {
-    // Generate jwt token and set cookie
-    // to the response header
-    setCookie(vendor.id, res, "vendor");
-
     // Create restaurant with vendor id
     const response = await Restaurant.create({
       owner: vendor.id,
@@ -61,12 +56,19 @@ router.post("/register", async (req, res) => {
         .select("-__v -updatedAt")
         .populate("owner", "-__v -password -createdAt -updatedAt");
 
-      // Send the data with response
-      res.status(200).json(restaurant);
+      // If restaurant is found
+      if (restaurant) {
+        // Send the data with response
+        res.status(200).json(restaurant);
+      } else {
+        // If restaurant isn't found
+        res.status(500);
+        throw new Error("Something went wrong");
+      }
     } else {
-      // If the restaurant isn't found
-      res.status(400);
-      throw new Error("Invalid restaurant data");
+      // If the restaurant isn't created
+      res.status(500);
+      throw new Error("Something went wrong");
     }
   } else {
     // If vendor isn't created successfully
