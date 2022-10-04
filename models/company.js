@@ -8,6 +8,7 @@ const companySchema = new Schema(
     },
     website: {
       type: String,
+      lowercase: true,
       required: [true, "Please provide a website"],
     },
     address: {
@@ -17,6 +18,7 @@ const companySchema = new Schema(
     code: {
       type: String,
       unique: true,
+      lowercase: true,
       required: [true, "Please provide a code"],
     },
     budget: {
