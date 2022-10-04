@@ -1,8 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const authUser = require("../middleware/authUser");
 const setCookie = require("../utils");
+const { serialize } = require("cookie");
+const authUser = require("../middleware/authUser");
 
 // Initialize router
 const router = express.Router();
@@ -22,9 +23,12 @@ router.post("/login", async (req, res) => {
 
   // If user exists and password matches
   if (user && (await bcrypt.compare(password, user.password))) {
+    // Convert user role to lower case
+    const role = user.role.toLowerCase();
+
     // Generate jwt token and set cookie
     // to the response header
-    setCookie(user.id, res, user.role);
+    setCookie(user.id, res, role);
 
     // Send user data with the response
     res.status(200).json({
@@ -38,6 +42,27 @@ router.post("/login", async (req, res) => {
     res.status(401);
     throw new Error("Invalid credentials");
   }
+});
+
+// Log out user
+router.post("/logout", authUser, async (req, res) => {
+  const { role } = req.user;
+  const token = role.toLowerCase();
+
+  // Remove the cookie
+  res.setHeader(
+    "Set-Cookie",
+    serialize(token, "", {
+      httpOnly: true,
+      path: "/",
+      expires: new Date(0),
+      sameSite: "strict",
+      secure: process.env.NODE_ENV !== "development",
+    })
+  );
+
+  // Return the response
+  res.status(200).json({ message: "Successfully logout" });
 });
 
 router.get("/me", authUser, (req, res) => {
