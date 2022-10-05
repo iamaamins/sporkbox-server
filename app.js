@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
-const error = require("./middleware/error");
 require("dotenv").config();
 require("express-async-errors");
 const connectDB = require("./config/db");
+const error = require("./middleware/error");
 const User = require("./routes/user");
 const Customer = require("./routes/customer");
 const Company = require("./routes/company");
