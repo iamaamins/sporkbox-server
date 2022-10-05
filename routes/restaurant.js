@@ -218,7 +218,7 @@ router.put("/:restaurantId/schedule", authUser, async (req, res) => {
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       restaurantId,
       {
-        scheduledAt: ISOString,
+        scheduledOn: ISOString,
       },
       {
         returnDocument: "after",
