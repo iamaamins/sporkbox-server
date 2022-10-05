@@ -26,8 +26,8 @@ app.use(express.urlencoded({ extended: false }));
 // Routes
 app.use("/api/user", User);
 app.use("/api/customer", Customer);
-app.use("/api/company", Company);
-app.use("/api/restaurant", Restaurant);
+app.use("/api/companies", Company);
+app.use("/api/restaurants", Restaurant);
 
 // Error middleware
 app.use(error);

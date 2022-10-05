@@ -9,7 +9,26 @@ const router = express.Router();
 
 // Get all the scheduled restaurants
 router.get("/scheduled", async (req, res) => {
-  const restaurants = await Restaurant.find();
+  // Now
+  const now = new Date();
+
+  // This week Sunday and Friday
+  const currSunday = now.getDate() - now.getDay();
+  var currFriday = currSunday + 12;
+
+  // Next week Sunday and Friday
+  var nextSunday = new Date(now.setDate(currSunday + 6));
+  var nextFriday = new Date(now.setDate(currFriday));
+
+  // Get the restaurants scheduled from next sunday to next friday
+  const restaurants = await Restaurant.find({
+    scheduledOn: {
+      $gte: new Date(nextSunday),
+      $lt: new Date(nextFriday),
+    },
+  });
+
+  console.log(restaurants);
 
   res.status(200).json(restaurants);
 });
