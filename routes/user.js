@@ -41,9 +41,7 @@ router.post("/login", async (req, res) => {
 });
 
 // Log out user
-router.post("/logout", authUser, async (req, res) => {
-  const { role } = req.user;
-
+router.post("/logout", async (req, res) => {
   // Clear cookie
   res.clearCookie("token");
 
