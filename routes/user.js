@@ -10,10 +10,7 @@ const router = express.Router();
 // Log out user
 router.post("/logout", async (req, res) => {
   // Clear cookie
-  res.clearCookie("token");
-
-  // Return the response
-  res.status(200).json({ message: "Successfully logout" });
+  res.clearCookie("token").end();
 });
 
 // user login
