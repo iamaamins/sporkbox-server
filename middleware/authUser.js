@@ -10,10 +10,10 @@ async function handler(req, res, next) {
   }
 
   // If there are cookies
-  const cookie = req.cookies;
+  const token = req.cookies.token;
 
   // Get the token from cookie
-  const token = cookie.admin || cookie.vendor || cookie.customer;
+  // const token = cookie.admin || cookie.vendor || cookie.customer;
 
   // Return not authorized in there is no token
   if (!token) {

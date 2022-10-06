@@ -45,7 +45,7 @@ router.post("/logout", authUser, async (req, res) => {
   const { role } = req.user;
 
   // Clear cookie
-  res.clearCookie(role.toLowerCase());
+  res.clearCookie("token");
 
   // Return the response
   res.status(200).json({ message: "Successfully logout" });
