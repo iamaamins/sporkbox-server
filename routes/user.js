@@ -7,6 +7,15 @@ const authUser = require("../middleware/authUser");
 // Initialize router
 const router = express.Router();
 
+// Log out user
+router.post("/logout", async (req, res) => {
+  // Clear cookie
+  res.clearCookie("token");
+
+  // Return the response
+  res.status(200).json({ message: "Successfully logout" });
+});
+
 // user login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -38,15 +47,6 @@ router.post("/login", async (req, res) => {
     res.status(401);
     throw new Error("Invalid credentials");
   }
-});
-
-// Log out user
-router.post("/logout", async (req, res) => {
-  // Clear cookie
-  res.clearCookie("token");
-
-  // Return the response
-  res.status(200).json({ message: "Successfully logout" });
 });
 
 // Get user details
