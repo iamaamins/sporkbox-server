@@ -14,9 +14,9 @@ function setCookie(res, user) {
   res.cookie(user.role.toLowerCase(), jwtToken, {
     httpOnly: true,
     path: "/",
-    secure: true,
+    secure: false,
     sameSite: "none",
-    // domain: process.env.SITE_URL,
+    domain: process.env.SITE_URL,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
   });
 }
