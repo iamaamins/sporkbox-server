@@ -18,7 +18,7 @@ function setCookie(res, user) {
     path: "/",
     sameSite: "lax",
     secure: true,
-    domain: process.env.SITE_URL,
+    domain: "https://sporkbytes.vercel.app",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
   });
 }
