@@ -9,28 +9,42 @@ const router = express.Router();
 
 // Get all the scheduled restaurants
 router.get("/scheduled", async (req, res) => {
-  // Now
-  const now = new Date();
+  // Get future date
+  function getFutureDate(dayToAdd) {
+    // Today
+    const today = new Date();
 
-  // This week Sunday and Friday
-  const currSunday = now.getDate() - now.getDay();
-  var currFriday = currSunday + 12;
+    // Day number of current week sunday
+    const sunday = today.getDate() - today.getDay();
 
-  // Next week Sunday and Friday
-  var nextSunday = new Date(now.setDate(currSunday + 6));
-  var nextFriday = new Date(now.setDate(currFriday));
+    // Return a future date
+    return new Date(today.setDate(sunday + dayToAdd));
+  }
 
-  // Get the restaurants scheduled from next sunday to next friday
+  // Get dates
+  const today = new Date();
+  const nextSaturday = getFutureDate(6);
+  const nextSunday = getFutureDate(7);
+  const nextWeekFriday = getFutureDate(12);
+  const followingSunday = getFutureDate(14);
+  const followingFriday = getFutureDate(19);
+
+  // Get the scheduled restaurants
   const restaurants = await Restaurant.find({
     scheduledOn: {
-      $gte: new Date(nextSunday),
-      $lt: new Date(nextFriday),
+      $gte: new Date(today < nextSaturday ? nextSunday : followingSunday),
+      $lt: new Date(today < nextSaturday ? nextWeekFriday : followingFriday),
     },
   });
 
-  console.log(restaurants);
-
-  res.status(200).json(restaurants);
+  // If restaurants are fetched successfully
+  if (restaurants) {
+    // Return the restaurants with response
+    res.status(200).json(restaurants);
+  } else {
+    res.status(500);
+    throw new Error("Something went wrong");
+  }
 });
 
 // Add a vendor and a restaurant
