@@ -12,10 +12,10 @@ function setCookie(id, res, token) {
     "Set-Cookie",
     serialize(token, jwtToken, {
       httpOnly: true,
-      // path: "/",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7, // 1 week
-      // sameSite: "strict",
-      // secure: process.env.NODE_ENV !== "development",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV !== "development",
     })
   );
 }

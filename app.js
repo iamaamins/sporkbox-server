@@ -4,6 +4,7 @@ require("dotenv").config();
 require("express-async-errors");
 const connectDB = require("./config/db");
 const error = require("./middleware/error");
+const cookieParser = require("cookie-parser");
 const User = require("./routes/user");
 const Customer = require("./routes/customer");
 const Company = require("./routes/company");
@@ -21,6 +22,7 @@ const app = express();
 // Middleware
 app.use(cors({ credentials: true, origin: process.env.SITE_URL }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 
 // Routes
