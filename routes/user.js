@@ -49,8 +49,7 @@ router.post("/logout", authUser, async (req, res) => {
     httpOnly: true,
     path: "/",
     maxAge: new Date(0), // 1 week
-    sameSite: "none",
-    domain: process.env.SITE_URL,
+    // sameSite: "strict",
     secure: process.env.NODE_ENV !== "development",
   });
 
