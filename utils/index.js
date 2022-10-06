@@ -10,11 +10,13 @@ function setCookie(res, user) {
     expiresIn: "7d",
   });
 
+  res.cookie("hello", "hello");
+
   // Set cookie to header
   res.cookie(user.role.toLowerCase(), jwtToken, {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    sameSite: "lax",
     secure: true,
     domain: process.env.SITE_URL,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
