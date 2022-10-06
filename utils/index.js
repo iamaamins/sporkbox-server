@@ -15,10 +15,10 @@ function setCookie(res, user) {
   // Set cookie to header
   res.cookie(user.role.toLowerCase(), jwtToken, {
     httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: true,
-    domain: "https://sporkbytes.vercel.app",
+    // path: "/",
+    // sameSite: "lax",
+    // secure: true,
+    // domain: "https://sporkbytes.vercel.app",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
   });
 }
