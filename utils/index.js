@@ -1,23 +1,23 @@
 const jwt = require("jsonwebtoken");
-const { serialize } = require("cookie");
 
-function setCookie(id, res, token) {
-  // Generate jwt token
+// Generate token and set cookie to header
+function setCookie(res, user) {
+  // Destructure user object
+  const { id, role } = user;
+
+  // Generate token
   const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
-  // Set response header cookie with jwt token
-  res.setHeader(
-    "Set-Cookie",
-    serialize(token, jwtToken, {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      // sameSite: "strict",
-      secure: process.env.NODE_ENV !== "development",
-    })
-  );
+  // Set cookie to header
+  res.cookie(role.toLowerCase(), jwtToken, {
+    httpOnly: true,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 1 week
+    sameSite: "strict",
+    secure: process.env.NODE_ENV !== "development",
+  });
 }
 
 module.exports = setCookie;

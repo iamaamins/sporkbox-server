@@ -40,9 +40,9 @@ router.post("/register", async (req, res) => {
 
   // If vendor is created successfully
   if (vendor) {
-    // Generate jwt token and set cookie
-    // to the response header
-    setCookie(vendor.id, res, "vendor");
+    // Generate jwt token and set
+    // cookie to the response header
+    setCookie(res, vendor);
 
     // Create restaurant with vendor id
     const response = await Restaurant.create({

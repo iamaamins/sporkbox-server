@@ -1,17 +1,16 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-const { parse } = require("cookie");
 
 async function handler(req, res, next) {
   // Return not authorized in there
   // is no cookie in the headers
-  if (!req.headers.cookie) {
+  if (!req.cookies) {
     res.status(401);
     throw new Error("Not Authorized");
   }
 
-  // If there is no token in the cookie
-  const cookie = parse(req.headers.cookie);
+  // If there are cookies
+  const cookie = req.cookies;
 
   // Get the token from cookie
   const token = cookie.admin || cookie.vendor || cookie.customer;

@@ -39,9 +39,9 @@ router.post("/register", async (req, res) => {
 
   // If customer is created successfully
   if (customer) {
-    // Generate jwt token and set cookie
-    // to the response header
-    setCookie(customer.id, res, "customer");
+    // Generate jwt token and set
+    // cookie to the response header
+    setCookie(res, customer);
 
     // Send the data with response
     res.status(201).json({
