@@ -11,10 +11,11 @@ function setCookie(id, res, token) {
   res.setHeader(
     "Set-Cookie",
     serialize(token, jwtToken, {
+      domain: process.env.SITE_URL,
       httpOnly: true,
-      path: "/",
+      // path: "/",
       maxAge: 60 * 60 * 24 * 7, // 1 week
-      sameSite: "strict",
+      sameSite: "none",
       secure: process.env.NODE_ENV !== "development",
     })
   );
