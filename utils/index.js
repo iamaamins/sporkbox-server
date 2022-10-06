@@ -16,6 +16,7 @@ function setCookie(res, user) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 1 week
     sameSite: "strict",
+    domain: process.env.SITE_URL,
     secure: process.env.NODE_ENV !== "development",
   });
 }
