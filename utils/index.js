@@ -13,8 +13,6 @@ function setCookie(res, user) {
   // Set cookie to header
   res.cookie(role.toLowerCase(), jwtToken, {
     httpOnly: true,
-    path: "/",
-    domain: process.env.SITE_URL,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
   });
 }
