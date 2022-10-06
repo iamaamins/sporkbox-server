@@ -11,13 +11,11 @@ function setCookie(id, res, token) {
   res.setHeader(
     "Set-Cookie",
     serialize(token, jwtToken, {
-      domain: "https://sporkbytes.vercel.app",
       httpOnly: true,
-
-      // path: "/",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7, // 1 week
-      // sameSite: "none",
-      // secure: process.env.NODE_ENV !== "development",
+      // sameSite: "strict",
+      secure: process.env.NODE_ENV !== "development",
     })
   );
 }
