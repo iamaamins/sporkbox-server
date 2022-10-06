@@ -6,7 +6,7 @@ function setCookie(res, user) {
   const { id, role } = user;
 
   // Generate token
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+  const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
