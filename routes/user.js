@@ -1,7 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const jwt = require("jsonwebtoken");
 const setCookie = require("../utils");
 const authUser = require("../middleware/authUser");
 
@@ -26,13 +25,6 @@ router.post("/login", async (req, res) => {
     // Generate jwt token and set
     // cookie to the response header
     setCookie(res, user);
-
-    // // Generate token
-    // const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    //   expiresIn: "7d",
-    // });
-
-    // res.cookie(user.role.toLowerCase(), jwtToken, { httpOnly: true });
 
     // Send user data with the response
     res.status(200).json({
