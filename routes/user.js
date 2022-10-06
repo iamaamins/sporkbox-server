@@ -45,14 +45,7 @@ router.post("/logout", authUser, async (req, res) => {
   const { role } = req.user;
 
   // Clear cookie
-  res.clearCookie(role.toLowerCase(), {
-    httpOnly: true,
-    path: "/",
-    // secure: false,
-    // sameSite: "none",
-    // domain: process.env.SITE_URL,
-    maxAge: 0,
-  });
+  res.clearCookie(role.toLowerCase());
 
   // Return the response
   res.status(200).json({ message: "Successfully logout" });
