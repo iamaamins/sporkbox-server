@@ -27,27 +27,6 @@ router.post("/login", async (req, res) => {
     // cookie to the response header
     setCookie(res, user);
 
-    // const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-    //   expiresIn: "7d",
-    // });
-
-    // // Set cookie to header
-    // res
-    //   .status(200)
-    //   .cookie("token", jwtToken, {
-    //     httpOnly: true,
-    //     // path: "/",
-    //     sameSite: "none",
-    //     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    //     secure: true,
-    //   })
-    //   .json({
-    //     id: user.id,
-    //     name: user.name,
-    //     email: user.email,
-    //     role: user.role,
-    //   });
-
     // Send user data with the response
     res.status(200).json({
       id: user.id,
@@ -66,17 +45,14 @@ router.post("/login", async (req, res) => {
 router.post("/logout", authUser, async (req, res) => {
   // Clear cookie
   res
-    .status(200)
     .clearCookie("token", {
       httpOnly: true,
-      // path: "/",
+      path: "/",
       sameSite: "none",
-      maxAge: 0, // 1 week
-      secure: true,
+      maxAge: 0,
+      secure: process.env.NODE_ENV !== "development",
     })
-    .json({ message: "Successfully logout" });
-
-  // res.status(200).json({ message: "Successfully logout" });
+    .end();
 });
 
 // Get user details
