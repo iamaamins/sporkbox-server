@@ -8,12 +8,6 @@ const jwt = require("jsonwebtoken");
 // Initialize router
 const router = express.Router();
 
-// Log out user
-router.post("/logout", async (req, res) => {
-  // Clear cookie
-  res.clearCookie("token").end();
-});
-
 // user login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -45,6 +39,14 @@ router.post("/login", async (req, res) => {
     res.status(401);
     throw new Error("Invalid credentials");
   }
+});
+
+// Log out user
+router.post("/logout", authUser, async (req, res) => {
+  // Clear cookie
+  res.clearCookie("token");
+
+  res.status(200).json({ message: "Successfully logout" });
 });
 
 // Get user details
