@@ -10,7 +10,15 @@ const router = express.Router();
 // Log out user
 router.post("/logout", async (req, res) => {
   // Clear cookie
-  res.clearCookie("token").end();
+  res
+    .clearCookie("token", {
+      httpOnly: true,
+      path: "/",
+      // sameSite: "none",
+      secure: true,
+      maxAge: 0, // 1 week
+    })
+    .end();
 });
 
 // user login
