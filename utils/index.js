@@ -14,7 +14,6 @@ function setCookie(res, user) {
   res.cookie("token", jwtToken, {
     httpOnly: true,
     path: "/",
-    domain: "https://sporkbytes.vercel.app",
     sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
