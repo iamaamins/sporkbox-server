@@ -13,10 +13,10 @@ function setCookie(res, user) {
   // Set cookie to header
   res.cookie("token", jwtToken, {
     httpOnly: true,
-    path: "/",
-    sameSite: "none",
+    // path: "/",
+    // sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    secure: false,
+    // secure: false,
   });
 }
 
