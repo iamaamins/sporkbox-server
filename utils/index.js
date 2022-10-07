@@ -14,6 +14,7 @@ function setCookie(res, user) {
   res.cookie("token", jwtToken, {
     httpOnly: true,
     path: "/",
+    domain: "https://vercel.app/",
     // sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
