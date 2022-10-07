@@ -65,9 +65,18 @@ router.post("/login", async (req, res) => {
 // Log out user
 router.post("/logout", authUser, async (req, res) => {
   // Clear cookie
-  res.clearCookie("token");
+  res
+    .status(200)
+    .clearCookie("token", {
+      httpOnly: true,
+      // path: "/",
+      sameSite: "none",
+      maxAge: 0, // 1 week
+      secure: true,
+    })
+    .json({ message: "Successfully logout" });
 
-  res.status(200).json({ message: "Successfully logout" });
+  // res.status(200).json({ message: "Successfully logout" });
 });
 
 // Get user details
