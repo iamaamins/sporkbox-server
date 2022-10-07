@@ -15,7 +15,7 @@ function setCookie(res, user) {
     httpOnly: true,
     path: "/",
     domain: "https://vercel.app/",
-    // sameSite: "none",
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
   });
