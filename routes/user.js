@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const setCookie = require("../utils");
 const authUser = require("../middleware/authUser");
-const jwt = require("jsonwebtoken");
 
 // Initialize router
 const router = express.Router();
@@ -42,7 +41,7 @@ router.post("/login", async (req, res) => {
 });
 
 // Log out user
-router.post("/logout", authUser, async (req, res) => {
+router.post("/logout", async (req, res) => {
   // Clear cookie
   res
     .clearCookie("token", {
