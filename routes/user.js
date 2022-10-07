@@ -25,15 +25,36 @@ router.post("/login", async (req, res) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     // Generate jwt token and set
     // cookie to the response header
-    setCookie(res, user);
+    // setCookie(res, user);
+
+    const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Set cookie to header
+    res
+      .status(200)
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        // path: "/",
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+        secure: true,
+      })
+      .json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
 
     // Send user data with the response
-    res.status(200).json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    });
+    // res.status(200).json({
+    //   id: user.id,
+    //   name: user.name,
+    //   email: user.email,
+    //   role: user.role,
+    // });
   } else {
     // If user doesn't exist or password doesn't match
     res.status(401);
