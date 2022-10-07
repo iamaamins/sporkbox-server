@@ -35,7 +35,7 @@ router.get("/scheduled", async (req, res) => {
       $gte: new Date(today < nextSaturday ? nextSunday : followingSunday),
       $lt: new Date(today < nextSaturday ? nextWeekFriday : followingFriday),
     },
-  });
+  }).sort({ scheduledOn: 1 });
 
   // If restaurants are fetched successfully
   if (restaurants) {
