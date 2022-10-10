@@ -86,9 +86,9 @@ router.post("/add", authUser, async (req, res) => {
       // Create restaurant with vendor id
       const response = await Restaurant.create({
         owner: vendor.id,
+        status: "PENDING",
         name: restaurantName,
         address: restaurantAddress,
-        status: "PENDING",
       });
 
       // If restaurant is created

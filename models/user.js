@@ -21,6 +21,10 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Please add a password"],
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+    },
   },
   {
     timestamps: true,

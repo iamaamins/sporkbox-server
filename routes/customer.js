@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const setCookie = require("../utils");
+const Company = require("../models/company");
 
 // Initialize router
 const router = express.Router();
@@ -14,6 +15,18 @@ router.post("/register", async (req, res) => {
   if (!name || !email || !password) {
     res.status(400);
     throw new Error("Please fill all the fields");
+  }
+
+  // Get company code from customer's email
+  const companyCode = email.split("@")[1].split(".")[0];
+
+  // Check if company exists
+  const company = await Company.findOne({ code: companyCode });
+
+  // If company doesn't exist
+  if (!company) {
+    res.status(400);
+    throw new Error("Your company isn't registered");
   }
 
   // Check if customer exists
@@ -30,36 +43,38 @@ router.post("/register", async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   // Create customer
-  const customer = await User.create({
+  const response = await User.create({
     name,
     email,
     role: "CUSTOMER",
+    company: company.id,
     password: hashedPassword,
   });
 
   // If customer is created successfully
-  if (customer) {
-    // Generate jwt token and set
-    // cookie to the response header
-    setCookie(res, customer);
+  if (response) {
+    // Find the customer and populate the company
+    const customer = await User.findById(response.id)
+      .select("-__v -password -createdAt -updatedAt")
+      .populate("company", "-__v -createdAt -updatedAt");
 
-    // Send the data with response
-    res.status(201).json({
-      id: customer.id,
-      name: customer.name,
-      email: customer.email,
-      role: customer.role,
-    });
+    if (customer) {
+      // Generate jwt token and set
+      // cookie to the response header
+      setCookie(res, customer);
+
+      // Send the data with response
+      res.status(201).json(customer);
+    } else {
+      // If customer isn't found successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
   } else {
     // If customer isn't created successfully
     res.status(500);
     throw new Error("Something went wrong");
   }
-});
-
-// Get customer data
-router.get("/me", async (req, res) => {
-  res.json({ message: "Get user data" });
 });
 
 module.exports = router;
