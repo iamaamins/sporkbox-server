@@ -116,7 +116,7 @@ router.put("/:restaurantId/schedule", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    ).select("-__v -updatedAt -createdAt -owner");
+    ).select("-__v -updatedAt");
 
     // If schedule date is updates successfully
     if (updatedRestaurant) {
