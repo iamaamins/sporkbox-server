@@ -24,7 +24,6 @@ const userSchema = new Schema(
     status: {
       type: String,
       enum: ["APPROVED", "PENDING"],
-      required: [true, "Please provide a status"],
     },
     company: {
       type: Schema.Types.ObjectId,
