@@ -26,7 +26,7 @@ const restaurantSchema = new Schema(
           required: [true, "Please provide item tags"],
         },
         price: {
-          type: String,
+          type: Number,
           required: [true, "Please provide item price"],
         },
         description: {

@@ -22,7 +22,7 @@ const companySchema = new Schema(
       required: [true, "Please provide a code"],
     },
     budget: {
-      type: String,
+      type: Number,
       required: [true, "Please provide a budget"],
     },
   },
