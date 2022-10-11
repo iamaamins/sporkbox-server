@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const express = require("express");
 const User = require("../models/user");
 const setCookie = require("../utils");
+const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
 
 // Initialize router
@@ -58,7 +59,7 @@ router.post("/register", async (req, res) => {
       // Find the vendor and populate the restaurant
       const response = await User.findById(vendor.id)
         .select("-__v -password -updatedAt")
-        .populate("restaurant", "-__v -updatedAt");
+        .populate("restaurant", "-__v -createdAt -updatedAt");
 
       // If vendor is found successfully
       if (response) {
@@ -128,6 +129,84 @@ router.post("/register", async (req, res) => {
   //   res.status(500);
   //   throw new Error("Something went wrong");
   // }
+});
+
+// Add a vendor and a restaurant
+router.post("/add", authUser, async (req, res) => {
+  // Get data from req
+  const { role } = req.user;
+  const { name, email, password, restaurantName, restaurantAddress } = req.body;
+
+  // If a value isn't provided
+  if (!name || !email || !password || !restaurantName || !restaurantAddress) {
+    res.status(400);
+    throw new Error("Please fill all the fields");
+  }
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Check if vendor exists
+    const vendorExists = await User.findOne({ email });
+
+    // Throw error if vendor already exists
+    if (vendorExists) {
+      res.status(400);
+      throw new Error("Vendor already exists");
+    }
+
+    // Create the restaurant
+    const restaurant = await Restaurant.create({
+      name: restaurantName,
+      address: restaurantAddress,
+    });
+
+    // If restaurant is created successfully
+    if (restaurant) {
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Create vendor
+      const vendor = await User.create({
+        name,
+        email,
+        role: "VENDOR",
+        status: "PENDING",
+        password: hashedPassword,
+        restaurant: restaurant.id,
+      });
+
+      // If vendor is created successfully
+      if (vendor) {
+        // Find the vendor and populate the restaurant
+        const response = await User.findById(vendor.id)
+          .select("-__v -password  -updatedAt")
+          .populate("restaurant", "-__v -createdAt -updatedAt");
+
+        // If vendor is found successfully
+        if (response) {
+          // Send the data with response
+          res.status(200).json(response);
+        } else {
+          // If vendor isn't found successfully
+          res.status(500);
+          throw new Error("Something went wrong");
+        }
+      } else {
+        // If vendor isn't created successfully
+        res.status(500);
+        throw new Error("Something went wrong");
+      }
+    } else {
+      // If restaurant isn't created successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
 });
 
 // Get all the vendors
