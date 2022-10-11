@@ -55,8 +55,8 @@ router.post("/register", async (req, res) => {
   if (response) {
     // Find the customer and populate the company
     const customer = await User.findById(response.id)
-      .select("-__v -password -createdAt -updatedAt")
-      .populate("company", "-__v -createdAt -updatedAt");
+      .select("-__v -password -updatedAt")
+      .populate("company", "-__v -updatedAt");
 
     if (customer) {
       // Generate jwt token and set

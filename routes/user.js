@@ -62,8 +62,8 @@ router.get("/me", authUser, async (req, res) => {
   if (role === "CUSTOMER") {
     // Find the customer and populate the company
     const customer = await User.findById(id)
-      .select("-__v -password -createdAt -updatedAt")
-      .populate("company", "-__v -createdAt -updatedAt");
+      .select("-__v -password -updatedAt")
+      .populate("company", "-__v -updatedAt");
 
     // If customer is found successfully
     if (customer) {

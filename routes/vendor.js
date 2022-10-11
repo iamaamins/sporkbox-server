@@ -179,7 +179,7 @@ router.get("/:limit", authUser, async (req, res) => {
       .limit(limit)
       .select("-__v -password -updatedAt")
       .sort({ createdAt: -1 })
-      .populate("restaurant", "-__v -createdAt -updatedAt");
+      .populate("restaurant", "-__v -updatedAt");
 
     // If vendors are fetched successfully
     if (vendors) {
@@ -221,7 +221,7 @@ router.put("/:vendorId/status", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    ).select("-__v -updatedAt -password");
+    ).select("-__v -password -updatedAt");
 
     // If status is updated successfully
     if (updatedVendor) {
