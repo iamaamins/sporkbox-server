@@ -59,8 +59,9 @@ router.post("/add", authUser, async (req, res) => {
     throw new Error("Please fill all the fields");
   }
 
+  // If role is admin
   if (role === "ADMIN") {
-    // Check if user exists
+    // Check if vendor exists
     const vendorExists = await User.findOne({ email });
 
     // Throw error if vendor already exists
@@ -69,51 +70,51 @@ router.post("/add", authUser, async (req, res) => {
       throw new Error("Vendor already exists");
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create a vendor
-    const vendor = await User.create({
-      name,
-      email,
-      role: "VENDOR",
-      password: hashedPassword,
+    // Create the restaurant
+    const restaurant = await Restaurant.create({
+      name: restaurantName,
+      address: restaurantAddress,
     });
 
-    // If vendor is created successfully
-    if (vendor) {
-      // Create restaurant with vendor id
-      const response = await Restaurant.create({
-        owner: vendor.id,
+    // If restaurant is created successfully
+    if (restaurant) {
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Create vendor
+      const vendor = await User.create({
+        name,
+        email,
+        role: "VENDOR",
         status: "PENDING",
-        name: restaurantName,
-        address: restaurantAddress,
+        password: hashedPassword,
+        restaurant: restaurant.id,
       });
 
-      // If restaurant is created
-      if (response) {
-        // Fetch the restaurant with owner data
-        const restaurant = await Restaurant.findById(response.id)
-          .select("-__v -updatedAt")
-          .populate("owner", "-__v -password -createdAt -updatedAt");
+      // If vendor is created successfully
+      if (vendor) {
+        // Find the vendor and populate the restaurant
+        const response = await User.findById(vendor.id)
+          .select("-__v -password -createdAt -updatedAt")
+          .populate("restaurant", "-__v -updatedAt");
 
-        // If restaurant is found
-        if (restaurant) {
+        // If vendor is found successfully
+        if (response) {
           // Send the data with response
-          res.status(200).json(restaurant);
+          res.status(200).json(response);
         } else {
-          // If restaurant isn't found
+          // If vendor isn't found successfully
           res.status(500);
           throw new Error("Something went wrong");
         }
       } else {
-        // If the restaurant isn't created
+        // If vendor isn't created successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
     } else {
-      // If vendor isn't created successfully
+      // If restaurant isn't created successfully
       res.status(500);
       throw new Error("Something went wrong");
     }
@@ -160,85 +161,6 @@ router.post("/:restaurantId/add-item", authUser, async (req, res) => {
     }
   } else {
     // Return not authorized if role isn't admin or vendor
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-});
-
-// Get all the restaurants
-router.get("/:limit", authUser, async (req, res) => {
-  // Get the role from req
-  const { role } = req.user;
-  const { limit } = req.params;
-
-  // If limit isn't provided
-  if (!limit) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // If role is admin
-  if (role === "ADMIN") {
-    // Fetch 20 latest restaurants with owner data
-    const restaurants = await Restaurant.find()
-      .limit(limit)
-      .select("-__v -updatedAt")
-      .sort({ createdAt: -1 })
-      .populate("owner", "-__v -password -createdAt -updatedAt");
-
-    // If restaurants are fetched successfully
-    if (restaurants) {
-      // Return the restaurants
-      res.status(200).json(restaurants);
-    } else {
-      // If restaurants are not fetched successfully
-      res.status(500);
-      throw new Error("Something went wrong");
-    }
-  } else {
-    // Return not authorized if role isn't admin
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-});
-
-// Update restaurant status
-router.put("/:restaurantId/status", authUser, async (req, res) => {
-  // Get the role from req
-  const { role } = req.user;
-  const { action } = req.body;
-  const { restaurantId } = req.params;
-
-  // If action or restaurant id aren't provided
-  if (!action) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // If role is admin
-  if (role === "ADMIN") {
-    // Find the restaurant and update the status
-    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-      restaurantId,
-      {
-        status: action === "Approve" ? "APPROVED" : "PENDING",
-      },
-      {
-        returnDocument: "after",
-      }
-    ).select("-__v -updatedAt");
-
-    // If status is updated successfully
-    if (updatedRestaurant) {
-      // Return the updated restaurant
-      res.status(200).json(updatedRestaurant);
-    } else {
-      // If status isn't updated successfully
-      res.status(500);
-      throw new Error("Something went wrong");
-    }
-  } else {
-    // Return not authorized if role isn't admin
     res.status(401);
     throw new Error("Not authorized");
   }

@@ -2,11 +2,6 @@ const { Schema, model } = require("mongoose");
 
 const restaurantSchema = new Schema(
   {
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Please provide owner id"],
-    },
     name: {
       type: String,
       required: [true, "Please provide a name"],
@@ -14,11 +9,6 @@ const restaurantSchema = new Schema(
     address: {
       type: String,
       required: [true, "Please provide an email"],
-    },
-    status: {
-      type: String,
-      enum: ["APPROVED", "PENDING"],
-      required: [true, "Please provide a status"],
     },
     scheduledOn: {
       type: Date,

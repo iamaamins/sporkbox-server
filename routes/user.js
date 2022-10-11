@@ -54,11 +54,6 @@ router.post("/logout", async (req, res) => {
     .end();
 });
 
-// Get user details
-// router.get("/me", authUser, (req, res) => {
-//   res.status(200).json(req.user);
-// });
-
 router.get("/me", authUser, async (req, res) => {
   // Destructure user
   const { id, role } = req.user;

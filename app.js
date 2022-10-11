@@ -6,8 +6,9 @@ const connectDB = require("./config/db");
 const error = require("./middleware/error");
 const cookieParser = require("cookie-parser");
 const User = require("./routes/user");
-const Customer = require("./routes/customer");
+const Vendor = require("./routes/vendor");
 const Company = require("./routes/company");
+const Customer = require("./routes/customer");
 const Restaurant = require("./routes/restaurant");
 
 // Port
@@ -27,6 +28,7 @@ app.use(cors({ credentials: true, origin: process.env.SITE_URL }));
 
 // Routes
 app.use("/api/user", User);
+app.use("/api/vendor", Vendor);
 app.use("/api/customer", Customer);
 app.use("/api/companies", Company);
 app.use("/api/restaurants", Restaurant);

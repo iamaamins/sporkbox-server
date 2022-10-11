@@ -21,9 +21,18 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Please add a password"],
     },
+    status: {
+      type: String,
+      enum: ["APPROVED", "PENDING"],
+      required: [true, "Please provide a status"],
+    },
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",
+    },
+    restaurant: {
+      type: Schema.Types.ObjectId,
+      ref: "Restaurant",
     },
   },
   {
