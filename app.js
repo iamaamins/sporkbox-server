@@ -24,7 +24,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({ credentials: true, origin: process.env.SITE_URL }));
+app.use(cors({ credentials: true, origin: "https://sporkbytes.vercel.app/" }));
 
 // Routes
 app.use("/api/user", User);
