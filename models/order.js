@@ -7,38 +7,40 @@ const orderSchema = new Schema(
       ref: "User",
       required: [true, "Please provide a customer id"],
     },
-    items: [
-      {
-        _id: {
-          type: Schema.Types.ObjectId,
-          required: [true, "Please provide an item id"],
-        },
-        name: {
-          type: String,
-          required: [true, "Please provide the item name"],
-        },
-        quantity: {
-          type: Number,
-          required: [true, "Please provide item quantity"],
-        },
-        total: {
-          type: Number,
-          required: [true, "Please provide a total price"],
-        },
-        restaurant: {
-          type: Schema.Types.ObjectId,
-          ref: "Restaurant",
-          required: [true, "Please provide a restaurant id"],
-        },
-        deliveryDate: {
-          type: Date,
-          required: [true, "Please provide a delivery date"],
-        },
+    restaurant: {
+      type: Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: [true, "Please provide a restaurant id"],
+    },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+    },
+    deliveryDate: {
+      type: Date,
+      required: [true, "Please provide a delivery date"],
+    },
+    status: {
+      type: String,
+      enum: ["PROCESSING", "DELIVERED"],
+    },
+    item: {
+      _id: {
+        type: Schema.Types.ObjectId,
+        required: [true, "Please provide an item id"],
       },
-    ],
-    total: {
-      type: Number,
-      required: [true, "Please provide a total amount"],
+      name: {
+        type: String,
+        required: [true, "Please provide the item name"],
+      },
+      quantity: {
+        type: Number,
+        required: [true, "Please provide item quantity"],
+      },
+      total: {
+        type: Number,
+        required: [true, "Please provide a total price"],
+      },
     },
   },
   {
