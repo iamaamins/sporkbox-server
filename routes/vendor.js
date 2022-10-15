@@ -123,13 +123,13 @@ router.post("/add", authUser, async (req, res) => {
             password: hashedPassword,
             restaurant: restaurant.id,
           })
-        ).populate("restaurant", "-__v -createdAt -updatedAt")
+        ).populate("restaurant", "-__v -updatedAt")
       ).toObject();
 
       // If vendor is created successfully
       if (vendor) {
         // Delete fields
-        deleteFields(vendor, ["password"]);
+        deleteFields(vendor, ["createdAt", "password"]);
 
         // Return the vendor
         res.status(200).json(vendor);
@@ -167,7 +167,7 @@ router.get("/:limit", authUser, async (req, res) => {
     // Fetch 20 latest vendors with restaurant data
     const vendors = await User.find({ role: "VENDOR" })
       .limit(limit)
-      .select("-__v -password -updatedAt")
+      .select("-__v -password -createdAt -updatedAt")
       .sort({ createdAt: -1 })
       .populate("restaurant", "-__v -updatedAt");
 
