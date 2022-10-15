@@ -62,7 +62,7 @@ router.post("/register", async (req, res) => {
     setCookie(res, customer);
 
     // Delete fields
-    deleteFields(customer, ["password"]);
+    deleteFields(customer, ["createdAt", "password"]);
 
     // Send the data with response
     res.status(201).json(customer);

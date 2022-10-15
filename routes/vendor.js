@@ -61,7 +61,7 @@ router.post("/register", async (req, res) => {
       setCookie(res, vendor);
 
       // Delete fields
-      deleteFields(vendor, ["password"]);
+      deleteFields(vendor, ["createdAt", "password"]);
 
       // Send the vendor with response
       res.status(200).json(vendor);
@@ -88,8 +88,6 @@ router.post("/add", authUser, async (req, res) => {
     res.status(400);
     throw new Error("Please fill all the fields");
   }
-
-  console.log(role);
 
   // If role is admin
   if (role === "ADMIN") {
