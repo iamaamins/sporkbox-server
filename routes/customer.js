@@ -1,8 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const setCookie = require("../utils");
 const Company = require("../models/company");
+const { setCookie, deleteFields } = require("../utils");
 
 // Initialize router
 const router = express.Router();
@@ -42,34 +42,30 @@ router.post("/register", async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Create customer
-  const response = await User.create({
-    name,
-    email,
-    role: "CUSTOMER",
-    company: company.id,
-    password: hashedPassword,
-  });
+  // Create customer and populate the company
+  const customer = (
+    await (
+      await User.create({
+        name,
+        email,
+        role: "CUSTOMER",
+        company: company.id,
+        password: hashedPassword,
+      })
+    ).populate("company", "-__v -updatedAt")
+  ).toObject();
 
   // If customer is created successfully
-  if (response) {
-    // Find the customer and populate the company
-    const customer = await User.findById(response.id)
-      .select("-__v -password -updatedAt")
-      .populate("company", "-__v -updatedAt");
+  if (customer) {
+    // Generate jwt token and set
+    // cookie to the response header
+    setCookie(res, customer);
 
-    if (customer) {
-      // Generate jwt token and set
-      // cookie to the response header
-      setCookie(res, customer);
+    // Delete fields
+    deleteFields(customer, ["password"]);
 
-      // Send the data with response
-      res.status(201).json(customer);
-    } else {
-      // If customer isn't found successfully
-      res.status(500);
-      throw new Error("Something went wrong");
-    }
+    // Send the data with response
+    res.status(201).json(customer);
   } else {
     // If customer isn't created successfully
     res.status(500);

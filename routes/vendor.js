@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const express = require("express");
 const User = require("../models/user");
-const setCookie = require("../utils");
+const { setCookie, deleteFields } = require("../utils");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
 
@@ -40,15 +40,19 @@ router.post("/register", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create vendor
-    const vendor = await User.create({
-      name,
-      email,
-      role: "VENDOR",
-      status: "PENDING",
-      password: hashedPassword,
-      restaurant: restaurant.id,
-    });
+    // Create vendor and populate the restaurant
+    const vendor = (
+      await (
+        await User.create({
+          name,
+          email,
+          role: "VENDOR",
+          status: "PENDING",
+          password: hashedPassword,
+          restaurant: restaurant.id,
+        })
+      ).populate("restaurant", "-__v -createdAt -updatedAt")
+    ).toObject();
 
     // If vendor is created successfully
     if (vendor) {
@@ -56,20 +60,11 @@ router.post("/register", async (req, res) => {
       // cookie to the response header
       setCookie(res, vendor);
 
-      // Find the vendor and populate the restaurant
-      const response = await User.findById(vendor.id)
-        .select("-__v -password -updatedAt")
-        .populate("restaurant", "-__v -createdAt -updatedAt");
+      // Delete fields
+      deleteFields(vendor, ["password"]);
 
-      // If vendor is found successfully
-      if (response) {
-        // Send the data with response
-        res.status(200).json(response);
-      } else {
-        // If vendor isn't found successfully
-        res.status(500);
-        throw new Error("Something went wrong");
-      }
+      // Send the vendor with response
+      res.status(200).json(vendor);
     } else {
       // If vendor isn't created successfully
       res.status(500);
@@ -94,6 +89,8 @@ router.post("/add", authUser, async (req, res) => {
     throw new Error("Please fill all the fields");
   }
 
+  console.log(role);
+
   // If role is admin
   if (role === "ADMIN") {
     // Check if vendor exists
@@ -117,32 +114,27 @@ router.post("/add", authUser, async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Create vendor
-      const vendor = await User.create({
-        name,
-        email,
-        role: "VENDOR",
-        status: "PENDING",
-        password: hashedPassword,
-        restaurant: restaurant.id,
-      });
+      // Create vendor and populate the restaurant
+      const vendor = (
+        await (
+          await User.create({
+            name,
+            email,
+            role: "VENDOR",
+            status: "PENDING",
+            password: hashedPassword,
+            restaurant: restaurant.id,
+          })
+        ).populate("restaurant", "-__v -createdAt -updatedAt")
+      ).toObject();
 
       // If vendor is created successfully
       if (vendor) {
-        // Find the vendor and populate the restaurant
-        const response = await User.findById(vendor.id)
-          .select("-__v -password -updatedAt")
-          .populate("restaurant", "-__v -createdAt -updatedAt");
+        // Delete fields
+        deleteFields(vendor, ["password"]);
 
-        // If vendor is found successfully
-        if (response) {
-          // Send the data with response
-          res.status(200).json(response);
-        } else {
-          // If vendor isn't found successfully
-          res.status(500);
-          throw new Error("Something went wrong");
-        }
+        // Return the vendor
+        res.status(200).json(vendor);
       } else {
         // If vendor isn't created successfully
         res.status(500);

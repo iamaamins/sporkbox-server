@@ -1,5 +1,6 @@
 const express = require("express");
 const Company = require("../models/company");
+const { deleteFields } = require("../utils");
 const authUser = require("../middleware/authUser");
 
 // Initialize router
@@ -18,28 +19,22 @@ router.post("/add", authUser, async (req, res) => {
 
   if (role === "ADMIN") {
     // Create a new company
-    const response = await Company.create({
-      name,
-      website,
-      address,
-      code,
-      budget,
-    });
+    const company = (
+      await Company.create({
+        name,
+        website,
+        address,
+        code,
+        budget,
+      })
+    ).toObject();
 
     // If company is created successfully
-    if (response) {
-      // Create company
-      const company = {
-        _id: response.id,
-        name: response.name,
-        website: response.website,
-        address: response.address,
-        code: response.code,
-        budget: response.budget,
-        createdAt: response.createdAt,
-      };
+    if (company) {
+      // Delete fields
+      deleteFields(company);
 
-      // Send the company with response
+      // // Send the company with response
       res.status(201).json(company);
     } else {
       // If company isn't created successfully

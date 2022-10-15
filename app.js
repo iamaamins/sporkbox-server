@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const error = require("./middleware/error");
 const cookieParser = require("cookie-parser");
 const User = require("./routes/user");
+const Order = require("./routes/order");
 const Vendor = require("./routes/vendor");
 const Company = require("./routes/company");
 const Customer = require("./routes/customer");
@@ -24,10 +25,16 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({ credentials: true, origin: "https://sporkbytes.vercel.app" }));
+app.use(
+  cors({
+    credentials: true,
+    origin: "http://localhost:3000",
+  })
+);
 
 // Routes
 app.use("/api/user", User);
+app.use("/api/orders", Order);
 app.use("/api/vendor", Vendor);
 app.use("/api/customer", Customer);
 app.use("/api/companies", Company);

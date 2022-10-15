@@ -102,16 +102,13 @@ router.put("/:restaurantId/schedule", authUser, async (req, res) => {
     throw new Error("Please fill all the fields");
   }
 
-  // Convert date to ISO string
-  const ISOString = new Date(date).toISOString();
-
   // If role is admin
   if (role === "ADMIN") {
     // Get the updated restaurant
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       restaurantId,
       {
-        scheduledOn: ISOString,
+        scheduledOn: date,
       },
       {
         returnDocument: "after",

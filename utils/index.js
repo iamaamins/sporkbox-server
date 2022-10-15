@@ -2,11 +2,8 @@ const jwt = require("jsonwebtoken");
 
 // Generate token and set cookie to header
 function setCookie(res, user) {
-  // // Destructure user object
-  const { id } = user;
-
   // Generate token
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+  const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -20,4 +17,18 @@ function setCookie(res, user) {
   });
 }
 
-module.exports = setCookie;
+// Delete unnecessary fields
+function deleteFields(data, moreFields) {
+  // Default fields
+  let fields = ["__v", "updatedAt"];
+
+  // If more fields are provided
+  if (moreFields) {
+    fields = [...fields, ...moreFields];
+  }
+
+  // Delete the fields
+  fields.forEach((field) => delete data[field]);
+}
+
+module.exports = { setCookie, deleteFields };

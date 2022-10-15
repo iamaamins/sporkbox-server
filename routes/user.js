@@ -1,8 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const setCookie = require("../utils");
 const authUser = require("../middleware/authUser");
+const { setCookie, deleteFields } = require("../utils");
 
 // Initialize router
 const router = express.Router();
@@ -18,7 +18,7 @@ router.post("/login", async (req, res) => {
   }
 
   // Find the user
-  const user = await User.findOne({ email });
+  const user = (await User.findOne({ email })).toObject();
 
   // If user exists and password matches
   if (user && (await bcrypt.compare(password, user.password))) {
@@ -26,13 +26,12 @@ router.post("/login", async (req, res) => {
     // cookie to the response header
     setCookie(res, user);
 
+    // Delete fields
+    deleteFields(user, ["password", "createdAt"]);
+    // console.log(user);
+
     // Send user data with the response
-    res.status(200).json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    });
+    res.status(200).json(user);
   } else {
     // If user doesn't exist or password doesn't match
     res.status(401);
