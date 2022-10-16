@@ -1,6 +1,6 @@
 const express = require("express");
 const Order = require("../models/order");
-const { deleteFields } = require("../utils");
+const { deleteFields, convertDateToText } = require("../utils");
 const authUser = require("../middleware/authUser");
 
 // Initialize router
@@ -76,12 +76,18 @@ router.get("/active", authUser, async (req, res) => {
   // If role is admin
   if (role === "ADMIN") {
     // Find the active orders
-    const activeOrders = await Order.find({ status: "PROCESSING" }).select(
+    const response = await Order.find({ status: "PROCESSING" }).select(
       "-__v -updatedAt"
     );
 
     // If active orders are found successfully
-    if (activeOrders) {
+    if (response) {
+      // Format the delivery date of each order
+      const activeOrders = response.map((activeOrder) => ({
+        ...activeOrder.toObject(),
+        deliveryDate: convertDateToText(activeOrder.deliveryDate),
+      }));
+
       // Send the data with response
       res.status(200).json(activeOrders);
     } else {

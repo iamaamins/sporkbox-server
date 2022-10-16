@@ -31,4 +31,8 @@ function deleteFields(data, moreFields) {
   fields.forEach((field) => delete data[field]);
 }
 
-module.exports = { setCookie, deleteFields };
+// Convert iso date to locale date string
+const convertDateToText = (date) =>
+  new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
+
+module.exports = { setCookie, deleteFields, convertDateToText };
