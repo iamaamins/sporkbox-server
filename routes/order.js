@@ -68,4 +68,32 @@ router.post("/create", authUser, async (req, res) => {
   }
 });
 
+// Get active orders
+router.get("/active", authUser, async (req, res) => {
+  // Get data from req user
+  const { role } = req.user;
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Find the active orders
+    const activeOrders = await Order.find({ status: "PROCESSING" }).select(
+      "-__v -updatedAt"
+    );
+
+    // If active orders are found successfully
+    if (activeOrders) {
+      // Send the data with response
+      res.status(200).json(activeOrders);
+    } else {
+      // If active orders aren't found successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 module.exports = router;
