@@ -22,9 +22,9 @@ async function handler(req, res, next) {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   // Get the User data from DB
-  const user = await User.findById(decoded.id).select(
-    "-password -__v -updatedAt -createdAt"
-  );
+  const user = await User.findById(decoded.id)
+    .select("-__v -password -updatedAt -createdAt")
+    .populate("company" || "restaurant", "-__v -updatedAt -createdAt");
 
   // If there is a user in db
   if (user) {

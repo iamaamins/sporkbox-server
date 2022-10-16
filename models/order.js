@@ -1,24 +1,46 @@
 const { Schema, model } = require("mongoose");
 
+// Order schema
 const orderSchema = new Schema(
   {
     customer: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "Please provide a customer id"],
+      required: [true, "Please provide customer id"],
+    },
+    customerName: {
+      type: String,
+      required: [true, "Please provide customer name"],
+    },
+    customerEmail: {
+      type: String,
+      required: [true, "Please provide customer email"],
+    },
+    deliveryAddress: {
+      type: String,
+      required: [true, "Please provide delivery address"],
     },
     restaurant: {
       type: Schema.Types.ObjectId,
       ref: "Restaurant",
-      required: [true, "Please provide a restaurant id"],
+      required: [true, "Please provide restaurant id"],
+    },
+    restaurantName: {
+      type: String,
+      required: [true, "Please provide restaurant name"],
     },
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",
+      required: [true, "Please provide company id"],
+    },
+    companyName: {
+      type: String,
+      required: [true, "Please provide company name"],
     },
     deliveryDate: {
       type: Date,
-      required: [true, "Please provide a delivery date"],
+      required: [true, "Please provide delivery date"],
     },
     status: {
       type: String,
