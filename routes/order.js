@@ -79,7 +79,6 @@ router.get("/active", authUser, async (req, res) => {
     const response = await Order.find({ status: "PROCESSING" }).select(
       "-__v -updatedAt"
     );
-
     // If active orders are found successfully
     if (response) {
       // Format the delivery date of each order
@@ -159,7 +158,9 @@ router.put("/:orderId/status", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    ).select("-__v -updatedAt");
+    )
+      .select("-__v -updatedAt")
+      .lean();
 
     // If order is updates successfully
     if (response) {
@@ -171,7 +172,7 @@ router.put("/:orderId/status", authUser, async (req, res) => {
 
       // Update delivery date
       const updatedOrder = {
-        ...response.toObject(),
+        ...response,
         deliveryDate: convertDateToText(response.deliveryDate),
       };
 

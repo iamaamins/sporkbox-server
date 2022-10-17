@@ -21,7 +21,7 @@ router.post("/register", async (req, res) => {
   const companyCode = email.split("@")[1].split(".")[0];
 
   // Check if company exists
-  const company = await Company.findOne({ code: companyCode });
+  const company = await Company.findOne({ code: companyCode }).lean();
 
   // If company doesn't exist
   if (!company) {
@@ -30,7 +30,7 @@ router.post("/register", async (req, res) => {
   }
 
   // Check if customer exists
-  const customerExists = await User.findOne({ email });
+  const customerExists = await User.findOne({ email }).lean();
 
   // If customer exists
   if (customerExists) {

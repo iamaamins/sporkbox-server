@@ -18,7 +18,7 @@ router.post("/login", async (req, res) => {
   }
 
   // Find the user
-  const user = (await User.findOne({ email })).toObject();
+  const user = await User.findOne({ email }).lean();
 
   // If user exists and password matches
   if (user && (await bcrypt.compare(password, user.password))) {
@@ -54,31 +54,8 @@ router.post("/logout", async (req, res) => {
 });
 
 router.get("/me", authUser, async (req, res) => {
-  // Destructure user
-  const { id, role } = req.user;
-
-  // If role is customer
-  if (role === "CUSTOMER") {
-    // Find the customer and populate the company
-    const customer = await User.findById(id)
-      .select("-__v -password -createdAt -updatedAt")
-      .populate("company", "-__v -updatedAt");
-
-    // If customer is found successfully
-    if (customer) {
-      res.status(200).json(customer);
-    } else {
-      res.status(500);
-      throw new Error("Something went wrong");
-    }
-  } else if (role === "ADMIN" || role === "VENDOR") {
-    // Simply return the user
-    res.status(200).json(req.user);
-  } else {
-    // If role isn't customer
-    res.status(401);
-    throw new Error("Not authorized");
-  }
+  // Send the user with response
+  res.status(200).json(req.user);
 });
 
 module.exports = router;

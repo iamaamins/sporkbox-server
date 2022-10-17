@@ -20,7 +20,7 @@ router.post("/register", async (req, res) => {
   }
 
   // Check if vendor exists
-  const vendorExists = await User.findOne({ email });
+  const vendorExists = await User.findOne({ email }).lean();
 
   // Throw error if vendor already exists
   if (vendorExists) {
@@ -92,7 +92,7 @@ router.post("/add", authUser, async (req, res) => {
   // If role is admin
   if (role === "ADMIN") {
     // Check if vendor exists
-    const vendorExists = await User.findOne({ email });
+    const vendorExists = await User.findOne({ email }).lean();
 
     // Throw error if vendor already exists
     if (vendorExists) {
@@ -211,7 +211,9 @@ router.put("/:vendorId/status", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    ).select("-__v -password -updatedAt");
+    )
+      .select("-__v -password -updatedAt")
+      .lean();
 
     // If status is updated successfully
     if (updatedVendor) {

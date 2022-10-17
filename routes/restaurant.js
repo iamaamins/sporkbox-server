@@ -64,15 +64,17 @@ router.post("/:restaurantId/add-item", authUser, async (req, res) => {
   // If the role is either admin or vendor
   if (role === "ADMIN" || role === "VENDOR") {
     // Find the restaurant and add the item
-    const updatedRestaurant = await Restaurant.findOneAndUpdate(
-      { _id: restaurantId },
+    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+      restaurantId,
       {
         $push: { items: { name, description, tags, price } },
       },
       {
         returnDocument: "after",
       }
-    ).select("-__v -updatedAt");
+    )
+      .select("-__v -updatedAt")
+      .lean();
 
     // If item is successfully added to db
     if (updatedRestaurant) {
@@ -113,7 +115,9 @@ router.put("/:restaurantId/schedule", authUser, async (req, res) => {
       {
         returnDocument: "after",
       }
-    ).select("-__v -updatedAt");
+    )
+      .select("-__v -updatedAt")
+      .lean();
 
     // If schedule date is updates successfully
     if (updatedRestaurant) {
@@ -156,7 +160,7 @@ router.delete(
         {
           returnDocument: "after",
         }
-      );
+      ).lean();
 
       // If the item is removed successfully
       if (updatedRestaurant) {
