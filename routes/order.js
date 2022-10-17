@@ -102,6 +102,47 @@ router.get("/active", authUser, async (req, res) => {
   }
 });
 
+// Get all delivered orders
+router.get("/:limit", authUser, async (req, res) => {
+  // Destructure data from req
+  const { role } = req.user;
+  const { limit } = req.params;
+
+  // If no limit is provided
+  if (!limit) {
+    res.status(401);
+    throw new Error("Please provide all the fields");
+  }
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Get all delivered orders
+    const response = await Order.find({ status: "DELIVERED" })
+      .limit(+limit)
+      .sort({ createdAt: -1 })
+      .select("-__v -updatedAt");
+
+    // If orders are fetched successfully
+    if (response) {
+      // Convert date
+      const deliveredOrders = response.map((activeOrder) => ({
+        ...activeOrder.toObject(),
+        deliveryDate: convertDateToText(activeOrder.deliveryDate),
+      }));
+
+      // Send delivered orders with response
+      res.status(200).json(deliveredOrders);
+    } else {
+      // If orders aren't fetched successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 router.put("/:orderId/status", authUser, async (req, res) => {
   // Get role and order id from req
   const { role } = req.user;
@@ -110,19 +151,32 @@ router.put("/:orderId/status", authUser, async (req, res) => {
   // If role is admin
   if (role === "ADMIN") {
     // Find the order and update the status
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, {
-      status: "DELIVERED",
-    });
+    const response = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        status: "DELIVERED",
+      },
+      {
+        returnDocument: "after",
+      }
+    ).select("-__v -updatedAt");
 
     // If order is updates successfully
-    if (updatedOrder) {
-      const { customerName, customerEmail } = updatedOrder;
+    if (response) {
+      // Get customer name and email from the order
+      const { customerName, customerEmail } = response;
 
       // Send email to the customer
       sendEmail(customerName, customerEmail);
 
+      // Update delivery date
+      const updatedOrder = {
+        ...response.toObject(),
+        deliveryDate: convertDateToText(response.deliveryDate),
+      };
+
       // Send the update
-      res.status(200).json({ message: "Status updated successfully" });
+      res.status(200).json(updatedOrder);
     } else {
       // If order is updates successfully
       res.status(500);

@@ -166,7 +166,7 @@ router.get("/:limit", authUser, async (req, res) => {
   if (role === "ADMIN") {
     // Fetch 20 latest vendors with restaurant data
     const vendors = await User.find({ role: "VENDOR" })
-      .limit(limit)
+      .limit(+limit)
       .select("-__v -password -createdAt -updatedAt")
       .sort({ createdAt: -1 })
       .populate("restaurant", "-__v -updatedAt");
