@@ -1,4 +1,8 @@
 const jwt = require("jsonwebtoken");
+const mail = require("@sendgrid/mail");
+
+// Set the sendgrid api key
+mail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Generate token and set cookie to header
 function setCookie(res, user) {
@@ -35,4 +39,25 @@ function deleteFields(data, moreFields) {
 const convertDateToText = (date) =>
   new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
 
-module.exports = { setCookie, deleteFields, convertDateToText };
+// General mail
+const sendEmail = async (name, email) => {
+  // Create template
+  const template = {
+    to: email,
+    from: process.env.SENDER_EMAIL,
+    subject: `Order Status Update`,
+    html: `
+    <p>Hi ${name}, your sporkbytes order is delivered now! Please collect from the reception point.</p>
+    `,
+  };
+
+  // Send the email
+  try {
+    await mail.send(template);
+    return "Email successfully sent";
+  } catch (err) {
+    return "Server error";
+  }
+};
+
+module.exports = { setCookie, deleteFields, convertDateToText, sendEmail };

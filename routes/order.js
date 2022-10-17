@@ -1,7 +1,7 @@
 const express = require("express");
 const Order = require("../models/order");
-const { deleteFields, convertDateToText } = require("../utils");
 const authUser = require("../middleware/authUser");
+const { convertDateToText, sendEmail } = require("../utils");
 
 // Initialize router
 const router = express.Router();
@@ -116,6 +116,11 @@ router.put("/:orderId/status", authUser, async (req, res) => {
 
     // If order is updates successfully
     if (updatedOrder) {
+      const { customerName, customerEmail } = updatedOrder;
+
+      // Send email to the customer
+      sendEmail(customerName, customerEmail);
+
       // Send the update
       res.status(200).json({ message: "Status updated successfully" });
     } else {
