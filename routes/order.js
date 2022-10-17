@@ -102,4 +102,32 @@ router.get("/active", authUser, async (req, res) => {
   }
 });
 
+router.put("/:orderId/status", authUser, async (req, res) => {
+  // Get role and order id from req
+  const { role } = req.user;
+  const { orderId } = req.params;
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Find the order and update the status
+    const updatedOrder = await Order.findByIdAndUpdate(orderId, {
+      status: "DELIVERED",
+    });
+
+    // If order is updates successfully
+    if (updatedOrder) {
+      // Send the update
+      res.status(200).json({ message: "Status updated successfully" });
+    } else {
+      // If order is updates successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't admin
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 module.exports = router;
