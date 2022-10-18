@@ -3,7 +3,7 @@ const { Schema, model } = require("mongoose");
 // Order schema
 const orderSchema = new Schema(
   {
-    customer: {
+    customerId: {
       type: Schema.Types.ObjectId,
       required: [true, "Please provide customer id"],
     },
@@ -15,11 +15,11 @@ const orderSchema = new Schema(
       type: String,
       required: [true, "Please provide customer email"],
     },
-    deliveryAddress: {
+    shippingAddress: {
       type: String,
-      required: [true, "Please provide delivery address"],
+      required: [true, "Please provide shipping address"],
     },
-    restaurant: {
+    restaurantId: {
       type: Schema.Types.ObjectId,
       required: [true, "Please provide restaurant id"],
     },
@@ -31,9 +31,9 @@ const orderSchema = new Schema(
       type: String,
       required: [true, "Please provide company name"],
     },
-    deliveryDate: {
+    shippingDate: {
       type: Date,
-      required: [true, "Please provide delivery date"],
+      required: [true, "Please provide shipping date"],
     },
     status: {
       type: String,

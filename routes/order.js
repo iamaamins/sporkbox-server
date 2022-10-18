@@ -22,14 +22,14 @@ router.post("/create", authUser, async (req, res) => {
   if (role === "CUSTOMER") {
     // Create order items
     const orderItems = items.map((item) => ({
-      customer: _id,
+      customerId: _id,
       customerName: name,
       customerEmail: email,
       status: "PROCESSING",
       companyName: company.name,
-      restaurant: item.restaurant,
-      deliveryDate: item.deliveryDate,
-      deliveryAddress: company.address,
+      restaurantId: item.restaurantId,
+      shippingDate: item.shippingDate,
+      shippingAddress: company.address,
       restaurantName: item.restaurantName,
       item: {
         _id: item._id,
@@ -48,9 +48,9 @@ router.post("/create", authUser, async (req, res) => {
       const orders = response.map((order) => ({
         item: order.item,
         status: order.status,
-        deliveryDate: order.deliveryDate,
+        shippingDate: order.shippingDate,
         restaurantName: order.restaurantName,
-        deliveryAddress: order.deliveryAddress,
+        shippingAddress: order.shippingAddress,
       }));
 
       // Send the data with response
@@ -80,10 +80,10 @@ router.get("/active", authUser, async (req, res) => {
     );
     // If active orders are found successfully
     if (response) {
-      // Format the delivery date of each order
+      // Format the shipping date of each order
       const activeOrders = response.map((activeOrder) => ({
         ...activeOrder.toObject(),
-        deliveryDate: convertDateToText(activeOrder.deliveryDate),
+        shippingDate: convertDateToText(activeOrder.shippingDate),
       }));
 
       // Send the data with response
@@ -125,7 +125,7 @@ router.get("/:limit", authUser, async (req, res) => {
       // Convert date
       const deliveredOrders = response.map((activeOrder) => ({
         ...activeOrder.toObject(),
-        deliveryDate: convertDateToText(activeOrder.deliveryDate),
+        shippingDate: convertDateToText(activeOrder.shippingDate),
       }));
 
       // Send delivered orders with response
@@ -169,10 +169,10 @@ router.put("/:orderId/status", authUser, async (req, res) => {
       // Send email to the customer
       sendEmail(customerName, customerEmail);
 
-      // Update delivery date
+      // Format shipping date date
       const updatedOrder = {
         ...response,
-        deliveryDate: convertDateToText(response.deliveryDate),
+        shippingDate: convertDateToText(response.shippingDate),
       };
 
       // Send the update
