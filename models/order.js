@@ -5,7 +5,6 @@ const orderSchema = new Schema(
   {
     customer: {
       type: Schema.Types.ObjectId,
-      ref: "User",
       required: [true, "Please provide customer id"],
     },
     customerName: {
@@ -22,17 +21,11 @@ const orderSchema = new Schema(
     },
     restaurant: {
       type: Schema.Types.ObjectId,
-      ref: "Restaurant",
       required: [true, "Please provide restaurant id"],
     },
     restaurantName: {
       type: String,
       required: [true, "Please provide restaurant name"],
-    },
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: "Company",
-      required: [true, "Please provide company id"],
     },
     companyName: {
       type: String,

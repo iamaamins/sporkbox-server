@@ -10,7 +10,7 @@ const router = express.Router();
 router.post("/create", authUser, async (req, res) => {
   // Get data from req user and body
   const { items } = req.body;
-  const { id, name, email, role, company } = req.user;
+  const { _id, name, email, role, company } = req.user;
 
   // If items aren't provided
   if (!items) {
@@ -22,11 +22,10 @@ router.post("/create", authUser, async (req, res) => {
   if (role === "CUSTOMER") {
     // Create order items
     const orderItems = items.map((item) => ({
-      customer: id,
+      customer: _id,
       customerName: name,
       customerEmail: email,
       status: "PROCESSING",
-      company: company.id,
       companyName: company.name,
       restaurant: item.restaurant,
       deliveryDate: item.deliveryDate,
