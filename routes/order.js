@@ -48,9 +48,9 @@ router.post("/create", authUser, async (req, res) => {
       const orders = response.map((order) => ({
         item: order.item,
         status: order.status,
-        shippingDate: order.shippingDate,
         restaurantName: order.restaurantName,
         shippingAddress: order.shippingAddress,
+        shippingDate: convertDateToText(order.shippingDate),
       }));
 
       // Send the data with response
