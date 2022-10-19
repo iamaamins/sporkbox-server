@@ -38,10 +38,10 @@ app.use(
 // https://sporkbytes.vercel.app
 
 // Routes
-app.use("/api/user", User);
+app.use("/api/users", User);
 app.use("/api/orders", Order);
-app.use("/api/vendor", Vendor);
-app.use("/api/customer", Customer);
+app.use("/api/vendors", Vendor);
+app.use("/api/customers", Customer);
 app.use("/api/companies", Company);
 app.use("/api/restaurants", Restaurant);
 app.use("/api/scheduled-restaurants", ScheduledRestaurant);
