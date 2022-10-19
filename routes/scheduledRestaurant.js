@@ -39,6 +39,13 @@ router.get("/", async (req, res) => {
     .sort({ scheduledOn: 1 })
     .select("-__v -createdAt -updatedAt");
 
+  // Remove past scheduled restaurants
+  await ScheduledRestaurant.deleteMany({
+    scheduledOn: {
+      $lt: Date.now(),
+    },
+  });
+
   // If scheduled restaurants are fetched successfully
   if (scheduledRestaurants) {
     // Return the scheduled restaurants with response
