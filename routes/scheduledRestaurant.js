@@ -1,6 +1,7 @@
 const express = require("express");
 const { deleteFields } = require("../utils");
 const authUser = require("../middleware/authUser");
+const Restaurant = require("../models/restaurant");
 const ScheduledRestaurant = require("../models/scheduledRestaurant");
 
 // Initialize router
@@ -35,7 +36,6 @@ router.get("/", async (req, res) => {
       $lt: new Date(today < nextSaturday ? nextWeekFriday : followingFriday),
     },
   })
-    .populate("restaurant", "-__v -updatedAt")
     .sort({ scheduledOn: 1 })
     .select("-__v -createdAt -updatedAt");
 
@@ -70,38 +70,46 @@ router.post("/schedule/:restaurantId", authUser, async (req, res) => {
 
   // If role is admin
   if (role === "ADMIN") {
-    // If a restaurant is already
-    // scheduled on the same date
-    const isScheduled = await ScheduledRestaurant.findOne({
-      restaurant: restaurantId,
-    })
+    // Check if the restaurant is already scheduled on the same day
+    const isScheduled = await ScheduledRestaurant.findOne({ restaurantId })
       .where("scheduledOn")
       .equals(date);
 
-    // If there is a scheduled restaurant on the same date
+    // If the restaurant is already scheduled
     if (isScheduled) {
       res.status(401);
       throw new Error("Restaurant is already scheduled on the date");
     }
 
-    // Schedule a restaurant
-    const scheduledRestaurant = (
-      await (
+    // Find the restaurant
+    const restaurant = await Restaurant.findById(restaurantId).lean();
+
+    // If restaurant is found successfully
+    if (restaurant) {
+      // // Schedule a restaurant
+      const scheduledRestaurant = (
         await ScheduledRestaurant.create({
-          restaurant: restaurantId,
           scheduledOn: date,
+          name: restaurant.name,
+          items: restaurant.items,
+          restaurantId: restaurant._id,
         })
-      ).populate("restaurant", "-__v -updatedAt")
-    ).toObject();
+      ).toObject();
 
-    // Delete fields
-    deleteFields(scheduledRestaurant);
+      // Delete fields
+      deleteFields(scheduledRestaurant);
 
-    // If schedule date is updates successfully
-    if (scheduledRestaurant) {
-      res.status(200).json(scheduledRestaurant);
+      // If restaurant is scheduled successfully
+      if (scheduledRestaurant) {
+        // Send the restaurant with response
+        res.status(200).json(scheduledRestaurant);
+      } else {
+        // If schedule date isn't updated successfully
+        res.status(500);
+        throw new Error("Something went wrong");
+      }
     } else {
-      // If schedule date isn't updated successfully
+      // If restaurant isn't found successfully
       res.status(500);
       throw new Error("Something went wrong");
     }
