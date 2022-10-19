@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "hhttps://sporkbytes.vercel.app",
+    origin: "http://localhost:3000",
   })
 );
 

@@ -73,8 +73,12 @@ router.post("/schedule/:restaurantId", authUser, async (req, res) => {
     // If a restaurant is already
     // scheduled on the same date
     const isScheduled = await ScheduledRestaurant.findOne({
-      scheduledOn: date,
-    }).lean();
+      restaurant: restaurantId,
+    })
+      .where("scheduledOn")
+      .equals(date);
+
+    console.log(isScheduled);
 
     // If there is a scheduled restaurant on the same date
     if (isScheduled) {
