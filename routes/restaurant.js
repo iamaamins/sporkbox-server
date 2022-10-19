@@ -1,53 +1,9 @@
 const express = require("express");
-const bcrypt = require("bcrypt");
-const User = require("../models/user");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
 
 // Initialize router
 const router = express.Router();
-
-// Get all the scheduled restaurants
-router.get("/scheduled", async (req, res) => {
-  // Get future date
-  function getFutureDate(dayToAdd) {
-    // Today
-    const today = new Date();
-
-    // Day number of current week sunday
-    const sunday = today.getDate() - today.getDay();
-
-    // Return a future date
-    return new Date(today.setDate(sunday + dayToAdd));
-  }
-
-  // Get dates
-  const today = new Date();
-  const nextSaturday = getFutureDate(6);
-  const nextSunday = getFutureDate(7);
-  const nextWeekFriday = getFutureDate(12);
-  const followingSunday = getFutureDate(14);
-  const followingFriday = getFutureDate(19);
-
-  // Get the scheduled restaurants
-  const restaurants = await Restaurant.find({
-    scheduledOn: {
-      $gte: new Date(today < nextSaturday ? nextSunday : followingSunday),
-      $lt: new Date(today < nextSaturday ? nextWeekFriday : followingFriday),
-    },
-  })
-    .sort({ scheduledOn: 1 })
-    .select("-__v -updatedAt");
-
-  // If restaurants are fetched successfully
-  if (restaurants) {
-    // Return the restaurants with response
-    res.status(200).json(restaurants);
-  } else {
-    res.status(500);
-    throw new Error("Something went wrong");
-  }
-});
 
 // Add an item to a restaurant
 router.post("/:restaurantId/add-item", authUser, async (req, res) => {
@@ -87,48 +43,6 @@ router.post("/:restaurantId/add-item", authUser, async (req, res) => {
     }
   } else {
     // Return not authorized if role isn't admin or vendor
-    res.status(401);
-    throw new Error("Not authorized");
-  }
-});
-
-// Schedule a restaurant
-router.put("/:restaurantId/schedule", authUser, async (req, res) => {
-  const { role } = req.user;
-  const { date } = req.body;
-  const { restaurantId } = req.params;
-
-  // If date isn't provided
-  if (!date) {
-    res.status(400);
-    throw new Error("Please fill all the fields");
-  }
-
-  // If role is admin
-  if (role === "ADMIN") {
-    // Get the updated restaurant
-    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-      restaurantId,
-      {
-        scheduledOn: date,
-      },
-      {
-        returnDocument: "after",
-      }
-    )
-      .select("-__v -updatedAt")
-      .lean();
-
-    // If schedule date is updates successfully
-    if (updatedRestaurant) {
-      res.status(200).json(updatedRestaurant);
-    } else {
-      // If schedule date isn't updated successfully
-      res.status(500);
-      throw new Error("Something went wrong");
-    }
-  } else {
-    // If role isn't admin
     res.status(401);
     throw new Error("Not authorized");
   }

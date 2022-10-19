@@ -10,11 +10,6 @@ const restaurantSchema = new Schema(
       type: String,
       required: [true, "Please provide an email"],
     },
-    scheduledOn: {
-      type: Date,
-      default: Date.now,
-      required: [true, "Please provide a schedule date"],
-    },
     items: [
       {
         name: {

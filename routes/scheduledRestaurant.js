@@ -1,7 +1,7 @@
 const express = require("express");
+const { deleteFields } = require("../utils");
 const authUser = require("../middleware/authUser");
 const ScheduledRestaurant = require("../models/scheduledRestaurant");
-const { deleteFields } = require("../utils");
 
 // Initialize router
 const router = express.Router();
