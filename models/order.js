@@ -15,9 +15,9 @@ const orderSchema = new Schema(
       type: String,
       required: [true, "Please provide customer email"],
     },
-    shippingAddress: {
+    deliveryAddress: {
       type: String,
-      required: [true, "Please provide shipping address"],
+      required: [true, "Please provide delivery address"],
     },
     restaurantId: {
       type: Schema.Types.ObjectId,
@@ -31,9 +31,9 @@ const orderSchema = new Schema(
       type: String,
       required: [true, "Please provide company name"],
     },
-    shippingDate: {
+    deliveryDate: {
       type: Date,
-      required: [true, "Please provide shipping date"],
+      required: [true, "Please provide delivery date"],
     },
     status: {
       type: String,

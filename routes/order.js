@@ -28,8 +28,8 @@ router.post("/create", authUser, async (req, res) => {
       status: "PROCESSING",
       companyName: company.name,
       restaurantId: item.restaurantId,
-      shippingDate: item.shippingDate,
-      shippingAddress: company.address,
+      deliveryDate: item.deliveryDate,
+      deliveryAddress: company.address,
       restaurantName: item.restaurantName,
       item: {
         _id: item._id,
@@ -49,8 +49,8 @@ router.post("/create", authUser, async (req, res) => {
         item: order.item,
         status: order.status,
         restaurantName: order.restaurantName,
-        shippingAddress: order.shippingAddress,
-        shippingDate: convertDateToText(order.shippingDate),
+        deliveryAddress: order.deliveryAddress,
+        deliveryDate: convertDateToText(order.deliveryDate),
       }));
 
       // Send the data with response
@@ -80,10 +80,10 @@ router.get("/active", authUser, async (req, res) => {
     );
     // If active orders are found successfully
     if (response) {
-      // Format the shipping date of each order
+      // Format the delivery date of each order
       const activeOrders = response.map((activeOrder) => ({
         ...activeOrder.toObject(),
-        shippingDate: convertDateToText(activeOrder.shippingDate),
+        deliveryDate: convertDateToText(activeOrder.deliveryDate),
       }));
 
       // Send the data with response
@@ -125,7 +125,7 @@ router.get("/:limit", authUser, async (req, res) => {
       // Convert date
       const deliveredOrders = response.map((activeOrder) => ({
         ...activeOrder.toObject(),
-        shippingDate: convertDateToText(activeOrder.shippingDate),
+        deliveryDate: convertDateToText(activeOrder.deliveryDate),
       }));
 
       // Send delivered orders with response
@@ -169,10 +169,10 @@ router.put("/:orderId/status", authUser, async (req, res) => {
       // Send email to the customer
       sendEmail(customerName, customerEmail);
 
-      // Format shipping date date
+      // Format delivery date date
       const updatedOrder = {
         ...response,
-        shippingDate: convertDateToText(response.shippingDate),
+        deliveryDate: convertDateToText(response.deliveryDate),
       };
 
       // Send the update
