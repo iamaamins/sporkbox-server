@@ -1,25 +1,17 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const { convertDateToMilliseconds, sortByDate } = require("../utils");
+const {
+  sortByDate,
+  getFutureDate,
+  convertDateToMilliseconds,
+} = require("../utils");
 
 // Initialize router
 const router = express.Router();
 
 // Get upcoming week restaurants
 router.get("/upcoming-week", async (req, res) => {
-  // Get future date
-  function getFutureDate(dayToAdd) {
-    // Today
-    const today = new Date();
-
-    // Day number of current week sunday
-    const sunday = today.getDate() - today.getDay();
-
-    // Return a future date
-    return new Date(today.setDate(sunday + dayToAdd));
-  }
-
   // Get dates
   const today = new Date();
   const nextSaturday = getFutureDate(6);

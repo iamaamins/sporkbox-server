@@ -68,11 +68,24 @@ const sortByDate = (a, b) =>
   convertDateToMilliseconds(a.scheduledOn) -
   convertDateToMilliseconds(b.scheduledOn);
 
+// Get future date
+function getFutureDate(dayToAdd) {
+  // Today
+  const today = new Date();
+
+  // Day number of current week sunday
+  const sunday = today.getDate() - today.getDay();
+
+  // Return a future date
+  return new Date(today.setDate(sunday + dayToAdd));
+}
+
 module.exports = {
   setCookie,
   sendEmail,
   sortByDate,
   deleteFields,
+  getFutureDate,
   convertDateToText,
   convertDateToMilliseconds,
 };
