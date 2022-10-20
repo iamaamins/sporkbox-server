@@ -63,10 +63,16 @@ const sendEmail = async (name, email) => {
 // Convert date to slug
 const convertDateToMilliseconds = (date) => new Date(date).getTime();
 
+// Sort by date
+const sortByDate = (a, b) =>
+  convertDateToMilliseconds(a.scheduledOn) -
+  convertDateToMilliseconds(b.scheduledOn);
+
 module.exports = {
   setCookie,
+  sendEmail,
+  sortByDate,
   deleteFields,
   convertDateToText,
-  sendEmail,
   convertDateToMilliseconds,
 };

@@ -1,7 +1,7 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const { convertDateToMilliseconds } = require("../utils");
+const { convertDateToMilliseconds, sortByDate } = require("../utils");
 
 // Initialize router
 const router = express.Router();
@@ -63,11 +63,7 @@ router.get("/upcoming-week", async (req, res) => {
         })
       )
       .flat(2)
-      .sort(
-        (a, b) =>
-          convertDateToMilliseconds(a.scheduledOn) -
-          convertDateToMilliseconds(b.scheduledOn)
-      );
+      .sort(sortByDate);
 
     // Return the scheduled restaurants with response
     res.status(200).json(upcomingWeekRestaurants);
@@ -108,11 +104,7 @@ router.get("/scheduled", authUser, async (req, res) => {
           })
         )
         .flat(2)
-        .sort(
-          (a, b) =>
-            convertDateToMilliseconds(a.scheduledOn) -
-            convertDateToMilliseconds(b.scheduledOn)
-        );
+        .sort(sortByDate);
 
       // Return the scheduled restaurants with response
       res.status(200).json(scheduledRestaurants);
