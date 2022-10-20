@@ -1,12 +1,13 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const { deleteFields, convertDateToMilliseconds } = require("../utils");
+const { convertDateToMilliseconds } = require("../utils");
 
 // Initialize router
 const router = express.Router();
 
-router.get("/scheduled", async (req, res) => {
+// Get upcoming week restaurants
+router.get("/upcoming-week", async (req, res) => {
   // Get future date
   function getFutureDate(dayToAdd) {
     // Today
@@ -42,17 +43,17 @@ router.get("/scheduled", async (req, res) => {
   // If restaurants are found successfully
   if (response) {
     // Create scheduled restaurants, then flat and sort
-    const scheduledRestaurants = response
-      .map((scheduledRestaurant) => ({
-        ...scheduledRestaurant.toObject(),
-        schedules: scheduledRestaurant.schedules.filter(
+    const upcomingWeekRestaurants = response
+      .map((upcomingWeekRestaurant) => ({
+        ...upcomingWeekRestaurant.toObject(),
+        schedules: upcomingWeekRestaurant.schedules.filter(
           (schedule) => schedule >= gte && schedule < lt
         ),
       }))
-      .map((scheduledRestaurant) =>
-        scheduledRestaurant.schedules.map((schedule) => {
+      .map((upcomingWeekRestaurant) =>
+        upcomingWeekRestaurant.schedules.map((schedule) => {
           // Destructure scheduled restaurant
-          const { schedules, ...rest } = scheduledRestaurant;
+          const { schedules, ...rest } = upcomingWeekRestaurant;
 
           // Create new restaurant object
           return {
@@ -69,10 +70,59 @@ router.get("/scheduled", async (req, res) => {
       );
 
     // Return the scheduled restaurants with response
-    res.status(200).json(scheduledRestaurants);
+    res.status(200).json(upcomingWeekRestaurants);
   } else {
     res.status(500);
     throw new Error("Something went wrong");
+  }
+});
+
+// Get all scheduled restaurants
+router.get("/scheduled", authUser, async (req, res) => {
+  // Destructure data from req
+  const { role } = req.user;
+
+  // If role is admin
+  if (role === "ADMIN") {
+    // Get the scheduled restaurants
+    const response = await Restaurant.find({
+      schedules: {
+        $gte: Date.now(),
+      },
+    }).select("-__v -updatedAt -createdAt -address -items");
+
+    // If restaurants are found successfully
+    if (response) {
+      // Create scheduled restaurants, then flat and sort
+      const scheduledRestaurants = response
+        .map((scheduledRestaurant) =>
+          scheduledRestaurant.schedules.map((schedule) => {
+            // Destructure scheduled restaurant
+            const { schedules, ...rest } = scheduledRestaurant.toObject();
+
+            // Create new restaurant object
+            return {
+              ...rest,
+              scheduledOn: schedule,
+            };
+          })
+        )
+        .flat(2)
+        .sort(
+          (a, b) =>
+            convertDateToMilliseconds(a.scheduledOn) -
+            convertDateToMilliseconds(b.scheduledOn)
+        );
+
+      // Return the scheduled restaurants with response
+      res.status(200).json(scheduledRestaurants);
+    } else {
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    res.status(401);
+    throw new Error("Not authorized");
   }
 });
 
