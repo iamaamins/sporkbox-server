@@ -11,7 +11,6 @@ const Vendor = require("./routes/vendor");
 const Company = require("./routes/company");
 const Customer = require("./routes/customer");
 const Restaurant = require("./routes/restaurant");
-const ScheduledRestaurant = require("./routes/scheduledRestaurant");
 
 // Port
 const PORT = process.env.PORT || 5100;
@@ -44,7 +43,6 @@ app.use("/api/vendors", Vendor);
 app.use("/api/customers", Customer);
 app.use("/api/companies", Company);
 app.use("/api/restaurants", Restaurant);
-app.use("/api/scheduled-restaurants", ScheduledRestaurant);
 
 // Error middleware
 app.use(error);

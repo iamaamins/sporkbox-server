@@ -60,4 +60,13 @@ const sendEmail = async (name, email) => {
   }
 };
 
-module.exports = { setCookie, deleteFields, convertDateToText, sendEmail };
+// Convert date to slug
+const convertDateToMilliseconds = (date) => new Date(date).getTime();
+
+module.exports = {
+  setCookie,
+  deleteFields,
+  convertDateToText,
+  sendEmail,
+  convertDateToMilliseconds,
+};
