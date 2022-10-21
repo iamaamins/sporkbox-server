@@ -18,7 +18,10 @@ router.post("/login", async (req, res) => {
   }
 
   // Find the user
-  const user = await User.findOne({ email }).lean();
+  const user = await User.findOne({ email })
+    // .populate("restaurant", "-__v -updatedAt -createdAt")
+    .populate("company", "-__v -updatedAt -createdAt -code -website")
+    .lean();
 
   // If user exists and password matches
   if (user && (await bcrypt.compare(password, user.password))) {
@@ -28,7 +31,6 @@ router.post("/login", async (req, res) => {
 
     // Delete fields
     deleteFields(user, ["password", "createdAt"]);
-    // console.log(user);
 
     // Send user data with the response
     res.status(200).json(user);

@@ -24,6 +24,7 @@ async function handler(req, res, next) {
   // Get the User data from DB
   const user = await User.findById(decoded.id)
     .select("-__v -password -updatedAt -createdAt")
+    // .populate("restaurant", "-__v -updatedAt -createdAt")
     .populate("company", "-__v -updatedAt -createdAt -code -website")
     .lean();
 
