@@ -15,7 +15,9 @@ router.get("/me/active", authUser, async (req, res) => {
     // Find the active orders of the customer
     const orders = await Order.find({ customerId: _id })
       .where("status", "PROCESSING")
-      .select(" _id createdAt status item restaurantName deliveryDate    ")
+      .select(
+        " _id createdAt status item restaurantId restaurantName deliveryDate    "
+      )
       .lean();
 
     // If orders are found successfully
@@ -45,7 +47,9 @@ router.get("/me/delivered/:limit", authUser, async (req, res) => {
     // Find the active orders of the customer
     const orders = await Order.find({ customerId: _id })
       .where("status", "DELIVERED")
-      .select(" _id createdAt status item restaurantName deliveryDate    ")
+      .select(
+        " _id createdAt status item restaurantId restaurantName deliveryDate    "
+      )
       .limit(+limit)
       .lean();
 

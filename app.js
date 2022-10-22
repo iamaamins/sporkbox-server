@@ -10,6 +10,7 @@ const Order = require("./routes/order");
 const Vendor = require("./routes/vendor");
 const Company = require("./routes/company");
 const Customer = require("./routes/customer");
+const Favorite = require("./routes/favorite");
 const Restaurant = require("./routes/restaurant");
 
 // Port
@@ -28,7 +29,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:3000",
+    origin: "https://sporkbytes.vercel.app",
   })
 );
 
@@ -42,6 +43,7 @@ app.use("/api/orders", Order);
 app.use("/api/vendors", Vendor);
 app.use("/api/customers", Customer);
 app.use("/api/companies", Company);
+app.use("/api/favorites", Favorite);
 app.use("/api/restaurants", Restaurant);
 
 // Error middleware
