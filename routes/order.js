@@ -34,6 +34,37 @@ router.get("/me/active", authUser, async (req, res) => {
   }
 });
 
+// Get customer's orders
+router.get("/me/delivered/:limit", authUser, async (req, res) => {
+  // Destructure req data
+  const { limit } = req.params;
+  const { role, _id } = req.user;
+
+  // If role is customer
+  if (role == "CUSTOMER") {
+    // Find the active orders of the customer
+    const orders = await Order.find({ customerId: _id })
+      .where("status", "DELIVERED")
+      .select(" _id createdAt status item restaurantName deliveryDate    ")
+      .limit(+limit)
+      .lean();
+
+    // If orders are found successfully
+    if (orders) {
+      // Send the data with response
+      res.status(200).json(orders);
+    } else {
+      // If orders aren't found successfully
+      res.status(500);
+      throw new Error("Something went wrong");
+    }
+  } else {
+    // If role isn't customer
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
 // Create an order
 router.post("/create", authUser, async (req, res) => {
   // Get data from req user and body
