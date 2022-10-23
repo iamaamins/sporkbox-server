@@ -5,21 +5,14 @@ const favoriteSchema = new Schema({
     type: Schema.Types.ObjectId,
     required: [true, "Please provide customer id"],
   },
-  restaurantId: {
+  restaurant: {
     type: Schema.Types.ObjectId,
+    ref: "Restaurant",
     required: [true, "Please provide restaurant id"],
-  },
-  restaurantName: {
-    type: String,
-    required: [true, "Please provide restaurant name"],
   },
   itemId: {
     type: Schema.Types.ObjectId,
     required: [true, "Please provide item id"],
-  },
-  itemName: {
-    type: String,
-    required: [true, "Please provide item name"],
   },
 });
 
