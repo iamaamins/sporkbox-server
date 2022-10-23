@@ -61,12 +61,11 @@ const sendEmail = async (name, email) => {
 };
 
 // Convert date to slug
-const convertDateToMilliseconds = (date) => new Date(date).getTime();
+const convertDateToMS = (date) => new Date(date).getTime();
 
 // Sort by date
 const sortByDate = (a, b) =>
-  convertDateToMilliseconds(a.scheduledOn) -
-  convertDateToMilliseconds(b.scheduledOn);
+  convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
 // Get future date
 function getFutureDate(dayToAdd) {
@@ -77,7 +76,9 @@ function getFutureDate(dayToAdd) {
   const sunday = today.getDate() - today.getDay();
 
   // Return a future date
-  return new Date(today.setDate(sunday + dayToAdd));
+  return convertDateToMS(
+    new Date(today.setDate(sunday + dayToAdd)).toDateString()
+  );
 }
 
 module.exports = {
@@ -87,5 +88,5 @@ module.exports = {
   deleteFields,
   getFutureDate,
   convertDateToText,
-  convertDateToMilliseconds,
+  convertDateToMS,
 };

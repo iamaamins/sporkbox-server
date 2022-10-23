@@ -1,28 +1,24 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const {
-  sortByDate,
-  getFutureDate,
-  convertDateToMilliseconds,
-} = require("../utils");
+const { sortByDate, getFutureDate, convertDateToMS } = require("../utils");
 
 // Initialize router
 const router = express.Router();
 
 // Get upcoming week restaurants
 router.get("/upcoming-week", async (req, res) => {
-  // Get dates
-  const today = new Date();
+  // Get dates in iso string
   const nextSaturday = getFutureDate(6);
   const nextSunday = getFutureDate(7);
   const nextWeekFriday = getFutureDate(12);
   const followingSunday = getFutureDate(14);
   const followingFriday = getFutureDate(19);
+  const today = convertDateToMS(new Date().toDateString());
 
   // Filters
-  const gte = new Date(today < nextSaturday ? nextSunday : followingSunday);
-  const lt = new Date(today < nextSaturday ? nextWeekFriday : followingFriday);
+  const gte = today < nextSaturday ? nextSunday : followingSunday;
+  const lt = today < nextSaturday ? nextWeekFriday : followingFriday;
 
   // Get the scheduled restaurants
   const response = await Restaurant.find({
@@ -123,7 +119,7 @@ router.put("/schedule/:restaurantId", authUser, async (req, res) => {
   }
 
   // If provided date is a past date
-  if (convertDateToMilliseconds(date) < Date.now()) {
+  if (convertDateToMS(date) < Date.now()) {
     res.status(400);
     throw new Error("Cant' schedule a restaurant in the past");
   }
@@ -149,9 +145,7 @@ router.put("/schedule/:restaurantId", authUser, async (req, res) => {
     if (restaurant) {
       // Check if the restaurant is schedule on the same date
       const isScheduled = restaurant.schedules.find(
-        (schedule) =>
-          convertDateToMilliseconds(schedule) ===
-          convertDateToMilliseconds(date)
+        (schedule) => convertDateToMS(schedule) === convertDateToMS(date)
       );
 
       // If the restaurant is already scheduled
