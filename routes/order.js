@@ -48,7 +48,7 @@ router.get("/me/delivered/:limit", authUser, async (req, res) => {
     // Find the active orders of the customer
     const orders = await Order.find({ customerId: _id })
       .where("status", "DELIVERED")
-      .sort({ deliveryDate: 1 })
+      .sort({ deliveryDate: -1 })
       .select(
         " _id createdAt status item restaurantId restaurantName deliveryDate"
       )
@@ -182,7 +182,7 @@ router.get("/:limit", authUser, async (req, res) => {
     // Get all delivered orders
     const response = await Order.find({ status: "DELIVERED" })
       .limit(+limit)
-      .sort({ deliveryDate: 1 })
+      .sort({ deliveryDate: -1 })
       .select("-__v -updatedAt");
 
     // If orders are fetched successfully

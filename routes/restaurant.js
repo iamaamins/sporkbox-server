@@ -1,25 +1,19 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const { sortByDate, getFutureDate, convertDateToMS } = require("../utils");
+const {
+  lt,
+  gte,
+  sortByDate,
+  getFutureDate,
+  convertDateToMS,
+} = require("../utils");
 
 // Initialize router
 const router = express.Router();
 
 // Get upcoming week restaurants
 router.get("/upcoming-week", async (req, res) => {
-  // Get dates in iso string
-  const nextSaturday = getFutureDate(6);
-  const nextSunday = getFutureDate(7);
-  const nextWeekFriday = getFutureDate(12);
-  const followingSunday = getFutureDate(14);
-  const followingFriday = getFutureDate(19);
-  const today = convertDateToMS(new Date().toDateString());
-
-  // Filters
-  const gte = today < nextSaturday ? nextSunday : followingSunday;
-  const lt = today < nextSaturday ? nextWeekFriday : followingFriday;
-
   // Get the scheduled restaurants
   const response = await Restaurant.find({
     schedules: {
@@ -71,7 +65,7 @@ router.get("/scheduled", authUser, async (req, res) => {
     // Get the scheduled restaurants
     const response = await Restaurant.find({
       schedules: {
-        $gte: Date.now(),
+        $gte: gte,
       },
     }).select("-__v -updatedAt -createdAt -address -items");
 
@@ -92,6 +86,10 @@ router.get("/scheduled", authUser, async (req, res) => {
           })
         )
         .flat(2)
+        .filter(
+          (scheduledRestaurant) =>
+            convertDateToMS(scheduledRestaurant.scheduledOn) >= gte
+        )
         .sort(sortByDate);
 
       // Return the scheduled restaurants with response

@@ -81,7 +81,21 @@ function getFutureDate(dayToAdd) {
   );
 }
 
+// Get dates in iso string
+const nextSaturday = getFutureDate(6);
+const nextSunday = getFutureDate(7);
+const nextWeekFriday = getFutureDate(12);
+const followingSunday = getFutureDate(14);
+const followingFriday = getFutureDate(19);
+const today = convertDateToMS(new Date().toDateString());
+
+// Filters
+const gte = today < nextSaturday ? nextSunday : followingSunday;
+const lt = today < nextSaturday ? nextWeekFriday : followingFriday;
+
 module.exports = {
+  lt,
+  gte,
   setCookie,
   sendEmail,
   sortByDate,
