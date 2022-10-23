@@ -109,7 +109,7 @@ router.get("/me", authUser, async (req, res) => {
       "name items"
     );
 
-    // If Favorites are found successfully
+    // If favorites are found successfully
     if (response) {
       // Create favorites
       const favorites = response.map((favorite) => {

@@ -15,6 +15,7 @@ router.get("/me/active", authUser, async (req, res) => {
     // Find the active orders of the customer
     const orders = await Order.find({ customerId: _id })
       .where("status", "PROCESSING")
+      .sort({ deliveryDate: 1 })
       .select(
         " _id createdAt status item restaurantId restaurantName deliveryDate    "
       )
@@ -47,8 +48,9 @@ router.get("/me/delivered/:limit", authUser, async (req, res) => {
     // Find the active orders of the customer
     const orders = await Order.find({ customerId: _id })
       .where("status", "DELIVERED")
+      .sort({ deliveryDate: 1 })
       .select(
-        " _id createdAt status item restaurantId restaurantName deliveryDate    "
+        " _id createdAt status item restaurantId restaurantName deliveryDate"
       )
       .limit(+limit)
       .lean();
@@ -130,7 +132,7 @@ router.post("/create", authUser, async (req, res) => {
   }
 });
 
-// Get active orders
+// Get all active orders
 router.get("/active", authUser, async (req, res) => {
   // Get data from req user
   const { role } = req.user;
@@ -138,9 +140,9 @@ router.get("/active", authUser, async (req, res) => {
   // If role is admin
   if (role === "ADMIN") {
     // Find the active orders
-    const response = await Order.find({ status: "PROCESSING" }).select(
-      "-__v -updatedAt"
-    );
+    const response = await Order.find({ status: "PROCESSING" })
+      .sort({ deliveryDate: 1 })
+      .select("-__v -updatedAt");
     // If active orders are found successfully
     if (response) {
       // Format the delivery date of each order
@@ -180,15 +182,15 @@ router.get("/:limit", authUser, async (req, res) => {
     // Get all delivered orders
     const response = await Order.find({ status: "DELIVERED" })
       .limit(+limit)
-      .sort({ createdAt: -1 })
+      .sort({ deliveryDate: 1 })
       .select("-__v -updatedAt");
 
     // If orders are fetched successfully
     if (response) {
       // Convert date
-      const deliveredOrders = response.map((activeOrder) => ({
-        ...activeOrder.toObject(),
-        deliveryDate: convertDateToText(activeOrder.deliveryDate),
+      const deliveredOrders = response.map((deliveredOrder) => ({
+        ...deliveredOrder.toObject(),
+        deliveryDate: convertDateToText(deliveredOrder.deliveryDate),
       }));
 
       // Send delivered orders with response
