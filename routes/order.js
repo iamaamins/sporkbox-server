@@ -111,10 +111,12 @@ router.post("/create", authUser, async (req, res) => {
     if (response) {
       // Create return data
       const orders = response.map((order) => ({
+        _id: order.id,
         item: order.item,
         status: order.status,
+        createdAt: order.createdAt,
+        restaurantId: order.restaurantId,
         restaurantName: order.restaurantName,
-        deliveryAddress: order.deliveryAddress,
         deliveryDate: convertDateToText(order.deliveryDate),
       }));
 
