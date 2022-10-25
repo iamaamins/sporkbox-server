@@ -101,6 +101,6 @@ module.exports = {
   sortByDate,
   deleteFields,
   getFutureDate,
-  convertDateToText,
   convertDateToMS,
+  convertDateToText,
 };
