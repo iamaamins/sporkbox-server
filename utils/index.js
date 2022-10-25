@@ -83,15 +83,15 @@ function getFutureDate(dayToAdd) {
 
 // Get dates in iso string
 const nextSaturday = getFutureDate(6);
-const nextSunday = getFutureDate(7);
-const nextWeekFriday = getFutureDate(12);
-const followingSunday = getFutureDate(14);
-const followingFriday = getFutureDate(19);
+const nextMonday = getFutureDate(8);
+const nextWeekSaturday = getFutureDate(13);
+const followingMonday = getFutureDate(15);
+const followingSaturday = getFutureDate(20);
 const today = convertDateToMS(new Date().toDateString());
 
 // Filters
-const gte = today < nextSaturday ? nextSunday : followingSunday;
-const lt = today < nextSaturday ? nextWeekFriday : followingFriday;
+const gte = today < nextSaturday ? nextMonday : followingMonday;
+const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
 
 module.exports = {
   lt,

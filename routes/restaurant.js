@@ -1,13 +1,7 @@
 const express = require("express");
 const Restaurant = require("../models/restaurant");
 const authUser = require("../middleware/authUser");
-const {
-  lt,
-  gte,
-  sortByDate,
-  getFutureDate,
-  convertDateToMS,
-} = require("../utils");
+const { gte, lt, sortByDate, convertDateToMS } = require("../utils");
 
 // Initialize router
 const router = express.Router();
