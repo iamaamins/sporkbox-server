@@ -116,6 +116,17 @@ router.put("/schedule/:restaurantId", authUser, async (req, res) => {
     throw new Error("Cant' schedule a restaurant in the past");
   }
 
+  // Get the day from provided date
+  const day = new Date(date).toDateString().split(" ")[0];
+
+  // Restrict scheduling on saturday and sunday
+  if (day === "Sat" || day === "Sun") {
+    res.status(400);
+    throw new Error(
+      `Can't schedule a restaurant on ${day === "Sat" ? "Saturday" : "Sunday"}`
+    );
+  }
+
   // If role is admin
   if (role === "ADMIN") {
     // Find the restaurant and remove past dates
