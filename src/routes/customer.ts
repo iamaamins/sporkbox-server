@@ -1,14 +1,14 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const User = require("../models/user");
-const Company = require("../models/company");
-const { setCookie, deleteFields } = require("../utils");
+import bcrypt from "bcrypt";
+import User from "../models/user";
+import Company from "../models/company";
+import { setCookie, deleteFields } from "../utils";
+import express, { Request, Response } from "express";
 
 // Initialize router
 const router = express.Router();
 
 // Register customer
-router.post("/register", async (req, res) => {
+router.post("/register", async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
   // If a value isn't provided
@@ -49,7 +49,7 @@ router.post("/register", async (req, res) => {
         name,
         email,
         role: "CUSTOMER",
-        company: company.id,
+        company: company._id,
         password: hashedPassword,
       })
     ).populate("company", "-__v -updatedAt")
@@ -59,7 +59,7 @@ router.post("/register", async (req, res) => {
   if (customer) {
     // Generate jwt token and set
     // cookie to the response header
-    setCookie(res, customer);
+    setCookie(res, customer._id);
 
     // Delete fields
     deleteFields(customer, ["createdAt", "password"]);
@@ -73,4 +73,4 @@ router.post("/register", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

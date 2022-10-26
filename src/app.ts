@@ -1,17 +1,20 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import * as dotenv from "dotenv";
+import { connectDB } from "./config/db";
+import error from "./middleware/error";
+import cookieParser from "cookie-parser";
+import User from "./routes/user";
+import Order from "./routes/order";
+import Vendor from "./routes/vendor";
+import Company from "./routes/company";
+import Customer from "./routes/customer";
+import Favorite from "./routes/favorite";
+import Restaurant from "./routes/restaurant";
+
+// Config
+dotenv.config();
 require("express-async-errors");
-const connectDB = require("./config/db");
-const error = require("./middleware/error");
-const cookieParser = require("cookie-parser");
-const User = require("./routes/user");
-const Order = require("./routes/order");
-const Vendor = require("./routes/vendor");
-const Company = require("./routes/company");
-const Customer = require("./routes/customer");
-const Favorite = require("./routes/favorite");
-const Restaurant = require("./routes/restaurant");
 
 // Port
 const PORT = process.env.PORT || 5100;
@@ -29,7 +32,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "https://sporkbytes.vercel.app",
+    origin: "http://localhost:3000",
   })
 );
 

@@ -1,6 +1,5 @@
-const { Schema, model } = require("mongoose");
+import { Schema, model } from "mongoose";
 
-// Order schema
 const orderSchema = new Schema(
   {
     customerId: {
@@ -63,4 +62,4 @@ const orderSchema = new Schema(
   }
 );
 
-module.exports = model("Order", orderSchema);
+export default model("Order", orderSchema);

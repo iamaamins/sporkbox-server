@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+import { Schema, model, Types } from "mongoose";
 
 const favoriteSchema = new Schema({
   customerId: {
@@ -16,4 +16,4 @@ const favoriteSchema = new Schema({
   },
 });
 
-module.exports = model("Favorite", favoriteSchema);
+export default model("Favorite", favoriteSchema);

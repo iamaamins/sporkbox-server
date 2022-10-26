@@ -1,14 +1,14 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const User = require("../models/user");
-const authUser = require("../middleware/authUser");
-const { setCookie, deleteFields } = require("../utils");
+import bcrypt from "bcrypt";
+import User from "../models/user";
+import authUser from "../middleware/authUser";
+import { setCookie, deleteFields } from "../utils";
+import express, { Request, Response } from "express";
 
 // Initialize router
 const router = express.Router();
 
 // user login
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   // If a value isn't provided
@@ -19,7 +19,10 @@ router.post("/login", async (req, res) => {
 
   // Find the user
   const user = await User.findOne({ email })
-    // .populate("restaurant", "-__v -updatedAt -createdAt")
+    // .populate(
+    //   "restaurant",
+    //   "-__v -updatedAt -createdAt"
+    // )
     .populate("company", "-__v -updatedAt -createdAt -code -website")
     .lean();
 
@@ -27,7 +30,7 @@ router.post("/login", async (req, res) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     // Generate jwt token and set
     // cookie to the response header
-    setCookie(res, user);
+    setCookie(res, user._id);
 
     // Delete fields
     deleteFields(user, ["password", "createdAt"]);
@@ -42,7 +45,7 @@ router.post("/login", async (req, res) => {
 });
 
 // Log out user
-router.post("/logout", async (req, res) => {
+router.post("/logout", async (req: Request, res: Response) => {
   // Clear cookie
   res
     .clearCookie("token", {
@@ -55,9 +58,9 @@ router.post("/logout", async (req, res) => {
     .end();
 });
 
-router.get("/me", authUser, async (req, res) => {
+router.get("/me", authUser, async (req: Request, res: Response) => {
   // Send the user with response
   res.status(200).json(req.user);
 });
 
-module.exports = router;
+export default router;

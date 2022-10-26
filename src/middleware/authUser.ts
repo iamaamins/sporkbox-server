@@ -1,7 +1,13 @@
-const User = require("../models/user");
-const jwt = require("jsonwebtoken");
+import User from "../models/user";
+import { ICompany } from "../types";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { NextFunction, Request, Response } from "express";
 
-async function handler(req, res, next) {
+export default async function handler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   // Return not authorized in there
   // is no cookie in the headers
   if (!req.cookies) {
@@ -19,13 +25,22 @@ async function handler(req, res, next) {
   }
 
   // Decode the token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_SECRET as string
+  ) as JwtPayload;
 
   // Get the User data from DB
   const user = await User.findById(decoded.id)
     .select("-__v -password -updatedAt -createdAt")
-    // .populate("restaurant", "-__v -updatedAt -createdAt")
-    .populate("company", "-__v -updatedAt -createdAt -code -website")
+    // .populate<{restaurant: IRestaurant}>(
+    //   "restaurant",
+    //   "-__v -updatedAt -createdAt"
+    // )
+    .populate<{ company: ICompany }>(
+      "company",
+      "-__v -updatedAt -createdAt -code -website"
+    )
     .lean();
 
   // If there is a user in db
@@ -42,5 +57,3 @@ async function handler(req, res, next) {
     throw new Error("Not authorized");
   }
 }
-
-module.exports = handler;

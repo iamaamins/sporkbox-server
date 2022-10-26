@@ -1,3 +1,6 @@
+import { Response } from "express";
+import { Types } from "mongoose";
+
 const jwt = require("jsonwebtoken");
 const mail = require("@sendgrid/mail");
 
@@ -5,9 +8,9 @@ const mail = require("@sendgrid/mail");
 mail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Generate token and set cookie to header
-function setCookie(res, user) {
+export const setCookie = (res: Response, id: Types.ObjectId) => {
   // Generate token
-  const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -19,10 +22,10 @@ function setCookie(res, user) {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
   });
-}
+};
 
 // Delete unnecessary fields
-function deleteFields(data, moreFields) {
+export const deleteFields = (data: object, moreFields?: string[]) => {
   // Default fields
   let fields = ["__v", "updatedAt"];
 
@@ -32,15 +35,15 @@ function deleteFields(data, moreFields) {
   }
 
   // Delete the fields
-  fields.forEach((field) => delete data[field]);
-}
+  fields.forEach((field) => delete data[field as keyof object]);
+};
 
 // Convert iso date to locale date string
-const convertDateToText = (date) =>
+export const convertDateToText = (date: string) =>
   new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
 
 // General mail
-const sendEmail = async (name, email) => {
+export const sendEmail = async (name: string, email: string) => {
   // Create template
   const template = {
     to: email,
@@ -61,14 +64,14 @@ const sendEmail = async (name, email) => {
 };
 
 // Convert date to slug
-const convertDateToMS = (date) => new Date(date).getTime();
+export const convertDateToMS = (date: string) => new Date(date).getTime();
 
 // Sort by date
-const sortByDate = (a, b) =>
+export const sortByDate = (a: any, b: any) =>
   convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
 // Get future date
-function getFutureDate(dayToAdd) {
+export const getFutureDate = (dayToAdd: number) => {
   // Today
   const today = new Date();
 
@@ -79,7 +82,7 @@ function getFutureDate(dayToAdd) {
   return convertDateToMS(
     new Date(today.setDate(sunday + dayToAdd)).toDateString()
   );
-}
+};
 
 // Get dates in iso string
 const nextSaturday = getFutureDate(6);
@@ -90,17 +93,5 @@ const followingSaturday = getFutureDate(20);
 const today = convertDateToMS(new Date().toDateString());
 
 // Filters
-const gte = today < nextSaturday ? nextMonday : followingMonday;
-const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
-
-module.exports = {
-  lt,
-  gte,
-  setCookie,
-  sendEmail,
-  sortByDate,
-  deleteFields,
-  getFutureDate,
-  convertDateToMS,
-  convertDateToText,
-};
+export const gte = today < nextSaturday ? nextMonday : followingMonday;
+export const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
