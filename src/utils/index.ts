@@ -1,16 +1,16 @@
-import { Response } from "express";
+import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
-
-const jwt = require("jsonwebtoken");
-const mail = require("@sendgrid/mail");
+import { Response } from "express";
+import { IUpcomingWeekRestaurant } from "../types";
+import mail, { MailDataRequired } from "@sendgrid/mail";
 
 // Set the sendgrid api key
-mail.setApiKey(process.env.SENDGRID_API_KEY);
+mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, id: Types.ObjectId) => {
   // Generate token
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET as string, {
     expiresIn: "7d",
   });
 
@@ -56,7 +56,7 @@ export const sendEmail = async (name: string, email: string) => {
 
   // Send the email
   try {
-    await mail.send(template);
+    await mail.send(template as MailDataRequired);
     return "Email successfully sent";
   } catch (err) {
     return "Server error";

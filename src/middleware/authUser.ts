@@ -1,5 +1,5 @@
 import User from "../models/user";
-import { ICompany } from "../types";
+import { IUserCompany } from "../types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
 
@@ -37,7 +37,7 @@ export default async function handler(
     //   "restaurant",
     //   "-__v -updatedAt -createdAt"
     // )
-    .populate<{ company: ICompany }>(
+    .populate<{ company: IUserCompany }>(
       "company",
       "-__v -updatedAt -createdAt -code -website"
     )

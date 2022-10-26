@@ -103,6 +103,8 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
+  console.log(items);
+
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
@@ -211,7 +213,6 @@ router.get(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-
     const { limit } = req.params;
 
     // Check if there is an user
@@ -252,12 +253,6 @@ router.get(
       // If there is no user
       res.status(401);
       throw new Error("Not authorized");
-    }
-
-    // If no limit is provided
-    if (!limit) {
-      res.status(401);
-      throw new Error("Please provide all the fields");
     }
   }
 );

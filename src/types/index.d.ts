@@ -8,6 +8,13 @@ interface IRestaurantItem {
   description: string;
 }
 
+export interface IUpcomingWeekRestaurant {
+  _id: Types.ObjectId;
+  name: string;
+  items: IRestaurantItem[];
+  scheduledOn: Date;
+}
+
 export interface IFavorite {
   _id: Types.ObjectId;
   name: string;
@@ -19,12 +26,12 @@ export interface IOrderItem {
   name: string;
   total: number;
   quantity: number;
-  deliveryDate: string;
+  deliveryDate: number;
   restaurantId: string;
   restaurantName: string;
 }
 
-export interface ICompany {
+export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
   address: string;
@@ -44,7 +51,7 @@ interface IUser {
   email: string;
   role: string;
   status?: string;
-  company?: ICompany;
+  company?: IUserCompany;
   // restaurant?: IRestaurant;
 }
 

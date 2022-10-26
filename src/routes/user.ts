@@ -58,6 +58,7 @@ router.post("/logout", async (req: Request, res: Response) => {
     .end();
 });
 
+// Get user details
 router.get("/me", authUser, async (req: Request, res: Response) => {
   // Send the user with response
   res.status(200).json(req.user);

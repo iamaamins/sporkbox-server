@@ -164,12 +164,6 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
   // Get the role from req
   const { limit } = req.params;
 
-  // If limit isn't provided
-  if (!limit) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
   // Check if there is an user
   if (req.user) {
     // Destructure data from req

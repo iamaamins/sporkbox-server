@@ -1,6 +1,6 @@
-import express, { Request, Response } from "express";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
+import express, { Request, Response } from "express";
 import { gte, lt, sortByDate, convertDateToMS } from "../utils";
 
 // Initialize router
@@ -110,6 +110,7 @@ router.put(
   "/schedule/:restaurantId",
   authUser,
   async (req: Request, res: Response) => {
+    // Destructure data from req
     const { date } = req.body;
     const { restaurantId } = req.params;
 
@@ -194,7 +195,7 @@ router.put(
         }
       } else {
         res.status(401);
-        throw new Error("Something went wrong");
+        throw new Error("Not authorized");
       }
     } else {
       // If there is no user
@@ -273,6 +274,7 @@ router.delete(
   "/:restaurantId/:itemId/delete-item",
   authUser,
   async (req: Request, res: Response) => {
+    // Destructure data from req
     const { restaurantId, itemId } = req.params;
 
     // If there is an user
@@ -310,6 +312,7 @@ router.delete(
         throw new Error("Not authorized");
       }
     } else {
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
