@@ -1,7 +1,61 @@
 import { Types } from "mongoose";
 
+export interface ICompanySchema {
+  name: string;
+  website: string;
+  address: string;
+  code: string;
+  budget: number;
+}
+
+export interface IFavoriteSchema {
+  customerId: Types.ObjectId;
+  restaurant: Types.ObjectId;
+  itemId: Types.ObjectId;
+}
+
+export interface IOrderSchema {
+  customerId: Types.ObjectId;
+  customerName: string;
+  customerEmail: string;
+  deliveryAddress: string;
+  restaurantId: Types.ObjectId;
+  restaurantName: string;
+  companyName: string;
+  deliveryDate: Date;
+  status: string;
+  item: {
+    _id: Types.ObjectId;
+    name: string;
+    quantity: number;
+    total: number;
+  };
+}
+
+export interface IRestaurantSchema {
+  name: string;
+  address: string;
+  schedules: Date[];
+  items: {
+    name: string;
+    tags: string;
+    price: number;
+    description: string;
+  }[];
+}
+
+export interface IUserSchema {
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+  status: string;
+  company: Types.ObjectId;
+  restaurant: Types.ObjectId;
+}
+
 export interface ISortScheduledRestaurant {
-  scheduledOn: string;
+  scheduledOn: Date;
 }
 
 export interface IFavorite {

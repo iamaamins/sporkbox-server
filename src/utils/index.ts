@@ -39,7 +39,7 @@ export const deleteFields = (data: object, moreFields?: string[]) => {
 };
 
 // Convert iso date to locale date string
-export const convertDateToText = (date: string) =>
+export const convertDateToText = (date: Date | string) =>
   new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
 
 // General mail
@@ -64,7 +64,8 @@ export const sendEmail = async (name: string, email: string) => {
 };
 
 // Convert date to slug
-export const convertDateToMS = (date: string) => new Date(date).getTime();
+export const convertDateToMS = (date: Date | string) =>
+  new Date(date).getTime();
 
 // Sort by date
 export const sortByDate = (

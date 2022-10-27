@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
+import { IFavoriteSchema } from "../types";
 
-const favoriteSchema = new Schema({
+const favoriteSchema = new Schema<IFavoriteSchema>({
   customerId: {
     type: Schema.Types.ObjectId,
     required: [true, "Please provide customer id"],

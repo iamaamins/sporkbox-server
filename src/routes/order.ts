@@ -140,7 +140,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           createdAt: order.createdAt,
           restaurantId: order.restaurantId,
           restaurantName: order.restaurantName,
-          deliveryDate: convertDateToText(order.deliveryDate as string),
+          deliveryDate: convertDateToText(order.deliveryDate),
         }));
 
         // Send the data with response
@@ -181,7 +181,7 @@ router.get("/active", authUser, async (req: Request, res: Response) => {
         // Format the delivery date of each order
         const activeOrders = response.map((activeOrder) => ({
           ...activeOrder.toObject(),
-          deliveryDate: convertDateToText(activeOrder.deliveryDate as string),
+          deliveryDate: convertDateToText(activeOrder.deliveryDate),
         }));
 
         // Send the data with response
@@ -229,9 +229,7 @@ router.get(
           // Convert date
           const deliveredOrders = response.map((deliveredOrder) => ({
             ...deliveredOrder.toObject(),
-            deliveryDate: convertDateToText(
-              deliveredOrder.deliveryDate as string
-            ),
+            deliveryDate: convertDateToText(deliveredOrder.deliveryDate),
           }));
 
           // Send delivered orders with response
@@ -293,7 +291,7 @@ router.put(
           // Format delivery date date
           const updatedOrder = {
             ...response,
-            deliveryDate: convertDateToText(response.deliveryDate as string),
+            deliveryDate: convertDateToText(response.deliveryDate),
           };
 
           // Send the update

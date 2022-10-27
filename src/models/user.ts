@@ -1,6 +1,7 @@
+import { IUserSchema } from "../types";
 import { Schema, model } from "mongoose";
 
-const userSchema = new Schema(
+const userSchema = new Schema<IUserSchema>(
   {
     name: {
       type: String,

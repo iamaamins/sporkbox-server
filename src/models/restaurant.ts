@@ -1,18 +1,7 @@
 import { Schema, model } from "mongoose";
+import { IRestaurantSchema } from "../types";
 
-interface IRestaurantSchema {
-  name: string;
-  address: string;
-  schedules: Date[];
-  items: {
-    name: string;
-    tags: string;
-    price: number;
-    description: string;
-  }[];
-}
-
-const restaurantSchema = new Schema(
+const restaurantSchema = new Schema<IRestaurantSchema>(
   {
     name: {
       type: String,

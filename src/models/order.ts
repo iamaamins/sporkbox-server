@@ -1,6 +1,7 @@
+import { IOrderSchema } from "../types";
 import { Schema, model } from "mongoose";
 
-const orderSchema = new Schema(
+const orderSchema = new Schema<IOrderSchema>(
   {
     customerId: {
       type: Schema.Types.ObjectId,

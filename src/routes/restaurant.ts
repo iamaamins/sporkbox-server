@@ -23,7 +23,8 @@ router.get("/upcoming-week", async (req: Request, res: Response) => {
       .map((upcomingWeekRestaurant) => ({
         ...upcomingWeekRestaurant.toObject(),
         schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) => schedule >= gte && schedule < lt
+          (schedule) =>
+            convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
         ),
       }))
       .map((upcomingWeekRestaurant) =>
@@ -34,7 +35,7 @@ router.get("/upcoming-week", async (req: Request, res: Response) => {
           // Create new restaurant object
           return {
             ...rest,
-            scheduledOn: schedule as string,
+            scheduledOn: schedule,
           };
         })
       )
@@ -78,7 +79,7 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
               // Create new restaurant object
               return {
                 ...rest,
-                scheduledOn: schedule as string,
+                scheduledOn: schedule,
               };
             })
           )
@@ -168,8 +169,7 @@ router.put(
         if (restaurant) {
           // Check if the restaurant is schedule on the same date
           const isScheduled = restaurant.schedules.find(
-            (schedule) =>
-              convertDateToMS(schedule as string) === convertDateToMS(date)
+            (schedule) => convertDateToMS(schedule) === convertDateToMS(date)
           );
 
           // If the restaurant is already scheduled
