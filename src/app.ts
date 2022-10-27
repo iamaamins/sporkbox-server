@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import "express-async-errors";
 import * as dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import error from "./middleware/error";
@@ -14,7 +15,6 @@ import Restaurant from "./routes/restaurant";
 
 // Config
 dotenv.config();
-require("express-async-errors");
 
 // Port
 const PORT = process.env.PORT || 5100;
