@@ -15,15 +15,14 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
     const { _id, role } = req.user;
 
     // If role is customer
-    if (role == "CUSTOMER") {
+    if (role === "CUSTOMER") {
       // Find the active orders of the customer
       const orders = await Order.find({ customerId: _id })
         .where("status", "PROCESSING")
         .sort({ deliveryDate: 1 })
         .select(
           "_id createdAt status item restaurantId restaurantName deliveryDate"
-        )
-        .lean();
+        );
 
       // If orders are found successfully
       if (orders) {
@@ -59,16 +58,15 @@ router.get(
       const { role, _id } = req.user;
       // If role is customer
 
-      if (role == "CUSTOMER") {
+      if (role === "CUSTOMER") {
         // Find the active orders of the customer
         const orders = await Order.find({ customerId: _id })
           .where("status", "DELIVERED")
+          .limit(+limit)
           .sort({ deliveryDate: -1 })
           .select(
             "_id createdAt status item restaurantId restaurantName deliveryDate"
-          )
-          .limit(+limit)
-          .lean();
+          );
 
         // If orders are found successfully
         if (orders) {
@@ -103,25 +101,23 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
-  console.log(items);
-
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { _id, name, email, role, company } = req.user;
 
     // If role is customer
-    if (role === "CUSTOMER") {
+    if (role === "CUSTOMER" && company) {
       // Create order items
       const orderItems = items.map((item: IOrderItem) => ({
         customerId: _id,
         customerName: name,
         customerEmail: email,
         status: "PROCESSING",
-        companyName: company?.name,
+        companyName: company.name,
         restaurantId: item.restaurantId,
         deliveryDate: item.deliveryDate,
-        deliveryAddress: company?.address,
+        deliveryAddress: company.address,
         restaurantName: item.restaurantName,
         item: {
           _id: item._id,
@@ -228,7 +224,7 @@ router.get(
           .sort({ deliveryDate: -1 })
           .select("-__v -updatedAt");
 
-        // If orders are fetched successfully
+        // If orders are found successfully
         if (response) {
           // Convert date
           const deliveredOrders = response.map((deliveredOrder) => ({
@@ -241,11 +237,12 @@ router.get(
           // Send delivered orders with response
           res.status(200).json(deliveredOrders);
         } else {
-          // If orders aren't fetched successfully
+          // If orders aren't found successfully
           res.status(500);
           throw new Error("Something went wrong");
         }
       } else {
+        // If role isn't admin
         res.status(401);
         throw new Error("Not authorized");
       }
@@ -262,7 +259,7 @@ router.put(
   "/:orderId/status",
   authUser,
   async (req: Request, res: Response) => {
-    // Get role and order id from req
+    // Destructure data from req
     const { orderId } = req.params;
 
     // Check if there is an user
@@ -285,7 +282,7 @@ router.put(
           .select("-__v -updatedAt")
           .lean();
 
-        // If order is updates successfully
+        // If order is updated successfully
         if (response) {
           // Get customer name and email from the order
           const { customerName, customerEmail } = response;
@@ -302,7 +299,7 @@ router.put(
           // Send the update
           res.status(200).json(updatedOrder);
         } else {
-          // If order is updates successfully
+          // If order isn't updated successfully
           res.status(500);
           throw new Error("Something went wrong");
         }

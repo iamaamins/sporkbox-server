@@ -79,7 +79,7 @@ router.post("/register", async (req: Request, res: Response) => {
 
 // Add a vendor and a restaurant
 router.post("/add", authUser, async (req: Request, res: Response) => {
-  // Get data from req
+  // Destructure data from req
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
   // If a value isn't provided
@@ -188,7 +188,7 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
         throw new Error("Something went wrong");
       }
     } else {
-      // Return not authorized if role isn't admin
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
@@ -244,7 +244,7 @@ router.put(
           throw new Error("Something went wrong");
         }
       } else {
-        // Return not authorized if role isn't admin
+        // If role isn't admin
         res.status(401);
         throw new Error("Not authorized");
       }

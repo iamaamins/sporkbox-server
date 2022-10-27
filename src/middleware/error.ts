@@ -1,7 +1,7 @@
 import { ErrorRequestHandler } from "express";
 
 const handler: ErrorRequestHandler = (err, req, res, next) => {
-  // Set status
+  // Set error status
   res.status(res.statusCode || 500);
 
   // Set error message

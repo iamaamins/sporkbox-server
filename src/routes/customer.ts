@@ -9,6 +9,7 @@ const router = express.Router();
 
 // Register customer
 router.post("/register", async (req: Request, res: Response) => {
+  // Destructure data from req
   const { name, email, password } = req.body;
 
   // If a value isn't provided

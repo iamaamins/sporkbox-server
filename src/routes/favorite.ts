@@ -98,6 +98,7 @@ router.delete(
 
         // If favorite is deleted successfully
         if (removedFavorite) {
+          // Send data with response
           res.status(200).json({ message: "Favorite removed" });
         } else {
           // If favorite isn't deleted successfully

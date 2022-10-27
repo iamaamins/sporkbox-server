@@ -1,18 +1,7 @@
 import { Types } from "mongoose";
 
-interface IRestaurantItem {
-  _id: Types.ObjectId;
-  name: string;
-  tags: string;
-  price: number;
-  description: string;
-}
-
-export interface IUpcomingWeekRestaurant {
-  _id: Types.ObjectId;
-  name: string;
-  items: IRestaurantItem[];
-  scheduledOn: Date;
+export interface ISortScheduledRestaurant {
+  scheduledOn: string;
 }
 
 export interface IFavorite {

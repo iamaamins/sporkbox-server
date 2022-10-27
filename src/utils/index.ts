@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
-import { IUpcomingWeekRestaurant } from "../types";
+import { ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
 
 // Set the sendgrid api key
@@ -67,8 +67,10 @@ export const sendEmail = async (name: string, email: string) => {
 export const convertDateToMS = (date: string) => new Date(date).getTime();
 
 // Sort by date
-export const sortByDate = (a: any, b: any) =>
-  convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
+export const sortByDate = (
+  a: ISortScheduledRestaurant,
+  b: ISortScheduledRestaurant
+) => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
 // Get future date
 export const getFutureDate = (dayToAdd: number) => {

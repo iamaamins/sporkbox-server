@@ -11,7 +11,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
   const { name, website, address, code, budget } = req.body;
 
   // If all the fields aren't provided
-  if (!name || !website || !code || !budget) {
+  if (!name || !website || !address || !code || !budget) {
     res.status(400);
     throw new Error("Please provide all the fields");
   }
@@ -21,6 +21,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     // Destructure data from req
     const { role } = req.user;
 
+    // If role is admin
     if (role === "ADMIN") {
       // Create a new company
       const company = (
@@ -46,6 +47,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
         throw new Error("Something went wrong");
       }
     } else {
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
@@ -70,16 +72,17 @@ router.get("/", authUser, async (req: Request, res: Response) => {
         .select("-__v -updatedAt")
         .sort({ createdAt: -1 });
 
-      // If company is created successfully
+      // If companies are found successfully
       if (companies) {
         // Send the companies with response
         res.status(201).json(companies);
       } else {
-        // If company isn't created successfully
+        // If companies aren't found successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
     } else {
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
@@ -105,11 +108,12 @@ router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
       // Find and delete the company
       const deleted = await Company.findByIdAndDelete(companyId);
 
-      // If successfully deleted
+      // If is successfully deleted
       if (deleted) {
+        // Send data with response
         res.status(200).json({ message: "Successfully deleted" });
       } else {
-        // If not deleted successfully
+        // If is not deleted successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
@@ -124,7 +128,5 @@ router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
     throw new Error("Not authorized");
   }
 });
-
-// Edit a company
 
 export default router;

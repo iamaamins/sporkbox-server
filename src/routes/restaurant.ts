@@ -34,7 +34,7 @@ router.get("/upcoming-week", async (req: Request, res: Response) => {
           // Create new restaurant object
           return {
             ...rest,
-            scheduledOn: schedule,
+            scheduledOn: schedule as string,
           };
         })
       )
@@ -44,6 +44,7 @@ router.get("/upcoming-week", async (req: Request, res: Response) => {
     // Return the scheduled restaurants with response
     res.status(200).json(upcomingWeekRestaurants);
   } else {
+    // If scheduled restaurants aren't found successfully
     res.status(500);
     throw new Error("Something went wrong");
   }
@@ -77,24 +78,26 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
               // Create new restaurant object
               return {
                 ...rest,
-                scheduledOn: schedule,
+                scheduledOn: schedule as string,
               };
             })
           )
           .flat(2)
           .filter(
             (scheduledRestaurant) =>
-              convertDateToMS(scheduledRestaurant.scheduledOn as string) >= gte
+              convertDateToMS(scheduledRestaurant.scheduledOn) >= gte
           )
           .sort(sortByDate);
 
         // Return the scheduled restaurants with response
         res.status(200).json(scheduledRestaurants);
       } else {
+        // If scheduled restaurants aren't found successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
     } else {
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
@@ -190,10 +193,12 @@ router.put(
           // Send updated restaurant with response
           res.status(201).json(scheduledRestaurant);
         } else {
+          // If scheduled restaurants aren't found successfully
           res.status(500);
           throw new Error("Something went wrong");
         }
       } else {
+        // If role isn't admin
         res.status(401);
         throw new Error("Not authorized");
       }
@@ -210,6 +215,7 @@ router.post(
   "/:restaurantId/add-item",
   authUser,
   async (req: Request, res: Response) => {
+    // Destructure data from req
     const { restaurantId } = req.params;
     const { name, description, tags, price } = req.body;
 
@@ -244,16 +250,17 @@ router.post(
           // Return the updated restaurant
           res.status(201).json(updatedRestaurant);
         } else {
-          // If item isn't successfully add to db
+          // If item isn't successfully added to db
           res.status(500);
           throw new Error("Something went wrong!");
         }
       } else {
-        // Return not authorized if role isn't admin or vendor
+        // If role isn't admin or vendor
         res.status(401);
         throw new Error("Not authorized");
       }
     } else {
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }

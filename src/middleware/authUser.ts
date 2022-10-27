@@ -51,8 +51,7 @@ export default async function handler(
     // Call the next middleware
     next();
   } else {
-    // If the token is invalid or
-    // failed to get User data from DB
+    // If the token is invalid and user isn't found
     res.status(401);
     throw new Error("Not authorized");
   }

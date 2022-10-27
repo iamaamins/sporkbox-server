@@ -1,5 +1,17 @@
 import { Schema, model } from "mongoose";
 
+interface IRestaurantSchema {
+  name: string;
+  address: string;
+  schedules: Date[];
+  items: {
+    name: string;
+    tags: string;
+    price: number;
+    description: string;
+  }[];
+}
+
 const restaurantSchema = new Schema(
   {
     name: {
