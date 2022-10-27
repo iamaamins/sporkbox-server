@@ -36,10 +36,6 @@ app.use(
   })
 );
 
-// origins
-// http://localhost:3000
-// https://sporkbytes.vercel.app
-
 // Routes
 app.use("/api/users", User);
 app.use("/api/orders", Order);

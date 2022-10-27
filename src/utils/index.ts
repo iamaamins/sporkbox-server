@@ -8,7 +8,7 @@ import mail, { MailDataRequired } from "@sendgrid/mail";
 mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
 // Generate token and set cookie to header
-export const setCookie = (res: Response, id: Types.ObjectId) => {
+export const setCookie = (res: Response, id: Types.ObjectId): void => {
   // Generate token
   const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET as string, {
     expiresIn: "7d",
@@ -25,7 +25,7 @@ export const setCookie = (res: Response, id: Types.ObjectId) => {
 };
 
 // Delete unnecessary fields
-export const deleteFields = (data: object, moreFields?: string[]) => {
+export const deleteFields = (data: object, moreFields?: string[]): void => {
   // Default fields
   let fields = ["__v", "updatedAt"];
 
@@ -39,11 +39,14 @@ export const deleteFields = (data: object, moreFields?: string[]) => {
 };
 
 // Convert iso date to locale date string
-export const convertDateToText = (date: Date | string) =>
+export const convertDateToText = (date: Date | string): string =>
   new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
 
 // General mail
-export const sendEmail = async (name: string, email: string) => {
+export const sendEmail = async (
+  name: string,
+  email: string
+): Promise<string> => {
   // Create template
   const template = {
     to: email,
@@ -64,17 +67,17 @@ export const sendEmail = async (name: string, email: string) => {
 };
 
 // Convert date to slug
-export const convertDateToMS = (date: Date | string) =>
+export const convertDateToMS = (date: Date | string): number =>
   new Date(date).getTime();
 
 // Sort by date
 export const sortByDate = (
   a: ISortScheduledRestaurant,
   b: ISortScheduledRestaurant
-) => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
+): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
 // Get future date
-export const getFutureDate = (dayToAdd: number) => {
+export const getFutureDate = (dayToAdd: number): number => {
   // Today
   const today = new Date();
 
