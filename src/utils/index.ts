@@ -101,3 +101,9 @@ const today = convertDateToMS(new Date().toDateString());
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;
 export const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
+
+// Allowed cors origin
+export const allowedOrigins = [
+  "http://localhost:3000",
+  "https://sporkbytes.vercel.app",
+];

@@ -2,16 +2,18 @@ import express from "express";
 import cors from "cors";
 import "express-async-errors";
 import * as dotenv from "dotenv";
-import { connectDB } from "./config/db";
-import error from "./middleware/error";
-import cookieParser from "cookie-parser";
 import User from "./routes/user";
 import Order from "./routes/order";
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
+import error from "./middleware/error";
+import { connectDB } from "./config/db";
+import { allowedOrigins } from "./utils";
 import Customer from "./routes/customer";
+import cookieParser from "cookie-parser";
 import Favorite from "./routes/favorite";
 import Restaurant from "./routes/restaurant";
+import credentials from "./middleware/credentials";
 
 // Config
 dotenv.config();
@@ -26,13 +28,14 @@ connectDB();
 const app = express();
 
 // Middleware
+app.use(credentials);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:3000", "https://sporkbytes.vercel.app"],
+    origin: allowedOrigins,
   })
 );
 
