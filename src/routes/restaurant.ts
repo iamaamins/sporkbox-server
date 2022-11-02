@@ -1,7 +1,7 @@
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
-import { gte, lt, sortByDate, convertDateToMS } from "../utils";
+import { gte, lt, sortByDate, convertDateToMS, deleteFields } from "../utils";
 
 // Initialize router
 const router = express.Router();
@@ -185,10 +185,13 @@ router.put(
           await restaurant.save();
 
           // Create scheduled restaurant
-          const { __v, schedules, ...rest } = restaurant;
+          const { schedules, ...rest } = restaurant.toObject();
 
           // Create restaurant with scheduled date
           const scheduledRestaurant = { ...rest, scheduledOn: date };
+
+          // Delete fields
+          deleteFields(scheduledRestaurant, ["items"]);
 
           // Send updated restaurant with response
           res.status(201).json(scheduledRestaurant);
