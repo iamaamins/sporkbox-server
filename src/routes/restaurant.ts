@@ -184,7 +184,7 @@ router.put(
           // Save the restaurant
           await restaurant.save();
 
-          // Create scheduled restaurant
+          // Destructure the restaurant object
           const { schedules, ...rest } = restaurant.toObject();
 
           // Create restaurant with scheduled date
