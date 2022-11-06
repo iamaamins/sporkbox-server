@@ -17,17 +17,17 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
     // If role is customer
     if (role === "CUSTOMER") {
       // Find the active orders of the customer
-      const orders = await Order.find({ customerId: _id })
+      const activeOrders = await Order.find({ customerId: _id })
         .where("status", "PROCESSING")
         .sort({ deliveryDate: 1 })
         .select(
           "_id createdAt status item restaurantId restaurantName deliveryDate"
         );
 
-      // If orders are found successfully
-      if (orders) {
+      // If active orders are found successfully
+      if (activeOrders) {
         // Send the data with response
-        res.status(200).json(orders);
+        res.status(200).json(activeOrders);
       } else {
         // If orders aren't found successfully
         res.status(500);
@@ -90,7 +90,7 @@ router.get(
   }
 );
 
-// Create an order
+// Create orders
 router.post("/create", authUser, async (req: Request, res: Response) => {
   // Get data from req user and body
   const { items } = req.body;
@@ -139,8 +139,8 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           status: order.status,
           createdAt: order.createdAt,
           restaurantId: order.restaurantId,
+          deliveryDate: order.deliveryDate,
           restaurantName: order.restaurantName,
-          deliveryDate: convertDateToText(order.deliveryDate),
         }));
 
         // Send the data with response

@@ -40,7 +40,7 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
 
 // Convert iso date to locale date string
 export const convertDateToText = (date: Date | string): string =>
-  new Date(date).toDateString().split(" ").slice(0, 3).join(" ");
+  new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
 
 // General mail
 export const sendEmail = async (
@@ -77,26 +77,35 @@ export const sortByDate = (
 ): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
 // Get future date
-export const getFutureDate = (dayToAdd: number): number => {
+export function getFutureDate(dayToAdd: number) {
   // Today
   const today = new Date();
 
   // Day number of current week sunday
   const sunday = today.getDate() - today.getDay();
 
-  // Return a future date
-  return convertDateToMS(
-    new Date(today.setDate(sunday + dayToAdd)).toDateString()
-  );
-};
+  // Get future date in MS
+  const futureDate = today.setDate(sunday + dayToAdd);
+
+  // Get future date without hours in MS
+  const futureDateInMS = new Date(futureDate).setHours(0, 0, 0, 0);
+
+  // Convert time zone difference in MS
+  const timeZoneInMS = new Date(futureDateInMS).getTimezoneOffset() * 60000;
+
+  // Return a future date - time zone in MS
+  return futureDateInMS - timeZoneInMS;
+}
 
 // Get dates in iso string
+// const today = new Date().getTime();
 const nextSaturday = getFutureDate(6);
 const nextMonday = getFutureDate(8);
 const nextWeekSaturday = getFutureDate(13);
 const followingMonday = getFutureDate(15);
 const followingSaturday = getFutureDate(20);
-const today = convertDateToMS(new Date().toDateString());
+const timeZoneInMs = new Date().getTimezoneOffset() * 60000;
+const today = new Date().setHours(0, 0, 0, 0) - timeZoneInMs;
 
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;

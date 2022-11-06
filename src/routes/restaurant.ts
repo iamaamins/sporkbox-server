@@ -131,7 +131,7 @@ router.put(
     }
 
     // Get the day from provided date
-    const day = new Date(date).toDateString().split(" ")[0];
+    const day = new Date(date).toUTCString().split(",")[0];
 
     // Restrict scheduling on saturday and sunday
     if (day === "Sat" || day === "Sun") {
