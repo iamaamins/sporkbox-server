@@ -32,16 +32,25 @@ export interface IOrderSchema {
   };
 }
 
+interface IReview {
+  customer: Types.ObjectId;
+  rating: number;
+  comment: string;
+}
+
+interface IItem {
+  name: string;
+  tags: string;
+  price: number;
+  description: string;
+  reviews: Types.DocumentArray<IReview>;
+}
+
 export interface IRestaurantSchema {
   name: string;
   address: string;
   schedules: Date[];
-  items: {
-    name: string;
-    tags: string;
-    price: number;
-    description: string;
-  }[];
+  items: Types.DocumentArray<IItem>;
 }
 
 export interface IUserSchema {

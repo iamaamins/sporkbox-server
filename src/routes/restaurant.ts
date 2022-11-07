@@ -1,3 +1,4 @@
+import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -318,6 +319,96 @@ router.delete(
         }
       } else {
         // If role isn't admin or vendor
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
+
+// Add a review to an item
+router.post(
+  "/:restaurantId/:itemId",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { restaurantId, itemId } = req.params;
+    const { rating, comment, orderId } = req.body;
+
+    // If rating or comment isn't provided
+    if (!rating || !comment) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // If there is an user in the req
+    if (req.user) {
+      // Destructure data
+      const { role, _id } = req.user;
+
+      // If role is customer
+      if (role === "CUSTOMER") {
+        // Check if order is valid
+        const order = await Order.findById({ customerId: _id })
+          .where("status", "DELIVERED")
+          .where("_id", orderId);
+
+        // If order is found successfully
+        if (order) {
+          // Find the restaurant
+          const restaurant = await Restaurant.findById(restaurantId);
+
+          // If restaurant is found successfully
+          if (restaurant) {
+            // Find the item
+            const item = restaurant.items.find((item) => item.id === itemId);
+
+            // If item is found successfully
+            if (item) {
+              // Check if customer has reviewed the item already
+              const hasReviewed = item.reviews.some(
+                (review) => review.customer.toString() === _id.toString()
+              );
+
+              // If customer has reviewed the item already
+              if (hasReviewed) {
+                res.status(400);
+                throw new Error("Already reviewed this item!");
+              }
+
+              // Add the review
+              item.reviews.push({ customer: _id, rating, comment });
+
+              // Save the restaurant
+              await restaurant.save();
+
+              // Update order item with a flag reviewed: true
+
+              // Return the updated order item
+
+              // Send the updated restaurant with response
+              res.status(200).json(restaurant);
+            } else {
+              // If item isn't found
+              res.status(400);
+              throw new Error("Item doesn't exist");
+            }
+          } else {
+            // If restaurant isn't found
+            res.status(400);
+            throw new Error("Restaurant doesn't exist");
+          }
+        } else {
+          // If there isn't an order
+          res.status(401);
+          throw new Error("Not authorized");
+        }
+      } else {
+        // If role isn't customer
         res.status(401);
         throw new Error("Not authorized");
       }

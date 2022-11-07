@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import { IRestaurantSchema } from "../types";
 
-const restaurantSchema = new Schema<IRestaurantSchema>(
+const restaurantSchema = new Schema(
   {
     name: {
       type: String,
@@ -17,7 +17,7 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       },
     ],
     items: [
-      {
+      new Schema({
         name: {
           type: String,
           required: [true, "Please provide item name"],
@@ -34,7 +34,23 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: String,
           required: [true, "Please provide item description"],
         },
-      },
+        reviews: [
+          new Schema({
+            customer: {
+              type: Schema.Types.ObjectId,
+              ref: "User",
+            },
+            rating: {
+              type: Number,
+              required: [true, "Please provide a rating"],
+            },
+            comment: {
+              type: String,
+              required: [true, "Please provide a rating"],
+            },
+          }),
+        ],
+      }),
     ],
   },
   {
@@ -42,4 +58,4 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
   }
 );
 
-export default model("Restaurant", restaurantSchema);
+export default model<IRestaurantSchema>("Restaurant", restaurantSchema);

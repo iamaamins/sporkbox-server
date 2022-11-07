@@ -108,6 +108,16 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER" && company) {
+      // Fetch customer's active orders
+
+      // Get total amount of the active orders + items total
+
+      // Check if the total amount is more than company budget
+
+      // If yes, allow them to pay the extra
+
+      // If not, allow them to place the orders
+
       // Create order items
       const orderItems = items.map((item: IOrderItem) => ({
         customerId: _id,
