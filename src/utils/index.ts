@@ -81,20 +81,14 @@ export function getFutureDate(dayToAdd: number) {
   // Today
   const today = new Date();
 
-  // Day number of current week sunday
-  const sunday = today.getDate() - today.getDay();
+  // Sunday's date of current week
+  const sunday = today.getUTCDate() - today.getUTCDay();
 
   // Get future date in MS
-  const futureDate = today.setDate(sunday + dayToAdd);
+  const futureDate = today.setUTCDate(sunday + dayToAdd);
 
   // Get future date without hours in MS
-  const futureDateInMS = new Date(futureDate).setHours(0, 0, 0, 0);
-
-  // Convert time zone difference in MS
-  const timeZoneInMS = new Date(futureDateInMS).getTimezoneOffset() * 60000;
-
-  // Return a future date - time zone in MS
-  return futureDateInMS - timeZoneInMS;
+  return new Date(futureDate).setUTCHours(0, 0, 0, 0);
 }
 
 // Get dates in iso string
@@ -104,8 +98,7 @@ const nextMonday = getFutureDate(8);
 const nextWeekSaturday = getFutureDate(13);
 const followingMonday = getFutureDate(15);
 const followingSaturday = getFutureDate(20);
-const timeZoneInMs = new Date().getTimezoneOffset() * 60000;
-const today = new Date().setHours(0, 0, 0, 0) - timeZoneInMs;
+const today = new Date().setUTCHours(0, 0, 0, 0);
 
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;
