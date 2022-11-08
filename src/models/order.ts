@@ -39,6 +39,10 @@ const orderSchema = new Schema<IOrderSchema>(
       type: String,
       enum: ["PROCESSING", "DELIVERED"],
     },
+    hasReviewed: {
+      type: Boolean,
+      default: false,
+    },
     item: {
       _id: {
         type: Schema.Types.ObjectId,

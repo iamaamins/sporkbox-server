@@ -24,6 +24,7 @@ export interface IOrderSchema {
   companyName: string;
   deliveryDate: Date;
   status: string;
+  hasReviewed: boolean;
   item: {
     _id: Types.ObjectId;
     name: string;

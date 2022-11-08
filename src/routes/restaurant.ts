@@ -386,12 +386,13 @@ router.post(
               // Save the restaurant
               await restaurant.save();
 
-              // Update order item with a flag reviewed: true
+              // Update and save the order
+              order.hasReviewed = true;
+
+              await order.save();
 
               // Return the updated order item
-
-              // Send the updated restaurant with response
-              res.status(200).json(restaurant);
+              res.status(201).json(order);
             } else {
               // If item isn't found
               res.status(400);

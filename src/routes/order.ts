@@ -21,7 +21,7 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
         .where("status", "PROCESSING")
         .sort({ deliveryDate: 1 })
         .select(
-          "_id createdAt status item restaurantId restaurantName deliveryDate"
+          "-__v -updatedAt -customerId -customerName -customerEmail -deliveryAddress -companyName"
         );
 
       // If active orders are found successfully
@@ -60,20 +60,20 @@ router.get(
 
       if (role === "CUSTOMER") {
         // Find the active orders of the customer
-        const orders = await Order.find({ customerId: _id })
+        const deliveredOrders = await Order.find({ customerId: _id })
           .where("status", "DELIVERED")
           .limit(+limit)
           .sort({ deliveryDate: -1 })
           .select(
-            "_id createdAt status item restaurantId restaurantName deliveryDate"
+            "-__v -updatedAt -customerId -customerName -customerEmail -deliveryAddress -companyName"
           );
 
-        // If orders are found successfully
-        if (orders) {
+        // If deliveredOrders are found successfully
+        if (deliveredOrders) {
           // Send the data with response
-          res.status(200).json(orders);
+          res.status(200).json(deliveredOrders);
         } else {
-          // If orders aren't found successfully
+          // If delivered orders aren't found successfully
           res.status(500);
           throw new Error("Something went wrong");
         }

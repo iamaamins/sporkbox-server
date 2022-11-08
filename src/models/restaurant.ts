@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import { IRestaurantSchema } from "../types";
 
-const restaurantSchema = new Schema(
+const restaurantSchema = new Schema<IRestaurantSchema>(
   {
     name: {
       type: String,
@@ -39,6 +39,7 @@ const restaurantSchema = new Schema(
             customer: {
               type: Schema.Types.ObjectId,
               ref: "User",
+              required: [true, "Please provide a customer"],
             },
             rating: {
               type: Number,
@@ -58,4 +59,4 @@ const restaurantSchema = new Schema(
   }
 );
 
-export default model<IRestaurantSchema>("Restaurant", restaurantSchema);
+export default model("Restaurant", restaurantSchema);
