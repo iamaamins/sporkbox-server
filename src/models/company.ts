@@ -22,9 +22,9 @@ const companySchema = new Schema<ICompanySchema>(
       lowercase: true,
       required: [true, "Please provide a code"],
     },
-    budget: {
+    dailyBudget: {
       type: Number,
-      required: [true, "Please provide a budget"],
+      required: [true, "Please provide a daily budget"],
     },
   },
   {

@@ -5,7 +5,7 @@ export interface ICompanySchema {
   website: string;
   address: string;
   code: string;
-  budget: number;
+  dailyBudget: number;
 }
 
 export interface IFavoriteSchema {
@@ -19,12 +19,12 @@ export interface IOrderSchema {
   customerName: string;
   customerEmail: string;
   deliveryAddress: string;
-  restaurantId: Types.ObjectId;
   restaurantName: string;
   companyName: string;
   deliveryDate: Date;
   status: string;
   hasReviewed: boolean;
+  restaurantId: Types.ObjectId;
   item: {
     _id: Types.ObjectId;
     name: string;
@@ -88,7 +88,7 @@ export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
   address: string;
-  budget: number;
+  dailyBudget: number;
 }
 
 export interface IRestaurant {

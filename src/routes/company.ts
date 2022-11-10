@@ -8,10 +8,10 @@ const router = express.Router();
 
 // Add a company
 router.post("/add", authUser, async (req: Request, res: Response) => {
-  const { name, website, address, code, budget } = req.body;
+  const { name, website, address, code, dailyBudget } = req.body;
 
   // If all the fields aren't provided
-  if (!name || !website || !address || !code || !budget) {
+  if (!name || !website || !address || !code || !dailyBudget) {
     res.status(400);
     throw new Error("Please provide all the fields");
   }
@@ -30,7 +30,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
           website,
           address,
           code,
-          budget,
+          dailyBudget,
         })
       ).toObject();
 
