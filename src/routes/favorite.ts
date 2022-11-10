@@ -1,4 +1,4 @@
-import { IFavorite } from "../types";
+import { IFavoriteRestaurant } from "../types";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -31,7 +31,10 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
           itemId: itemId,
           restaurant: restaurantId,
         })
-      ).populate<{ restaurant: IFavorite }>("restaurant", "_id name items");
+      ).populate<{ restaurant: IFavoriteRestaurant }>(
+        "restaurant",
+        "_id name items"
+      );
 
       // If favorite is created successfully
       if (response) {
@@ -130,7 +133,10 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
       // Find the favorites
       const response = await Favorite.find({
         customerId: _id,
-      }).populate<{ restaurant: IFavorite }>("restaurant", "_id name items");
+      }).populate<{ restaurant: IFavoriteRestaurant }>(
+        "restaurant",
+        "_id name items"
+      );
 
       // If favorites are found successfully
       if (response) {

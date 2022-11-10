@@ -2,54 +2,72 @@ import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
-import { gte, lt, sortByDate, convertDateToMS, deleteFields } from "../utils";
+import {
+  gte,
+  lt,
+  sortByDate,
+  convertDateToMS,
+  deleteFields,
+  getUpcomingWeekRestaurants,
+} from "../utils";
 
 // Initialize router
 const router = express.Router();
 
 // Get upcoming week restaurants
 router.get("/upcoming-week", async (req: Request, res: Response) => {
-  // Get the scheduled restaurants
-  const response = await Restaurant.find({
-    schedules: {
-      $gte: gte,
-      $lt: lt,
-    },
-  }).select("-__v -updatedAt -createdAt -address");
+  // Get upcoming week restaurants
+  const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
-  // If restaurants are found successfully
-  if (response) {
-    // Create scheduled restaurants, then flat and sort
-    const upcomingWeekRestaurants = response
-      .map((upcomingWeekRestaurant) => ({
-        ...upcomingWeekRestaurant.toObject(),
-        schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) =>
-            convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
-        ),
-      }))
-      .map((upcomingWeekRestaurant) =>
-        upcomingWeekRestaurant.schedules.map((schedule) => {
-          // Destructure scheduled restaurant
-          const { schedules, ...rest } = upcomingWeekRestaurant;
-
-          // Create new restaurant object
-          return {
-            ...rest,
-            scheduledOn: schedule,
-          };
-        })
-      )
-      .flat(2)
-      .sort(sortByDate);
-
-    // Return the scheduled restaurants with response
+  // If upcoming week restaurants are found successfully
+  if (upcomingWeekRestaurants) {
     res.status(200).json(upcomingWeekRestaurants);
   } else {
-    // If scheduled restaurants aren't found successfully
+    // If upcoming week restaurants aren't found successfully
     res.status(500);
     throw new Error("Something went wrong");
   }
+  // // Get the scheduled restaurants
+  // const response = await Restaurant.find({
+  //   schedules: {
+  //     $gte: gte,
+  //     $lt: lt,
+  //   },
+  // }).select("-__v -updatedAt -createdAt -address");
+
+  // // If restaurants are found successfully
+  // if (response) {
+  //   // Create scheduled restaurants, then flat and sort
+  //   const upcomingWeekRestaurants = response
+  //     .map((upcomingWeekRestaurant) => ({
+  //       ...upcomingWeekRestaurant.toObject(),
+  //       schedules: upcomingWeekRestaurant.schedules.filter(
+  //         (schedule) =>
+  //           convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
+  //       ),
+  //     }))
+  //     .map((upcomingWeekRestaurant) =>
+  //       upcomingWeekRestaurant.schedules.map((schedule) => {
+  //         // Destructure scheduled restaurant
+  //         const { schedules, ...rest } = upcomingWeekRestaurant;
+
+  //         // Create new restaurant object
+  //         return {
+  //           ...rest,
+  //           scheduledOn: schedule,
+  //         };
+  //       })
+  //     )
+  //     .flat(2)
+  //     .sort(sortByDate);
+
+  //   // Return the scheduled restaurants with response
+  //   res.status(200).json(upcomingWeekRestaurants);
+  // } else {
+  //   // If scheduled restaurants aren't found successfully
+  //   res.status(500);
+  //   throw new Error("Something went wrong");
+  // }
 });
 
 // Get all scheduled restaurants
@@ -371,7 +389,7 @@ router.post(
             if (item) {
               // Check if customer has reviewed the item already
               const hasReviewed = item.reviews.some(
-                (review) => review.customer.toString() === _id.toString()
+                (review) => String(review.customer) === String(_id)
               );
 
               // If customer has reviewed the item already

@@ -9,9 +9,9 @@ export interface ICompanySchema {
 }
 
 export interface IFavoriteSchema {
+  itemId: Types.ObjectId;
   customerId: Types.ObjectId;
   restaurant: Types.ObjectId;
-  itemId: Types.ObjectId;
 }
 
 export interface IOrderSchema {
@@ -68,7 +68,16 @@ export interface ISortScheduledRestaurant {
   scheduledOn: Date;
 }
 
-export interface IFavorite {
+interface IRestaurantItem {
+  _id: Types.ObjectId;
+  name: string;
+  tags: string;
+  price: number;
+  description: string;
+  reviews: IReview[];
+}
+
+export interface IFavoriteRestaurant {
   _id: Types.ObjectId;
   name: string;
   items: IRestaurantItem[];
@@ -91,11 +100,16 @@ export interface IUserCompany {
   dailyBudget: number;
 }
 
-export interface IRestaurant {
-  _id: Types.ObjectId;
+export interface IOrderItem {
+  _id: string;
   name: string;
-  address: string;
-  items: IRestaurantItem[];
+  price: number;
+  total: number;
+  quantity: number;
+  expiresIn: number;
+  restaurantId: string;
+  deliveryDate: number;
+  restaurantName: string;
 }
 
 interface IUser {

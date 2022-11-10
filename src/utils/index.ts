@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
+import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
 
@@ -103,6 +104,46 @@ const today = new Date().setUTCHours(0, 0, 0, 0);
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;
 export const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
+
+export async function getUpcomingWeekRestaurants() {
+  // Get the scheduled restaurants
+  const response = await Restaurant.find({
+    schedules: {
+      $gte: gte,
+      $lt: lt,
+    },
+  }).select("-__v -updatedAt -createdAt -address");
+
+  // If restaurants are found successfully
+  if (response) {
+    // Create scheduled restaurants, then flat and sort
+    const upcomingWeekRestaurants = response
+      .map((upcomingWeekRestaurant) => ({
+        ...upcomingWeekRestaurant.toObject(),
+        schedules: upcomingWeekRestaurant.schedules.filter(
+          (schedule) =>
+            convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
+        ),
+      }))
+      .map((upcomingWeekRestaurant) =>
+        upcomingWeekRestaurant.schedules.map((schedule) => {
+          // Destructure scheduled restaurant
+          const { schedules, ...rest } = upcomingWeekRestaurant;
+
+          // Create new restaurant object
+          return {
+            ...rest,
+            scheduledOn: schedule,
+          };
+        })
+      )
+      .flat(2)
+      .sort(sortByDate);
+
+    // Return the scheduled restaurants with response
+    return upcomingWeekRestaurants;
+  }
+}
 
 // Allowed cors origin
 export const allowedOrigins = [

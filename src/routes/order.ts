@@ -1,8 +1,13 @@
-import { IOrderItem } from "../types";
 import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
-import { convertDateToText, sendEmail } from "../utils";
+import {
+  sendEmail,
+  convertDateToMS,
+  convertDateToText,
+  getUpcomingWeekRestaurants,
+} from "../utils";
+import { IOrderItem } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -108,55 +113,75 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER" && company) {
-      // Fetch customer's active orders
+      // Get upcoming week restaurants
+      const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
-      // Get total amount of the active orders + items total
+      // If upcoming weeks restaurants are found successfully
+      if (upcomingWeekRestaurants) {
+        // Check if the order items are valid
+        const isItemValid = items.every((orderItem: IOrderItem) =>
+          upcomingWeekRestaurants.some(
+            (upcomingWeekRestaurant) =>
+              String(upcomingWeekRestaurant._id) === orderItem.restaurantId &&
+              convertDateToMS(upcomingWeekRestaurant.scheduledOn) ===
+                orderItem.deliveryDate &&
+              upcomingWeekRestaurant.items.some(
+                (item) => String(item._id) === orderItem._id
+              )
+          )
+        );
 
-      // Check if the total amount is more than company budget
+        // If order order items are valid
+        if (isItemValid) {
+          // Create order items
+          const orderItems = items.map((item: IOrderItem) => ({
+            customerId: _id,
+            customerName: name,
+            customerEmail: email,
+            status: "PROCESSING",
+            companyName: company.name,
+            restaurantId: item.restaurantId,
+            deliveryDate: item.deliveryDate,
+            deliveryAddress: company.address,
+            restaurantName: item.restaurantName,
+            item: {
+              _id: item._id,
+              name: item.name,
+              total: item.total,
+              quantity: item.quantity,
+            },
+          }));
 
-      // If yes, allow them to pay the extra
+          // Create orders
+          const response = await Order.insertMany(orderItems);
 
-      // If not, allow them to place the orders
+          // If orders are created successfully
+          if (response) {
+            // Create return data
+            const orders = response.map((order) => ({
+              _id: order._id,
+              item: order.item,
+              status: order.status,
+              createdAt: order.createdAt,
+              restaurantId: order.restaurantId,
+              deliveryDate: order.deliveryDate,
+              restaurantName: order.restaurantName,
+            }));
 
-      // Create order items
-      const orderItems = items.map((item: IOrderItem) => ({
-        customerId: _id,
-        customerName: name,
-        customerEmail: email,
-        status: "PROCESSING",
-        companyName: company.name,
-        restaurantId: item.restaurantId,
-        deliveryDate: item.deliveryDate,
-        deliveryAddress: company.address,
-        restaurantName: item.restaurantName,
-        item: {
-          _id: item._id,
-          name: item.name,
-          total: item.total,
-          quantity: item.quantity,
-        },
-      }));
-
-      // Create orders
-      const response = await Order.insertMany(orderItems);
-
-      // If orders are created successfully
-      if (response) {
-        // Create return data
-        const orders = response.map((order) => ({
-          _id: order._id,
-          item: order.item,
-          status: order.status,
-          createdAt: order.createdAt,
-          restaurantId: order.restaurantId,
-          deliveryDate: order.deliveryDate,
-          restaurantName: order.restaurantName,
-        }));
-
-        // Send the data with response
-        res.status(201).json(orders);
+            // Send the data with response
+            res.status(201).json(orders);
+          } else {
+            // If order isn't created successfully
+            res.status(500);
+            throw new Error("Something went wrong");
+          }
+        } else {
+          // If there is an invalid item
+          res.status(400);
+          throw new Error("Please provide valid items");
+        }
       } else {
-        // If order isn't created successfully
+        // If upcoming weeks restaurants are found successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
