@@ -54,6 +54,13 @@ export interface IRestaurantSchema {
   items: Types.DocumentArray<IItem>;
 }
 
+export interface IUpcomingWeekRestaurant {
+  _id: string;
+  name: string;
+  scheduledOn: string;
+  items: IRestaurantItem[];
+}
+
 export interface IUserSchema {
   name: string;
   email: string;

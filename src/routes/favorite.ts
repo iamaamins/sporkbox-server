@@ -40,7 +40,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
       if (response) {
         // Find the item
         const item = response.restaurant.items.find(
-          (item) => String(item._id) === String(response.itemId)
+          (item) => item._id.toString() === response.itemId.toString()
         );
 
         // If item is found successfully
@@ -144,7 +144,7 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
         const favorites = response.map((favorite) => {
           // Get the item
           const item = favorite.restaurant.items.find(
-            (item) => String(item._id) === String(favorite.itemId)
+            (item) => item._id.toString() === favorite.itemId.toString()
           );
 
           // If there is an item

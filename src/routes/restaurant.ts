@@ -389,7 +389,7 @@ router.post(
             if (item) {
               // Check if customer has reviewed the item already
               const hasReviewed = item.reviews.some(
-                (review) => String(review.customer) === String(_id)
+                (review) => review.customer.toString() === _id.toString()
               );
 
               // If customer has reviewed the item already

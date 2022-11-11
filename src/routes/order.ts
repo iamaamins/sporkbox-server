@@ -98,10 +98,10 @@ router.get(
 // Create orders
 router.post("/create", authUser, async (req: Request, res: Response) => {
   // Get data from req user and body
-  const { items } = req.body;
+  const { orderItems } = req.body;
 
   // If items aren't provided
-  if (!items) {
+  if (!orderItems) {
     res.status(401);
     throw new Error("Please provide all the fields");
   }
@@ -118,47 +118,62 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 
       // If upcoming weeks restaurants are found successfully
       if (upcomingWeekRestaurants) {
-        // Check if the order items are valid
-        const isItemValid = items.every((orderItem: IOrderItem) =>
+        // Check if the provided items are valid
+        const itemsAreValid = orderItems.every((orderItem: IOrderItem) =>
           upcomingWeekRestaurants.some(
             (upcomingWeekRestaurant) =>
-              String(upcomingWeekRestaurant._id) === orderItem.restaurantId &&
+              upcomingWeekRestaurant._id.toString() ===
+                orderItem.restaurantId &&
               convertDateToMS(upcomingWeekRestaurant.scheduledOn) ===
                 orderItem.deliveryDate &&
               upcomingWeekRestaurant.items.some(
-                (item) => String(item._id) === orderItem._id
+                (item) => item._id?.toString() === orderItem._id
               )
           )
         );
 
-        // If order order items are valid
-        if (isItemValid) {
-          // Create order items
-          const orderItems = items.map((item: IOrderItem) => ({
-            customerId: _id,
-            customerName: name,
-            customerEmail: email,
-            status: "PROCESSING",
-            companyName: company.name,
-            restaurantId: item.restaurantId,
-            deliveryDate: item.deliveryDate,
-            deliveryAddress: company.address,
-            restaurantName: item.restaurantName,
-            item: {
-              _id: item._id,
-              name: item.name,
-              total: item.total,
-              quantity: item.quantity,
-            },
-          }));
+        // If order provided items are valid
+        if (itemsAreValid) {
+          // Create orders
+          const orders = orderItems.map((orderItem: IOrderItem) => {
+            // Find the restaurant
+            const restaurant = upcomingWeekRestaurants.find(
+              (upcomingWeekRestaurant) =>
+                upcomingWeekRestaurant._id.toString() === orderItem.restaurantId
+            );
+
+            // Find the item
+            const item = restaurant?.items.find(
+              (item) => item._id?.toString() === orderItem._id
+            );
+
+            // Create and return the order object
+            return {
+              customerId: _id,
+              customerName: name,
+              customerEmail: email,
+              status: "PROCESSING",
+              companyName: company.name,
+              deliveryAddress: company.address,
+              restaurantName: restaurant?.name,
+              restaurantId: orderItem.restaurantId,
+              deliveryDate: orderItem.deliveryDate,
+              item: {
+                _id: orderItem._id,
+                name: item?.name,
+                quantity: orderItem.quantity,
+                total: item?.price! * orderItem.quantity,
+              },
+            };
+          });
 
           // Create orders
-          const response = await Order.insertMany(orderItems);
+          const response = await Order.insertMany(orders);
 
           // If orders are created successfully
           if (response) {
-            // Create return data
-            const orders = response.map((order) => ({
+            // Format orders for customer
+            const customerOrders = response.map((order) => ({
               _id: order._id,
               item: order.item,
               status: order.status,
@@ -169,7 +184,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             }));
 
             // Send the data with response
-            res.status(201).json(orders);
+            res.status(201).json(customerOrders);
           } else {
             // If order isn't created successfully
             res.status(500);
@@ -178,7 +193,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
         } else {
           // If there is an invalid item
           res.status(400);
-          throw new Error("Please provide valid items");
+          throw new Error("Invalid orders");
         }
       } else {
         // If upcoming weeks restaurants are found successfully
