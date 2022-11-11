@@ -1,3 +1,4 @@
+import { IRestaurantSchema } from "./../types/index.d";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
@@ -114,35 +115,32 @@ export async function getUpcomingWeekRestaurants() {
     },
   }).select("-__v -updatedAt -createdAt -address");
 
-  // If restaurants are found successfully
-  if (response) {
-    // Create scheduled restaurants, then flat and sort
-    const upcomingWeekRestaurants = response
-      .map((upcomingWeekRestaurant) => ({
-        ...upcomingWeekRestaurant.toObject(),
-        schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) =>
-            convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
-        ),
-      }))
-      .map((upcomingWeekRestaurant) =>
-        upcomingWeekRestaurant.schedules.map((schedule) => {
-          // Destructure scheduled restaurant
-          const { schedules, ...rest } = upcomingWeekRestaurant;
+  // Create scheduled restaurants, then flat and sort
+  const upcomingWeekRestaurants = response
+    .map((upcomingWeekRestaurant) => ({
+      ...upcomingWeekRestaurant.toObject(),
+      schedules: upcomingWeekRestaurant.schedules.filter(
+        (schedule) =>
+          convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
+      ),
+    }))
+    .map((upcomingWeekRestaurant) =>
+      upcomingWeekRestaurant.schedules.map((schedule) => {
+        // Destructure scheduled restaurant
+        const { schedules, ...rest } = upcomingWeekRestaurant;
 
-          // Create new restaurant object
-          return {
-            ...rest,
-            scheduledOn: schedule,
-          };
-        })
-      )
-      .flat(2)
-      .sort(sortByDate);
+        // Create new restaurant object
+        return {
+          ...rest,
+          scheduledOn: schedule,
+        };
+      })
+    )
+    .flat(2)
+    .sort(sortByDate);
 
-    // Return the scheduled restaurants with response
-    return upcomingWeekRestaurants;
-  }
+  // Return the scheduled restaurants with response
+  return upcomingWeekRestaurants;
 }
 
 // Allowed cors origin

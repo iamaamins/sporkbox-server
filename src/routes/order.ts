@@ -147,6 +147,14 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
               (item) => item._id?.toString() === orderItem._id
             );
 
+            // Create temporary maximum quantity for first phase
+            const tempQuantity = Math.floor(
+              company.dailyBudget /
+                (item?.price! > company.dailyBudget
+                  ? company.dailyBudget
+                  : item?.price!)
+            );
+
             // Create and return the order object
             return {
               customerId: _id,
@@ -161,8 +169,13 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
               item: {
                 _id: orderItem._id,
                 name: item?.name,
-                quantity: orderItem.quantity,
-                total: item?.price! * orderItem.quantity,
+                // quantity: orderItem.quantity,
+                // total: item?.price! * orderItem.quantity,
+                quantity: tempQuantity,
+                total:
+                  (item?.price! > company.dailyBudget
+                    ? company.dailyBudget
+                    : item?.price!) * tempQuantity,
               },
             };
           });
@@ -178,6 +191,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
               item: order.item,
               status: order.status,
               createdAt: order.createdAt,
+              hasReviewed: order.hasReviewed,
               restaurantId: order.restaurantId,
               deliveryDate: order.deliveryDate,
               restaurantName: order.restaurantName,
