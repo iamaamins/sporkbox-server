@@ -40,7 +40,7 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
   fields.forEach((field) => delete data[field as keyof object]);
 };
 
-// Convert iso date to locale date string
+// Convert date to string
 export const convertDateToText = (date: Date | string): string =>
   new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
 
@@ -78,7 +78,8 @@ export const sortByDate = (
   b: ISortScheduledRestaurant
 ): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
-// Get future date
+// Get future date in UCT as the restaurant
+// schedule date and delivery date has no timezone
 export function getFutureDate(dayToAdd: number) {
   // Today
   const today = new Date();
@@ -94,13 +95,16 @@ export function getFutureDate(dayToAdd: number) {
 }
 
 // Get dates in iso string
-// const today = new Date().getTime();
 const nextSaturday = getFutureDate(6);
 const nextMonday = getFutureDate(8);
 const nextWeekSaturday = getFutureDate(13);
 const followingMonday = getFutureDate(15);
 const followingSaturday = getFutureDate(20);
-const today = new Date().setUTCHours(0, 0, 0, 0);
+const today = new Date(
+  new Date().toLocaleString("en-us", {
+    timeZone: "America/Los_Angeles",
+  })
+).setHours(0, 0, 0, 0);
 
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;
