@@ -101,8 +101,8 @@ const nextWeekSaturday = getFutureDate(13);
 const followingMonday = getFutureDate(15);
 const followingSaturday = getFutureDate(20);
 
-// PST date
-const losAngelesTime = new Date().toLocaleDateString("en-US", {
+// Today's PST date
+const PSTDate = new Date().toLocaleDateString("en-US", {
   timeZone: "America/Los_Angeles",
 });
 
@@ -110,7 +110,7 @@ const losAngelesTime = new Date().toLocaleDateString("en-US", {
 const timeZoneOffsetInMS = new Date().getTimezoneOffset() * 60000;
 
 // PST timestamp without the timezone
-const today = new Date(losAngelesTime).getTime() - timeZoneOffsetInMS;
+const today = Date.parse(PSTDate) - timeZoneOffsetInMS;
 
 // Filters
 export const gte = today < nextSaturday ? nextMonday : followingMonday;
