@@ -96,30 +96,33 @@ export function getFutureDate(dayToAdd: number) {
 
 // Get dates in iso string
 const nextSaturday = getFutureDate(6);
-const nextMonday = getFutureDate(8);
+const nextWeekMonday = getFutureDate(8);
 const nextWeekSaturday = getFutureDate(13);
-const followingMonday = getFutureDate(15);
-const followingSaturday = getFutureDate(20);
+const followingWeekMonday = getFutureDate(15);
+const followingWeekSaturday = getFutureDate(20);
 
-// Moment object for PST
-const PSTMoment = moment.tz(new Date(), "America/Los_Angeles");
+// Moment object for current Los Angeles date
+const losAngelesMoment = moment.tz(new Date(), "America/Los_Angeles");
 
-// PST timestamp
-const now = Date.parse(PSTMoment.format());
+// Timestamp of current Los Angeles moment
+const now = Date.parse(losAngelesMoment.format());
 
-// isDST
-const isDST = PSTMoment.isDST();
+// Check if isDST
+const isDST = losAngelesMoment.isDST();
 
-// Server time zone offset in MS
+// Los Angeles time zone offset
 const timeZoneOffsetInMS = isDST ? 420 : 480 * 60000;
+
+// Timestamp of Los Angeles next Saturday
+const nextSaturdayLosAngelesTimeStamp = nextSaturday + timeZoneOffsetInMS;
 
 // Filters
 export const gte =
-  now < nextSaturday + timeZoneOffsetInMS ? nextMonday : followingMonday;
+  now < nextSaturdayLosAngelesTimeStamp ? nextWeekMonday : followingWeekMonday;
 export const lt =
-  now < nextSaturday + timeZoneOffsetInMS
+  now < nextSaturdayLosAngelesTimeStamp
     ? nextWeekSaturday
-    : followingSaturday;
+    : followingWeekSaturday;
 
 export async function getUpcomingWeekRestaurants() {
   // Get the scheduled restaurants
