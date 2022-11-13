@@ -1,4 +1,4 @@
-import { IRestaurantSchema } from "./../types/index.d";
+import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
@@ -101,20 +101,25 @@ const nextWeekSaturday = getFutureDate(13);
 const followingMonday = getFutureDate(15);
 const followingSaturday = getFutureDate(20);
 
-// Today's PST date
-const PSTDate = new Date().toLocaleDateString("en-US", {
-  timeZone: "America/Los_Angeles",
-});
+// Moment object for PST
+const PSTMoment = moment.tz(new Date(), "America/Los_Angeles");
+
+// PST timestamp
+const now = Date.parse(PSTMoment.format());
+
+// isDST
+const isDST = PSTMoment.isDST();
 
 // Server time zone offset in MS
-const timeZoneOffsetInMS = new Date().getTimezoneOffset() * 60000;
-
-// PST timestamp without the timezone
-const today = Date.parse(PSTDate) - timeZoneOffsetInMS;
+const timeZoneOffsetInMS = isDST ? 420 : 480 * 60000;
 
 // Filters
-export const gte = today < nextSaturday ? nextMonday : followingMonday;
-export const lt = today < nextSaturday ? nextWeekSaturday : followingSaturday;
+export const gte =
+  now < nextSaturday + timeZoneOffsetInMS ? nextMonday : followingMonday;
+export const lt =
+  now < nextSaturday + timeZoneOffsetInMS
+    ? nextWeekSaturday
+    : followingSaturday;
 
 export async function getUpcomingWeekRestaurants() {
   // Get the scheduled restaurants
