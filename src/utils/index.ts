@@ -166,13 +166,6 @@ export async function getUpcomingWeekRestaurants() {
   return upcomingWeekRestaurants;
 }
 
-export async function getCustomerActiveOrders(_id: Types.ObjectId) {
-  return await Order.find({ customerId: _id })
-    .where("status", "PROCESSING")
-    .sort({ deliveryDate: 1 })
-    .select("deliveryDate item");
-}
-
 // Allowed cors origin
 export const allowedOrigins = [
   "http://localhost:3000",

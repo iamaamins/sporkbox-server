@@ -6,7 +6,6 @@ import {
   convertDateToMS,
   convertDateToText,
   formatNumberToUS,
-  getCustomerActiveOrders,
   getUpcomingWeekRestaurants,
 } from "../utils";
 import { IOrder, IOrderItem } from "../types";
@@ -119,7 +118,10 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
       // Get customer active orders
-      const customerActiveOrders = await getCustomerActiveOrders(_id);
+      const customerActiveOrders = await Order.find({ customerId: _id })
+        .where("status", "PROCESSING")
+        .sort({ deliveryDate: 1 })
+        .select("deliveryDate item");
 
       // If upcoming weeks restaurants and active orders are fetched successfully
       if (upcomingWeekRestaurants && customerActiveOrders) {
