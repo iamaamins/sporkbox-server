@@ -23,7 +23,7 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
     // If role is customer
     if (role === "CUSTOMER") {
       // Find the active orders of the customer
-      const activeOrders = await Order.find({ customerId: _id })
+      const customerActiveOrders = await Order.find({ customerId: _id })
         .where("status", "PROCESSING")
         .sort({ deliveryDate: 1 })
         .select(
@@ -31,9 +31,9 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
         );
 
       // If active orders are found successfully
-      if (activeOrders) {
+      if (customerActiveOrders) {
         // Send the data with response
-        res.status(200).json(activeOrders);
+        res.status(200).json(customerActiveOrders);
       } else {
         // If orders aren't found successfully
         res.status(500);
@@ -66,7 +66,7 @@ router.get(
 
       if (role === "CUSTOMER") {
         // Find the active orders of the customer
-        const deliveredOrders = await Order.find({ customerId: _id })
+        const customerDeliveredOrders = await Order.find({ customerId: _id })
           .where("status", "DELIVERED")
           .limit(+limit)
           .sort({ deliveryDate: -1 })
@@ -74,10 +74,10 @@ router.get(
             "-__v -updatedAt -customerId -customerName -customerEmail -deliveryAddress -companyName"
           );
 
-        // If deliveredOrders are found successfully
-        if (deliveredOrders) {
+        // If customer deliveredOrders are found successfully
+        if (customerDeliveredOrders) {
           // Send the data with response
-          res.status(200).json(deliveredOrders);
+          res.status(200).json(customerDeliveredOrders);
         } else {
           // If delivered orders aren't found successfully
           res.status(500);
