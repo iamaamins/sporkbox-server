@@ -1,5 +1,13 @@
 import { Types } from "mongoose";
 
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: IUser;
+    }
+  }
+}
+
 export interface ICompanySchema {
   name: string;
   website: string;
@@ -17,41 +25,41 @@ export interface IFavoriteSchema {
 export interface IOrderSchema {
   customerId: Types.ObjectId;
   customerName: string;
+  companyName: string;
+  status: string;
+  deliveryDate: Date;
+  hasReviewed: boolean;
   customerEmail: string;
   deliveryAddress: string;
   restaurantName: string;
-  companyName: string;
-  deliveryDate: Date;
-  status: string;
-  hasReviewed: boolean;
-  restaurantId: Types.ObjectId;
   item: {
     _id: Types.ObjectId;
     name: string;
     quantity: number;
     total: number;
   };
+  restaurantId: Types.ObjectId;
 }
 
-interface IReview {
+interface IReviewSchema {
   customer: Types.ObjectId;
   rating: number;
   comment: string;
 }
 
-interface IItem {
+interface IItemSchema {
   name: string;
   tags: string;
   price: number;
   description: string;
-  reviews: Types.DocumentArray<IReview>;
+  reviews: Types.DocumentArray<IReviewSchema>;
 }
 
 export interface IRestaurantSchema {
   name: string;
   address: string;
   schedules: Date[];
-  items: Types.DocumentArray<IItem>;
+  items: Types.DocumentArray<IItemSchema>;
 }
 
 export interface IUpcomingWeekRestaurant {
@@ -81,7 +89,7 @@ interface IRestaurantItem {
   tags: string;
   price: number;
   description: string;
-  reviews: IReview[];
+  reviews: IReviewSchema[];
 }
 
 export interface IFavoriteRestaurant {
@@ -92,12 +100,28 @@ export interface IFavoriteRestaurant {
 
 export interface IOrderItem {
   _id: string;
-  name: string;
-  total: number;
   quantity: number;
   deliveryDate: number;
   restaurantId: string;
+}
+
+export interface IOrder {
+  customerId: Types.ObjectId;
+  customerName: string;
+  customerEmail: string;
+  status: string;
+  createdAt: Date;
+  companyName: string;
+  deliveryAddress: string;
   restaurantName: string;
+  restaurantId: string;
+  deliveryDate: number;
+  item: {
+    _id: string;
+    name: string;
+    quantity: number;
+    total: number;
+  };
 }
 
 export interface IUserCompany {
@@ -105,18 +129,6 @@ export interface IUserCompany {
   name: string;
   address: string;
   dailyBudget: number;
-}
-
-export interface IOrderItem {
-  _id: string;
-  name: string;
-  price: number;
-  total: number;
-  quantity: number;
-  expiresIn: number;
-  restaurantId: string;
-  deliveryDate: number;
-  restaurantName: string;
 }
 
 interface IUser {
@@ -127,12 +139,4 @@ interface IUser {
   status?: string;
   company?: IUserCompany;
   // restaurant?: IRestaurant;
-}
-
-declare global {
-  namespace Express {
-    export interface Request {
-      user?: IUser;
-    }
-  }
 }

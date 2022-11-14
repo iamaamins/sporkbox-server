@@ -2,6 +2,7 @@ import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
+import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
@@ -39,6 +40,10 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
   // Delete the fields
   fields.forEach((field) => delete data[field as keyof object]);
 };
+
+// Convert number
+export const formatNumberToUS = (number: number) =>
+  +number.toLocaleString("en-US");
 
 // Convert date to string
 export const convertDateToText = (date: Date | string): string =>
@@ -78,7 +83,7 @@ export const sortByDate = (
   b: ISortScheduledRestaurant
 ): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
 
-// Get future date in UCT as the restaurant
+// Get future date in UTC as the restaurant
 // schedule date and delivery date has no timezone
 export function getFutureDate(dayToAdd: number) {
   // Today
@@ -95,34 +100,34 @@ export function getFutureDate(dayToAdd: number) {
 }
 
 // Get dates in iso string
-const nextSaturday = getFutureDate(6);
-const nextWeekMonday = getFutureDate(8);
-const nextWeekSaturday = getFutureDate(13);
-const followingWeekMonday = getFutureDate(15);
-const followingWeekSaturday = getFutureDate(20);
+const nextSaturdayUTCTimestamp = getFutureDate(6);
+const nextWeekMondayUTCTimestamp = getFutureDate(8);
+const nextWeekSaturdayUTCTimestamp = getFutureDate(13);
+const followingWeekMondayUTCTimestamp = getFutureDate(15);
+const followingWeekSaturdayUTCTimestamp = getFutureDate(20);
 
-// Moment object for current Los Angeles date
-const losAngelesMoment = moment.tz(new Date(), "America/Los_Angeles");
-
-// Timestamp of current Los Angeles moment
-const now = Date.parse(losAngelesMoment.format());
+// Timestamp of current moment
+const now = Date.now();
 
 // Check if isDST
-const isDST = losAngelesMoment.isDST();
+const isDST = moment.tz(new Date(), "America/Los_Angeles").isDST();
 
 // Los Angeles time zone offset
-const timeZoneOffsetInMS = isDST ? 420 : 480 * 60000;
+const losAngelesTimeZoneOffsetInMS = isDST ? 420 : 480 * 60000;
 
 // Timestamp of Los Angeles next Saturday
-const nextSaturdayLosAngelesTimeStamp = nextSaturday + timeZoneOffsetInMS;
+const nextSaturdayLosAngelesTimeStamp =
+  nextSaturdayUTCTimestamp + losAngelesTimeZoneOffsetInMS;
 
 // Filters
 export const gte =
-  now < nextSaturdayLosAngelesTimeStamp ? nextWeekMonday : followingWeekMonday;
+  now < nextSaturdayLosAngelesTimeStamp
+    ? nextWeekMondayUTCTimestamp
+    : followingWeekMondayUTCTimestamp;
 export const lt =
   now < nextSaturdayLosAngelesTimeStamp
-    ? nextWeekSaturday
-    : followingWeekSaturday;
+    ? nextWeekSaturdayUTCTimestamp
+    : followingWeekSaturdayUTCTimestamp;
 
 export async function getUpcomingWeekRestaurants() {
   // Get the scheduled restaurants
@@ -133,7 +138,7 @@ export async function getUpcomingWeekRestaurants() {
     },
   }).select("-__v -updatedAt -createdAt -address");
 
-  // Create scheduled restaurants, then flat and sort
+  // Create upcoming week restaurants, then flat and sort
   const upcomingWeekRestaurants = response
     .map((upcomingWeekRestaurant) => ({
       ...upcomingWeekRestaurant.toObject(),
@@ -159,6 +164,13 @@ export async function getUpcomingWeekRestaurants() {
 
   // Return the scheduled restaurants with response
   return upcomingWeekRestaurants;
+}
+
+export async function getCustomerActiveOrders(_id: Types.ObjectId) {
+  return await Order.find({ customerId: _id })
+    .where("status", "PROCESSING")
+    .sort({ deliveryDate: 1 })
+    .select("deliveryDate item");
 }
 
 // Allowed cors origin

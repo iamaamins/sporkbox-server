@@ -5,9 +5,11 @@ import {
   sendEmail,
   convertDateToMS,
   convertDateToText,
+  formatNumberToUS,
+  getCustomerActiveOrders,
   getUpcomingWeekRestaurants,
 } from "../utils";
-import { IOrderItem } from "../types";
+import { IOrder, IOrderItem } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -116,8 +118,11 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
       // Get upcoming week restaurants
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
-      // If upcoming weeks restaurants are found successfully
-      if (upcomingWeekRestaurants) {
+      // Get customer active orders
+      const customerActiveOrders = await getCustomerActiveOrders(_id);
+
+      // If upcoming weeks restaurants and active orders are fetched successfully
+      if (upcomingWeekRestaurants && customerActiveOrders) {
         // Check if the provided items are valid
         const itemsAreValid = orderItems.every((orderItem: IOrderItem) =>
           upcomingWeekRestaurants.some(
@@ -132,10 +137,10 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           )
         );
 
-        // If order provided items are valid
+        // If provided items are valid
         if (itemsAreValid) {
           // Create orders
-          const orders = orderItems.map((orderItem: IOrderItem) => {
+          const orders: IOrder[] = orderItems.map((orderItem: IOrderItem) => {
             // Find the restaurant
             const restaurant = upcomingWeekRestaurants.find(
               (upcomingWeekRestaurant) =>
@@ -167,6 +172,70 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             };
           });
 
+          // Get next week dates and budget on hand
+          const nextWeekBudgetAndDates = upcomingWeekRestaurants
+            .map((upcomingWeekRestaurant) =>
+              convertDateToMS(upcomingWeekRestaurant.scheduledOn)
+            )
+            .filter((date, index, dates) => dates.indexOf(date) === index)
+            .map((nextWeekDate) => {
+              // Find the active orders those match the date
+              const nextWeekDateActiveOrders = customerActiveOrders.filter(
+                (customerActiveOrder) =>
+                  convertDateToMS(customerActiveOrder.deliveryDate) ===
+                  nextWeekDate
+              );
+
+              // If active orders are found on the date
+              if (nextWeekDateActiveOrders.length > 0) {
+                // Get active orders total on the date
+                const nextWeekDateActiveOrdersTotal =
+                  nextWeekDateActiveOrders.reduce(
+                    (acc, nextWeekActiveOrder) =>
+                      acc + nextWeekActiveOrder.item.total,
+                    0
+                  );
+
+                // Return the date and company budget - active orders total
+                return {
+                  nextWeekDate,
+                  budgetOnHand: formatNumberToUS(
+                    company.dailyBudget - nextWeekDateActiveOrdersTotal
+                  ),
+                };
+              } else {
+                // If no active orders are found with the
+                // date then return the date and company budget
+                return {
+                  nextWeekDate,
+                  budgetOnHand: company.dailyBudget,
+                };
+              }
+            });
+
+          // Check if the daily budget has exceeded
+          const hasDailyBudgetExceeded = nextWeekBudgetAndDates.some(
+            (nextWeekBudgetAndDate) => {
+              return (
+                nextWeekBudgetAndDate.budgetOnHand -
+                  orders
+                    .filter(
+                      (order) =>
+                        order.deliveryDate ===
+                        nextWeekBudgetAndDate.nextWeekDate
+                    )
+                    .reduce((acc, order) => acc + order.item.total, 0) <
+                0
+              );
+            }
+          );
+
+          // If daily budget has exceeded
+          if (hasDailyBudgetExceeded) {
+            res.status(400);
+            throw new Error("One of your orders has exceeded the daily budget");
+          }
+
           // Create orders
           const response = await Order.insertMany(orders);
 
@@ -187,7 +256,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             // Send the data with response
             res.status(201).json(customerOrders);
           } else {
-            // If order isn't created successfully
+            // If orders aren't created successfully
             res.status(500);
             throw new Error("Something went wrong");
           }
@@ -197,7 +266,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           throw new Error("Invalid orders");
         }
       } else {
-        // If upcoming weeks restaurants are found successfully
+        // If upcoming weeks restaurants and customer active orders aren't fetched successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
