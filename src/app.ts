@@ -28,15 +28,13 @@ connectDB();
 const app = express();
 
 // Middleware
-// app.use(credentials);
-// app.options(allowedOrigins, cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: allowedOrigins,
+    origin: "https://www.araqo.com",
   })
 );
 
