@@ -12,6 +12,7 @@ export default async function handler(
 
   // Check if the origin in allowed origins
   if (allowedOrigins.includes(origin as string)) {
+    res.header("Access-Control-Allow-Origin", "true");
     res.header("Access-Control-Allow-Credentials", "true");
   }
 
