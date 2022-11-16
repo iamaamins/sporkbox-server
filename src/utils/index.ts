@@ -2,7 +2,6 @@ import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
-import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
@@ -21,7 +20,7 @@ export const setCookie = (res: Response, id: Types.ObjectId): void => {
   res.cookie("token", jwtToken, {
     httpOnly: true,
     path: "/",
-    domain: "araqo.com",
+    // domain: "araqo.com",
     sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
