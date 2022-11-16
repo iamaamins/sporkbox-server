@@ -168,7 +168,7 @@ export async function getUpcomingWeekRestaurants() {
 
 // Allowed cors origin
 export const allowedOrigins = [
-  "http://www.araqo.com",
+  "https://www.araqo.com",
   "http://localhost:3000",
   "https://sporkbytes.vercel.app",
 ];
