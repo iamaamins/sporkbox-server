@@ -51,8 +51,9 @@ router.post("/logout", async (req: Request, res: Response) => {
     .clearCookie("token", {
       httpOnly: true,
       path: "/",
-      sameSite: "none",
       maxAge: 0,
+      // domain: 'araqo.com',
+      sameSite: "strict",
       secure: process.env.NODE_ENV !== "development",
     })
     .end();

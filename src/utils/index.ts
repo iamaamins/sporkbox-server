@@ -21,7 +21,8 @@ export const setCookie = (res: Response, id: Types.ObjectId): void => {
   res.cookie("token", jwtToken, {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    domain: "araqo.com",
+    sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
   });
@@ -168,6 +169,7 @@ export async function getUpcomingWeekRestaurants() {
 
 // Allowed cors origin
 export const allowedOrigins = [
+  "http://www.araqo.com",
   "http://localhost:3000",
   "https://sporkbytes.vercel.app",
 ];
