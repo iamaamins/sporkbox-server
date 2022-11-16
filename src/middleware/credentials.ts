@@ -12,8 +12,8 @@ export default async function handler(
 
   // Check if the origin in allowed origins
   if (allowedOrigins.includes(origin as string)) {
-    res.setHeader("Access-Control-Allow-Origin", "true");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Origin", origin as string);
+    res.setHeader("Access-Control-Allow-Credentials", origin as string);
   }
 
   // Call the next middleware
