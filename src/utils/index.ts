@@ -165,10 +165,3 @@ export async function getUpcomingWeekRestaurants() {
   // Return the scheduled restaurants with response
   return upcomingWeekRestaurants;
 }
-
-// Allowed cors origin
-export const allowedOrigins = [
-  "https://www.araqo.com",
-  "http://localhost:3000",
-  "https://sporkbytes.vercel.app",
-];

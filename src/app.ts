@@ -8,12 +8,10 @@ import Vendor from "./routes/vendor";
 import Company from "./routes/company";
 import error from "./middleware/error";
 import { connectDB } from "./config/db";
-import { allowedOrigins } from "./utils";
 import Customer from "./routes/customer";
 import cookieParser from "cookie-parser";
 import Favorite from "./routes/favorite";
 import Restaurant from "./routes/restaurant";
-import credentials from "./middleware/credentials";
 
 // Config
 dotenv.config();
@@ -38,14 +36,17 @@ app.use(
   })
 );
 
+// "https://www.araqo.com",
+// "http://localhost:3000",
+
 // Routes
-app.use("/api/users", User);
-app.use("/api/orders", Order);
-app.use("/api/vendors", Vendor);
-app.use("/api/customers", Customer);
-app.use("/api/companies", Company);
-app.use("/api/favorites", Favorite);
-app.use("/api/restaurants", Restaurant);
+app.use("/users", User);
+app.use("/orders", Order);
+app.use("/vendors", Vendor);
+app.use("/customers", Customer);
+app.use("/companies", Company);
+app.use("/favorites", Favorite);
+app.use("/restaurants", Restaurant);
 
 // Error middleware
 app.use(error);
