@@ -29,14 +29,7 @@ const app = express();
 
 // Middleware
 // app.use(credentials);
-app.options(
-  "*",
-  cors({
-    credentials: true,
-    origin: allowedOrigins,
-    preflightContinue: true,
-  })
-);
+app.options("*", cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
