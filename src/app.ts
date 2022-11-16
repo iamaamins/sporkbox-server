@@ -36,7 +36,7 @@ app.use(
   cors({
     credentials: true,
     origin: allowedOrigins,
-    // preflightContinue: true,
+    preflightContinue: true,
   })
 );
 
