@@ -80,10 +80,32 @@ router.post("/register", async (req: Request, res: Response) => {
 // Add a vendor and a restaurant
 router.post("/add", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
-  const { name, email, password, restaurantName, restaurantAddress } = req.body;
+  const {
+    name,
+    email,
+    password,
+    city,
+    state,
+    zip,
+    confirmPassword,
+    restaurantName,
+    address_line_1,
+    address_line_2,
+  } = req.body;
 
   // If a value isn't provided
-  if (!name || !email || !password || !restaurantName || !restaurantAddress) {
+  if (
+    !name ||
+    !email ||
+    !password ||
+    !city ||
+    !state ||
+    !zip ||
+    !confirmPassword ||
+    !restaurantName ||
+    !address_line_1 ||
+    !address_line_2
+  ) {
     res.status(400);
     throw new Error("Please fill all the fields");
   }
@@ -107,7 +129,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
       // Create the restaurant
       const restaurant = await Restaurant.create({
         name: restaurantName,
-        address: restaurantAddress,
+        address: `${address_line_1}, ${address_line_2}, ${city}, ${state} ${zip}`,
       });
 
       // If restaurant is created successfully
