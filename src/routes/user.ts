@@ -52,7 +52,6 @@ router.post("/logout", async (req: Request, res: Response) => {
       httpOnly: true,
       path: "/",
       maxAge: 0,
-      // domain: 'araqo.com',
       sameSite: "strict",
       secure: process.env.NODE_ENV !== "development",
     })
