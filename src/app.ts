@@ -32,7 +32,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "https://www.araqo.com",
+    origin: "http://localhost:3000",
   })
 );
 
