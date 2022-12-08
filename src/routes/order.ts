@@ -149,29 +149,49 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                 upcomingWeekRestaurant._id.toString() === orderItem.restaurantId
             );
 
-            // Find the item
-            const item = restaurant?.items.find(
-              (item) => item._id?.toString() === orderItem._id
-            );
+            // If restaurant is found
+            if (restaurant) {
+              // Find the item
+              const item = restaurant.items.find(
+                (item) => item._id?.toString() === orderItem._id
+              );
 
-            // Create and return the order object
-            return {
-              customerId: _id,
-              customerName: name,
-              customerEmail: email,
-              status: "PROCESSING",
-              companyName: company.name,
-              deliveryAddress: company.address,
-              restaurantName: restaurant?.name,
-              restaurantId: orderItem.restaurantId,
-              deliveryDate: orderItem.deliveryDate,
-              item: {
-                _id: orderItem._id,
-                name: item?.name,
-                quantity: orderItem.quantity,
-                total: item?.price! * orderItem.quantity,
-              },
-            };
+              // If the item is found
+              if (item) {
+                // Discount item price to company budget
+                const unitPrice =
+                  item.price > company.dailyBudget
+                    ? company.dailyBudget
+                    : item.price;
+
+                // Create and return the order object
+                return {
+                  customerId: _id,
+                  customerName: name,
+                  customerEmail: email,
+                  status: "PROCESSING",
+                  companyName: company.name,
+                  deliveryAddress: company.address,
+                  restaurantName: restaurant.name,
+                  restaurantId: orderItem.restaurantId,
+                  deliveryDate: orderItem.deliveryDate,
+                  item: {
+                    _id: orderItem._id,
+                    name: item.name,
+                    quantity: orderItem.quantity,
+                    total: unitPrice * orderItem.quantity,
+                  },
+                };
+              } else {
+                // If item isn't found
+                res.status(400);
+                throw new Error("Item is not found");
+              }
+            } else {
+              // If restaurant isn't found
+              res.status(400);
+              throw new Error("Restaurant is not found");
+            }
           });
 
           // Get next week dates and budget on hand
