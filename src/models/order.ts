@@ -52,6 +52,14 @@ const orderSchema = new Schema<IOrderSchema>(
         type: String,
         required: [true, "Please provide the item name"],
       },
+      tags: {
+        type: String,
+        required: [true, "Please provide the item name"],
+      },
+      description: {
+        type: String,
+        required: [true, "Please provide the item name"],
+      },
       quantity: {
         type: Number,
         required: [true, "Please provide item quantity"],

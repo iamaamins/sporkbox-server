@@ -35,6 +35,8 @@ export interface IOrderSchema {
   item: {
     _id: Types.ObjectId;
     name: string;
+    tags: string;
+    description: string;
     quantity: number;
     total: number;
   };

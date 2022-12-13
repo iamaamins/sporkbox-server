@@ -178,6 +178,8 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                   item: {
                     _id: orderItem._id,
                     name: item.name,
+                    tags: item.tags,
+                    description: item.description,
                     quantity: orderItem.quantity,
                     total: unitPrice * orderItem.quantity,
                   },
