@@ -44,7 +44,7 @@ export interface IOrderSchema {
   hasReviewed: boolean;
   createdAt: Date;
   item: {
-    _id: Types.ObjectId;
+    id: Types.ObjectId;
     name: string;
     tags: string;
     description: string;
@@ -111,38 +111,13 @@ export interface IFavoriteRestaurant {
   items: IRestaurantItem[];
 }
 
-export interface ICartItems {
-  cartItems: {
-    _id: string;
-    name: string;
-    price: number;
+export interface IOrdersPayload {
+  ordersPayload: {
+    itemId: string;
     quantity: number;
-    expiresIn: number;
     restaurantId: string;
     deliveryDate: number;
   }[];
-}
-
-export interface ICustomerOrder {
-  _id: Types.ObjectId;
-  item: {
-    _id: Types.ObjectId;
-    name: string;
-    tags: string;
-    description: string;
-    quantity: number;
-    total: number;
-  };
-  status: string;
-  createdAt: Date;
-  restaurant: {
-    id: Types.ObjectId;
-    name: string;
-  };
-  delivery: {
-    date: Date;
-  };
-  hasReviewed: boolean;
 }
 
 export interface IUserCompany {

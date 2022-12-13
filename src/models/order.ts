@@ -56,7 +56,7 @@ const orderSchema = new Schema<IOrderSchema>(
       default: false,
     },
     item: {
-      _id: {
+      id: {
         type: Schema.Types.ObjectId,
         required: [true, "Please provide an item id"],
       },

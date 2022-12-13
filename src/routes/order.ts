@@ -1,4 +1,4 @@
-import { ICartItems, ICustomerOrder } from "./../types/index.d";
+import { IOrdersPayload } from "./../types/index.d";
 import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -13,8 +13,8 @@ import {
 // Initialize router
 const router = express.Router();
 
-// Get customer's active orders
-router.get("/me/active", authUser, async (req: Request, res: Response) => {
+// Get customer's upcoming orders
+router.get("/me/upcoming", authUser, async (req: Request, res: Response) => {
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
@@ -22,16 +22,16 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER") {
-      // Find the active orders of the customer
-      const customerActiveOrders = await Order.find({ "customer.id": _id })
+      // Find the upcoming orders of the customer
+      const customerUpcomingOrders = await Order.find({ "customer.id": _id })
         .where("status", "PROCESSING")
         .sort({ "delivery.date": 1 })
         .select("-__v -updatedAt -customer -delivery.address -company");
 
-      // If active orders are found successfully
-      if (customerActiveOrders) {
+      // If upcoming orders are found successfully
+      if (customerUpcomingOrders) {
         // Send the data with response
-        res.status(200).json(customerActiveOrders);
+        res.status(200).json(customerUpcomingOrders);
       } else {
         // If orders aren't found successfully
         res.status(500);
@@ -63,7 +63,7 @@ router.get(
       // If role is customer
 
       if (role === "CUSTOMER") {
-        // Find the active orders of the customer
+        // Find the upcoming orders of the customer
         const customerDeliveredOrders = await Order.find({ "customer.id": _id })
           .where("status", "DELIVERED")
           .limit(+limit)
@@ -95,12 +95,21 @@ router.get(
 // Create orders
 router.post("/create", authUser, async (req: Request, res: Response) => {
   // Get data from req user and body
-  const { cartItems }: ICartItems = req.body;
+  const { ordersPayload }: IOrdersPayload = req.body;
 
-  // If items aren't provided
-  if (!cartItems) {
+  // If required data aren't provided
+  if (
+    !ordersPayload ||
+    !ordersPayload.every(
+      (orderPayload) =>
+        orderPayload.itemId &&
+        orderPayload.quantity &&
+        orderPayload.restaurantId &&
+        orderPayload.deliveryDate
+    )
+  ) {
     res.status(401);
-    throw new Error("Please provide all the fields");
+    throw new Error("Please provide all orders data");
   }
 
   // Check if there is an user
@@ -113,23 +122,24 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
       // Get upcoming week restaurants
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
-      // Get customer active orders
-      const customerActiveOrders = await Order.find({ "customer.id": _id })
+      // Get customer upcoming orders
+      const customerUpcomingOrders = await Order.find({ "customer.id": _id })
         .where("status", "PROCESSING")
         .select("delivery item")
         .sort({ "delivery.date": 1 });
 
-      // If upcoming weeks restaurants and active orders are fetched successfully
-      if (upcomingWeekRestaurants && customerActiveOrders) {
+      // If upcoming weeks restaurants and upcoming orders are fetched successfully
+      if (upcomingWeekRestaurants && customerUpcomingOrders) {
         // Check if the provided items are valid
-        const itemsAreValid = cartItems.every((cartItem) =>
+        const itemsAreValid = ordersPayload.every((orderPayload) =>
           upcomingWeekRestaurants.some(
             (upcomingWeekRestaurant) =>
-              upcomingWeekRestaurant._id.toString() === cartItem.restaurantId &&
+              upcomingWeekRestaurant._id.toString() ===
+                orderPayload.restaurantId &&
               convertDateToMS(upcomingWeekRestaurant.scheduledOn) ===
-                cartItem.deliveryDate &&
+                orderPayload.deliveryDate &&
               upcomingWeekRestaurant.items.some(
-                (item) => item._id?.toString() === cartItem._id
+                (item) => item._id?.toString() === orderPayload.itemId
               )
           )
         );
@@ -137,18 +147,19 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
         // If provided items are valid
         if (itemsAreValid) {
           // Create orders
-          const orders = cartItems.map((cartItem) => {
+          const orders = ordersPayload.map((orderPayload) => {
             // Find the restaurant
             const restaurant = upcomingWeekRestaurants.find(
               (upcomingWeekRestaurant) =>
-                upcomingWeekRestaurant._id.toString() === cartItem.restaurantId
+                upcomingWeekRestaurant._id.toString() ===
+                orderPayload.restaurantId
             );
 
             // If restaurant is found
             if (restaurant) {
               // Find the item
               const item = restaurant.items.find(
-                (item) => item._id?.toString() === cartItem._id
+                (item) => item._id?.toString() === orderPayload.itemId
               );
 
               // If the item is found
@@ -168,24 +179,24 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                     email,
                   },
                   restaurant: {
-                    id: restaurant._id,
+                    id: orderPayload.restaurantId,
                     name: restaurant.name,
                   },
                   company: {
                     name: company.name,
                   },
                   delivery: {
-                    date: cartItem.deliveryDate,
+                    date: orderPayload.deliveryDate,
                     address: company.address,
                   },
                   status: "PROCESSING",
                   item: {
-                    _id: item.id,
+                    id: orderPayload.itemId,
                     name: item.name,
                     tags: item.tags,
                     description: item.description,
-                    quantity: cartItem.quantity,
-                    total: unitPrice * cartItem.quantity,
+                    quantity: orderPayload.quantity,
+                    total: unitPrice * orderPayload.quantity,
                   },
                 };
               } else {
@@ -207,32 +218,33 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             )
             .filter((date, index, dates) => dates.indexOf(date) === index)
             .map((nextWeekDate) => {
-              // Find the active orders those match the date
-              const nextWeekDateActiveOrders = customerActiveOrders.filter(
-                (customerActiveOrder) =>
-                  convertDateToMS(customerActiveOrder.delivery.date) ===
-                  nextWeekDate
-              );
+              // Find the upcoming orders which match the date
+              const upcomingOrdersOnADateNextWeek =
+                customerUpcomingOrders.filter(
+                  (customerUpcomingOrder) =>
+                    convertDateToMS(customerUpcomingOrder.delivery.date) ===
+                    nextWeekDate
+                );
 
-              // If active orders are found on the date
-              if (nextWeekDateActiveOrders.length > 0) {
-                // Get active orders total on the date
-                const nextWeekDateActiveOrdersTotal =
-                  nextWeekDateActiveOrders.reduce(
-                    (acc, nextWeekActiveOrder) =>
-                      acc + nextWeekActiveOrder.item.total,
+              // If upcoming orders are found on the date
+              if (upcomingOrdersOnADateNextWeek.length > 0) {
+                // Get upcoming orders total on the date
+                const upcomingOrdersTotalOnADateNextWeek =
+                  upcomingOrdersOnADateNextWeek.reduce(
+                    (acc, upcomingOrderOnADateNextWeek) =>
+                      acc + upcomingOrderOnADateNextWeek.item.total,
                     0
                   );
 
-                // Return the date and company budget - active orders total
+                // Return the date and company budget - upcoming orders total
                 return {
                   nextWeekDate,
                   budgetOnHand: formatNumberToUS(
-                    company.dailyBudget - nextWeekDateActiveOrdersTotal
+                    company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
                   ),
                 };
               } else {
-                // If no active orders are found with the
+                // If no upcoming orders are found with the
                 // date then return the date and company budget
                 return {
                   nextWeekDate,
@@ -295,7 +307,8 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           throw new Error("Invalid orders");
         }
       } else {
-        // If upcoming weeks restaurants and customer active orders aren't fetched successfully
+        // If upcoming weeks restaurants and customer
+        // upcoming orders aren't fetched successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
@@ -311,8 +324,8 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
   }
 });
 
-// Get all active orders
-router.get("/active", authUser, async (req: Request, res: Response) => {
+// Get all upcoming orders
+router.get("/upcoming", authUser, async (req: Request, res: Response) => {
   // Check if there is an user
   if (req.user) {
     // Get data from req user
@@ -320,26 +333,26 @@ router.get("/active", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Find the active orders
+      // Find the upcoming orders
       const response = await Order.find({ status: "PROCESSING" })
         .select("-__v -updatedAt")
         .sort({ "delivery.date": 1 });
 
-      // If active orders are found successfully
+      // If upcoming orders are found successfully
       if (response) {
         // Format the delivery date of each order
-        const activeOrders = response.map((activeOrder) => ({
-          ...activeOrder.toObject(),
+        const upcomingOrders = response.map((upcomingOrder) => ({
+          ...upcomingOrder.toObject(),
           delivery: {
-            ...activeOrder.delivery,
-            date: convertDateToText(activeOrder.delivery.date),
+            ...upcomingOrder.delivery,
+            date: convertDateToText(upcomingOrder.delivery.date),
           },
         }));
 
         // Send the data with response
-        res.status(200).json(activeOrders);
+        res.status(200).json(upcomingOrders);
       } else {
-        // If active orders aren't found successfully
+        // If upcoming orders aren't found successfully
         res.status(500);
         throw new Error("Something went wrong");
       }
