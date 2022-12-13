@@ -26,7 +26,7 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
       const customerActiveOrders = await Order.find({ "customer.id": _id })
         .where("status", "PROCESSING")
         .sort({ "delivery.date": 1 })
-        .select("-__v -updatedAt -customer -company");
+        .select("-__v -updatedAt -customer -delivery.address -company");
 
       // If active orders are found successfully
       if (customerActiveOrders) {
@@ -64,13 +64,11 @@ router.get(
 
       if (role === "CUSTOMER") {
         // Find the active orders of the customer
-        const customerDeliveredOrders = await Order.find({ customerId: _id })
+        const customerDeliveredOrders = await Order.find({ "customer.id": _id })
           .where("status", "DELIVERED")
           .limit(+limit)
-          .sort({ deliveryDate: -1 })
-          .select(
-            "-__v -updatedAt -customerId -customerName -customerEmail -deliveryAddress -companyName"
-          );
+          .sort({ "delivery.date": -1 })
+          .select("-__v -updatedAt -customer -delivery.address -company");
 
         // If customer deliveredOrders are found successfully
         if (customerDeliveredOrders) {
@@ -324,15 +322,18 @@ router.get("/active", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       // Find the active orders
       const response = await Order.find({ status: "PROCESSING" })
-        .sort({ deliveryDate: 1 })
-        .select("-__v -updatedAt");
+        .select("-__v -updatedAt")
+        .sort({ "delivery.date": 1 });
 
       // If active orders are found successfully
       if (response) {
         // Format the delivery date of each order
         const activeOrders = response.map((activeOrder) => ({
           ...activeOrder.toObject(),
-          deliveryDate: convertDateToText(activeOrder.delivery.date),
+          delivery: {
+            ...activeOrder.delivery,
+            date: convertDateToText(activeOrder.delivery.date),
+          },
         }));
 
         // Send the data with response
@@ -372,15 +373,18 @@ router.get(
         // Get delivered orders
         const response = await Order.find({ status: "DELIVERED" })
           .limit(+limit)
-          .sort({ deliveryDate: -1 })
-          .select("-__v -updatedAt");
+          .select("-__v -updatedAt")
+          .sort({ "delivery.date": -1 });
 
         // If orders are found successfully
         if (response) {
           // Convert date
           const deliveredOrders = response.map((deliveredOrder) => ({
             ...deliveredOrder.toObject(),
-            deliveryDate: convertDateToText(deliveredOrder.delivery.date),
+            delivery: {
+              ...deliveredOrder.delivery,
+              date: convertDateToText(deliveredOrder.delivery.date),
+            },
           }));
 
           // Send delivered orders with response
