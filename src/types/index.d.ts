@@ -23,15 +23,26 @@ export interface IFavoriteSchema {
 }
 
 export interface IOrderSchema {
-  customerId: Types.ObjectId;
-  customerName: string;
-  companyName: string;
+  customer: {
+    id: Types.ObjectId;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  restaurant: {
+    id: Types.ObjectId;
+    name: string;
+  };
+  company: {
+    name: string;
+  };
+  delivery: {
+    date: Date;
+    address: string;
+  };
   status: string;
-  deliveryDate: Date;
   hasReviewed: boolean;
-  customerEmail: string;
-  deliveryAddress: string;
-  restaurantName: string;
+  createdAt: Date;
   item: {
     _id: Types.ObjectId;
     name: string;
@@ -40,7 +51,6 @@ export interface IOrderSchema {
     quantity: number;
     total: number;
   };
-  restaurantId: Types.ObjectId;
 }
 
 interface IReviewSchema {
@@ -72,7 +82,8 @@ export interface IUpcomingWeekRestaurant {
 }
 
 export interface IUserSchema {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
   password: string;
@@ -100,30 +111,38 @@ export interface IFavoriteRestaurant {
   items: IRestaurantItem[];
 }
 
-export interface IOrderItem {
-  _id: string;
-  quantity: number;
-  deliveryDate: number;
-  restaurantId: string;
-}
-
-export interface IOrder {
-  customerId: Types.ObjectId;
-  customerName: string;
-  customerEmail: string;
-  status: string;
-  createdAt: Date;
-  companyName: string;
-  deliveryAddress: string;
-  restaurantName: string;
-  restaurantId: string;
-  deliveryDate: number;
-  item: {
+export interface ICartItems {
+  cartItems: {
     _id: string;
     name: string;
+    price: number;
+    quantity: number;
+    expiresIn: number;
+    restaurantId: string;
+    deliveryDate: number;
+  }[];
+}
+
+export interface ICustomerOrder {
+  _id: Types.ObjectId;
+  item: {
+    _id: Types.ObjectId;
+    name: string;
+    tags: string;
+    description: string;
     quantity: number;
     total: number;
   };
+  status: string;
+  createdAt: Date;
+  restaurant: {
+    id: Types.ObjectId;
+    name: string;
+  };
+  delivery: {
+    date: Date;
+  };
+  hasReviewed: boolean;
 }
 
 export interface IUserCompany {
@@ -135,7 +154,8 @@ export interface IUserCompany {
 
 interface IUser {
   _id: Types.ObjectId;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
   status?: string;

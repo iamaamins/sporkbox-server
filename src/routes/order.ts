@@ -1,3 +1,4 @@
+import { ICartItems, ICustomerOrder } from "./../types/index.d";
 import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -8,7 +9,6 @@ import {
   formatNumberToUS,
   getUpcomingWeekRestaurants,
 } from "../utils";
-import { IOrder, IOrderItem } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -23,12 +23,10 @@ router.get("/me/active", authUser, async (req: Request, res: Response) => {
     // If role is customer
     if (role === "CUSTOMER") {
       // Find the active orders of the customer
-      const customerActiveOrders = await Order.find({ customerId: _id })
+      const customerActiveOrders = await Order.find({ "customer.id": _id })
         .where("status", "PROCESSING")
-        .sort({ deliveryDate: 1 })
-        .select(
-          "-__v -updatedAt -customerId -customerName -customerEmail -deliveryAddress -companyName"
-        );
+        .sort({ "delivery.date": 1 })
+        .select("-__v -updatedAt -customer -company");
 
       // If active orders are found successfully
       if (customerActiveOrders) {
@@ -99,10 +97,10 @@ router.get(
 // Create orders
 router.post("/create", authUser, async (req: Request, res: Response) => {
   // Get data from req user and body
-  const { orderItems } = req.body;
+  const { cartItems }: ICartItems = req.body;
 
   // If items aren't provided
-  if (!orderItems) {
+  if (!cartItems) {
     res.status(401);
     throw new Error("Please provide all the fields");
   }
@@ -110,7 +108,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
-    const { _id, name, email, role, company } = req.user;
+    const { _id, firstName, lastName, email, role, company } = req.user;
 
     // If role is customer
     if (role === "CUSTOMER" && company) {
@@ -118,23 +116,22 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
       // Get customer active orders
-      const customerActiveOrders = await Order.find({ customerId: _id })
+      const customerActiveOrders = await Order.find({ "customer.id": _id })
         .where("status", "PROCESSING")
-        .sort({ deliveryDate: 1 })
-        .select("deliveryDate item");
+        .select("delivery item")
+        .sort({ "delivery.date": 1 });
 
       // If upcoming weeks restaurants and active orders are fetched successfully
       if (upcomingWeekRestaurants && customerActiveOrders) {
         // Check if the provided items are valid
-        const itemsAreValid = orderItems.every((orderItem: IOrderItem) =>
+        const itemsAreValid = cartItems.every((cartItem) =>
           upcomingWeekRestaurants.some(
             (upcomingWeekRestaurant) =>
-              upcomingWeekRestaurant._id.toString() ===
-                orderItem.restaurantId &&
+              upcomingWeekRestaurant._id.toString() === cartItem.restaurantId &&
               convertDateToMS(upcomingWeekRestaurant.scheduledOn) ===
-                orderItem.deliveryDate &&
+                cartItem.deliveryDate &&
               upcomingWeekRestaurant.items.some(
-                (item) => item._id?.toString() === orderItem._id
+                (item) => item._id?.toString() === cartItem._id
               )
           )
         );
@@ -142,18 +139,18 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
         // If provided items are valid
         if (itemsAreValid) {
           // Create orders
-          const orders: IOrder[] = orderItems.map((orderItem: IOrderItem) => {
+          const orders = cartItems.map((cartItem) => {
             // Find the restaurant
             const restaurant = upcomingWeekRestaurants.find(
               (upcomingWeekRestaurant) =>
-                upcomingWeekRestaurant._id.toString() === orderItem.restaurantId
+                upcomingWeekRestaurant._id.toString() === cartItem.restaurantId
             );
 
             // If restaurant is found
             if (restaurant) {
               // Find the item
               const item = restaurant.items.find(
-                (item) => item._id?.toString() === orderItem._id
+                (item) => item._id?.toString() === cartItem._id
               );
 
               // If the item is found
@@ -164,24 +161,33 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                     ? company.dailyBudget
                     : item.price;
 
-                // Create and return the order object
+                // Return individual order
                 return {
-                  customerId: _id,
-                  customerName: name,
-                  customerEmail: email,
+                  customer: {
+                    id: _id,
+                    firstName,
+                    lastName,
+                    email,
+                  },
+                  restaurant: {
+                    id: restaurant._id,
+                    name: restaurant.name,
+                  },
+                  company: {
+                    name: company.name,
+                  },
+                  delivery: {
+                    date: cartItem.deliveryDate,
+                    address: company.address,
+                  },
                   status: "PROCESSING",
-                  companyName: company.name,
-                  deliveryAddress: company.address,
-                  restaurantName: restaurant.name,
-                  restaurantId: orderItem.restaurantId,
-                  deliveryDate: orderItem.deliveryDate,
                   item: {
-                    _id: orderItem._id,
+                    _id: item.id,
                     name: item.name,
                     tags: item.tags,
                     description: item.description,
-                    quantity: orderItem.quantity,
-                    total: unitPrice * orderItem.quantity,
+                    quantity: cartItem.quantity,
+                    total: unitPrice * cartItem.quantity,
                   },
                 };
               } else {
@@ -206,7 +212,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
               // Find the active orders those match the date
               const nextWeekDateActiveOrders = customerActiveOrders.filter(
                 (customerActiveOrder) =>
-                  convertDateToMS(customerActiveOrder.deliveryDate) ===
+                  convertDateToMS(customerActiveOrder.delivery.date) ===
                   nextWeekDate
               );
 
@@ -245,7 +251,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                   orders
                     .filter(
                       (order) =>
-                        order.deliveryDate ===
+                        order.delivery.date ===
                         nextWeekBudgetAndDate.nextWeekDate
                     )
                     .reduce((acc, order) => acc + order.item.total, 0) <
@@ -271,10 +277,11 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
               item: order.item,
               status: order.status,
               createdAt: order.createdAt,
+              restaurant: order.restaurant,
+              delivery: {
+                date: order.delivery.date,
+              },
               hasReviewed: order.hasReviewed,
-              restaurantId: order.restaurantId,
-              deliveryDate: order.deliveryDate,
-              restaurantName: order.restaurantName,
             }));
 
             // Send the data with response
@@ -325,7 +332,7 @@ router.get("/active", authUser, async (req: Request, res: Response) => {
         // Format the delivery date of each order
         const activeOrders = response.map((activeOrder) => ({
           ...activeOrder.toObject(),
-          deliveryDate: convertDateToText(activeOrder.deliveryDate),
+          deliveryDate: convertDateToText(activeOrder.delivery.date),
         }));
 
         // Send the data with response
@@ -373,7 +380,7 @@ router.get(
           // Convert date
           const deliveredOrders = response.map((deliveredOrder) => ({
             ...deliveredOrder.toObject(),
-            deliveryDate: convertDateToText(deliveredOrder.deliveryDate),
+            deliveryDate: convertDateToText(deliveredOrder.delivery.date),
           }));
 
           // Send delivered orders with response
@@ -397,65 +404,65 @@ router.get(
 );
 
 // Update order status
-router.put(
-  "/:orderId/status",
-  authUser,
-  async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { orderId } = req.params;
+// router.put(
+//   "/:orderId/status",
+//   authUser,
+//   async (req: Request, res: Response) => {
+//     // Destructure data from req
+//     const { orderId } = req.params;
 
-    // Check if there is an user
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+//     // Check if there is an user
+//     if (req.user) {
+//       // Destructure data from req
+//       const { role } = req.user;
 
-      // If role is admin
-      if (role === "ADMIN") {
-        // Find the order and update the status
-        const response = await Order.findByIdAndUpdate(
-          orderId,
-          {
-            status: "DELIVERED",
-          },
-          {
-            returnDocument: "after",
-          }
-        )
-          .select("-__v -updatedAt")
-          .lean();
+//       // If role is admin
+//       if (role === "ADMIN") {
+//         // Find the order and update the status
+//         const response = await Order.findByIdAndUpdate(
+//           orderId,
+//           {
+//             status: "DELIVERED",
+//           },
+//           {
+//             returnDocument: "after",
+//           }
+//         )
+//           .select("-__v -updatedAt")
+//           .lean();
 
-        // If order is updated successfully
-        if (response) {
-          // Get customer name and email from the order
-          const { customerName, customerEmail } = response;
+//         // If order is updated successfully
+//         if (response) {
+//           // Get customer name and email from the order
+//           const { customer } = response;
 
-          // Send email to the customer
-          sendEmail(customerName as string, customerEmail as string);
+//           // Send email to the customer
+//           sendEmail(`${customer.firstName} ${customer.lastName}`, customer.email);
 
-          // Format delivery date date
-          const updatedOrder = {
-            ...response,
-            deliveryDate: convertDateToText(response.deliveryDate),
-          };
+//           // Format delivery date date
+//           const updatedOrder = {
+//             ...response,
+//             deliveryDate: convertDateToText(response.delivery.date),
+//           };
 
-          // Send the update
-          res.status(200).json(updatedOrder);
-        } else {
-          // If order isn't updated successfully
-          res.status(500);
-          throw new Error("Something went wrong");
-        }
-      } else {
-        // If role isn't admin
-        res.status(401);
-        throw new Error("Not authorized");
-      }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
-    }
-  }
-);
+//           // Send the update
+//           res.status(200).json(updatedOrder);
+//         } else {
+//           // If order isn't updated successfully
+//           res.status(500);
+//           throw new Error("Something went wrong");
+//         }
+//       } else {
+//         // If role isn't admin
+//         res.status(401);
+//         throw new Error("Not authorized");
+//       }
+//     } else {
+//       // If there is no user
+//       res.status(401);
+//       throw new Error("Not authorized");
+//     }
+//   }
+// );
 
 export default router;

@@ -10,10 +10,10 @@ const router = express.Router();
 // Register customer
 router.post("/register", async (req: Request, res: Response) => {
   // Destructure data from req
-  const { name, email, password } = req.body;
+  const { firstName, lastName, email, password } = req.body;
 
   // If a value isn't provided
-  if (!name || !email || !password) {
+  if (!firstName || !lastName || !email || !password) {
     res.status(400);
     throw new Error("Please fill all the fields");
   }
@@ -47,7 +47,8 @@ router.post("/register", async (req: Request, res: Response) => {
   const customer = (
     await (
       await User.create({
-        name,
+        firstName,
+        lastName,
         email,
         role: "CUSTOMER",
         company: company._id,

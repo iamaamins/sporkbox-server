@@ -3,37 +3,49 @@ import { Schema, model } from "mongoose";
 
 const orderSchema = new Schema<IOrderSchema>(
   {
-    customerId: {
-      type: Schema.Types.ObjectId,
-      required: [true, "Please provide customer id"],
+    customer: {
+      id: {
+        type: Schema.Types.ObjectId,
+        required: [true, "Please provide customer id"],
+      },
+      firstName: {
+        type: String,
+        required: [true, "Please provide customer first name"],
+      },
+      lastName: {
+        type: String,
+        required: [true, "Please provide customer last name"],
+      },
+      email: {
+        type: String,
+        required: [true, "Please provide customer email"],
+      },
     },
-    customerName: {
-      type: String,
-      required: [true, "Please provide customer name"],
+    restaurant: {
+      id: {
+        type: Schema.Types.ObjectId,
+        required: [true, "Please provide restaurant id"],
+      },
+      name: {
+        type: String,
+        required: [true, "Please provide restaurant name"],
+      },
     },
-    customerEmail: {
-      type: String,
-      required: [true, "Please provide customer email"],
+    company: {
+      name: {
+        type: String,
+        required: [true, "Please provide company name"],
+      },
     },
-    deliveryAddress: {
-      type: String,
-      required: [true, "Please provide delivery address"],
-    },
-    restaurantId: {
-      type: Schema.Types.ObjectId,
-      required: [true, "Please provide restaurant id"],
-    },
-    restaurantName: {
-      type: String,
-      required: [true, "Please provide restaurant name"],
-    },
-    companyName: {
-      type: String,
-      required: [true, "Please provide company name"],
-    },
-    deliveryDate: {
-      type: Date,
-      required: [true, "Please provide delivery date"],
+    delivery: {
+      date: {
+        type: Date,
+        required: [true, "Please provide delivery date"],
+      },
+      address: {
+        type: String,
+        required: [true, "Please provide delivery address"],
+      },
     },
     status: {
       type: String,

@@ -81,7 +81,8 @@ router.post("/register", async (req: Request, res: Response) => {
 router.post("/add", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
   const {
-    name,
+    firstName,
+    lastName,
     email,
     password,
     city,
@@ -95,7 +96,8 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
 
   // If a value isn't provided
   if (
-    !name ||
+    !firstName ||
+    !lastName ||
     !email ||
     !password ||
     !city ||
@@ -142,7 +144,8 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
         const vendor = (
           await (
             await User.create({
-              name,
+              firstName,
+              lastName,
               email,
               role: "VENDOR",
               status: "PENDING",
