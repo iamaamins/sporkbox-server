@@ -4,7 +4,7 @@ import { Schema, model } from "mongoose";
 const orderSchema = new Schema<IOrderSchema>(
   {
     customer: {
-      id: {
+      _id: {
         type: Schema.Types.ObjectId,
         required: [true, "Please provide customer id"],
       },
@@ -22,7 +22,7 @@ const orderSchema = new Schema<IOrderSchema>(
       },
     },
     restaurant: {
-      id: {
+      _id: {
         type: Schema.Types.ObjectId,
         required: [true, "Please provide restaurant id"],
       },
@@ -56,7 +56,7 @@ const orderSchema = new Schema<IOrderSchema>(
       default: false,
     },
     item: {
-      id: {
+      _id: {
         type: Schema.Types.ObjectId,
         required: [true, "Please provide an item id"],
       },

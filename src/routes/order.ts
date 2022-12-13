@@ -109,7 +109,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
     )
   ) {
     res.status(401);
-    throw new Error("Please provide all orders data");
+    throw new Error("Please provide all the orders data");
   }
 
   // Check if there is an user
@@ -173,13 +173,13 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                 // Return individual order
                 return {
                   customer: {
-                    id: _id,
+                    _id: _id,
                     firstName,
                     lastName,
                     email,
                   },
                   restaurant: {
-                    id: orderPayload.restaurantId,
+                    _id: orderPayload.restaurantId,
                     name: restaurant.name,
                   },
                   company: {
@@ -191,7 +191,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
                   },
                   status: "PROCESSING",
                   item: {
-                    id: orderPayload.itemId,
+                    _id: orderPayload.itemId,
                     name: item.name,
                     tags: item.tags,
                     description: item.description,

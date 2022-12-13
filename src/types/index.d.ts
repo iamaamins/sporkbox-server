@@ -24,13 +24,13 @@ export interface IFavoriteSchema {
 
 export interface IOrderSchema {
   customer: {
-    id: Types.ObjectId;
+    _id: Types.ObjectId;
     firstName: string;
     lastName: string;
     email: string;
   };
   restaurant: {
-    id: Types.ObjectId;
+    _id: Types.ObjectId;
     name: string;
   };
   company: {
@@ -44,7 +44,7 @@ export interface IOrderSchema {
   hasReviewed: boolean;
   createdAt: Date;
   item: {
-    id: Types.ObjectId;
+    _id: Types.ObjectId;
     name: string;
     tags: string;
     description: string;
