@@ -137,3 +137,15 @@ interface IUser {
   company?: IUserCompany;
   // restaurant?: IRestaurant;
 }
+
+export interface ICompanyPayload {
+  name: string;
+  code: string;
+  city: string;
+  state: string;
+  zip: string;
+  website: string;
+  dailyBudget: number;
+  addressLine1: string;
+  addressLine2: string;
+}

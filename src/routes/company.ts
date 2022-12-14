@@ -1,6 +1,7 @@
 import Company from "../models/company";
 import { deleteFields } from "../utils";
 import authUser from "../middleware/authUser";
+import { ICompanyPayload } from "../types";
 import express, { Request, Response } from "express";
 
 // Initialize router
@@ -16,9 +17,9 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     zip,
     website,
     dailyBudget,
-    address_line_1,
-    address_line_2,
-  } = req.body;
+    addressLine1,
+    addressLine2,
+  }: ICompanyPayload = req.body;
 
   // If all the fields aren't provided
   if (
@@ -29,8 +30,8 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     !zip ||
     !website ||
     !dailyBudget ||
-    !address_line_1 ||
-    !address_line_2
+    !addressLine1 ||
+    !addressLine2
   ) {
     res.status(400);
     throw new Error("Please provide all the fields");
@@ -50,7 +51,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
           website,
           code,
           dailyBudget,
-          address: `${address_line_1}, ${address_line_2}, ${city}, ${state} ${zip}`,
+          address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
         })
       ).toObject();
 

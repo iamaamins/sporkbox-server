@@ -23,7 +23,7 @@ router.get("/me/upcoming", authUser, async (req: Request, res: Response) => {
     // If role is customer
     if (role === "CUSTOMER") {
       // Find the upcoming orders of the customer
-      const customerUpcomingOrders = await Order.find({ "customer.id": _id })
+      const customerUpcomingOrders = await Order.find({ "customer._id": _id })
         .where("status", "PROCESSING")
         .sort({ "delivery.date": 1 })
         .select("-__v -updatedAt -customer -delivery.address -company");
@@ -64,7 +64,9 @@ router.get(
 
       if (role === "CUSTOMER") {
         // Find the upcoming orders of the customer
-        const customerDeliveredOrders = await Order.find({ "customer.id": _id })
+        const customerDeliveredOrders = await Order.find({
+          "customer._id": _id,
+        })
           .where("status", "DELIVERED")
           .limit(+limit)
           .sort({ "delivery.date": -1 })
@@ -123,7 +125,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
 
       // Get customer upcoming orders
-      const customerUpcomingOrders = await Order.find({ "customer.id": _id })
+      const customerUpcomingOrders = await Order.find({ "customer._id": _id })
         .where("status", "PROCESSING")
         .select("delivery item")
         .sort({ "delivery.date": 1 });
