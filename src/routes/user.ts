@@ -3,13 +3,14 @@ import User from "../models/user";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
+import { ILoginPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
 
 // user login
 router.post("/login", async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password }: ILoginPayload = req.body;
 
   // If a value isn't provided
   if (!email || !password) {

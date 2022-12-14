@@ -178,3 +178,8 @@ export interface IReviewPayload {
   comment: string;
   orderId: string;
 }
+
+export interface ILoginPayload {
+  email: string;
+  password: string;
+}
