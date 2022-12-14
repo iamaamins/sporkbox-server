@@ -9,6 +9,11 @@ import {
   convertDateToMS,
   getUpcomingWeekRestaurants,
 } from "../utils";
+import {
+  IItemPayload,
+  IReviewPayload,
+  IScheduleRestaurantPayload,
+} from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -110,8 +115,8 @@ router.put(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { date } = req.body;
     const { restaurantId } = req.params;
+    const { date }: IScheduleRestaurantPayload = req.body;
 
     // If date isn't provided
     if (!date) {
@@ -215,7 +220,7 @@ router.post(
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId } = req.params;
-    const { name, description, tags, price } = req.body;
+    const { name, description, tags, price }: IItemPayload = req.body;
 
     // If restaurant id, name, description, tags, price aren't provided
     if (!name || !description || !tags || !price) {
@@ -331,7 +336,7 @@ router.post(
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId, itemId } = req.params;
-    const { rating, comment, orderId } = req.body;
+    const { rating, comment, orderId }: IReviewPayload = req.body;
 
     // If rating or comment isn't provided
     if (!rating || !comment) {

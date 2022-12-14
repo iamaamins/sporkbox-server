@@ -161,3 +161,20 @@ export interface IFavoritePayload {
   restaurantId: string;
   itemId: string;
 }
+
+export interface IScheduleRestaurantPayload {
+  date: Date;
+}
+
+export interface IItemPayload {
+  name: string;
+  description: string;
+  tags: string;
+  price: number;
+}
+
+export interface IReviewPayload {
+  rating: number;
+  comment: string;
+  orderId: string;
+}
