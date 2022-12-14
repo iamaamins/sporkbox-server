@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
+import { ICustomerPayload } from "../types";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // Register customer
 router.post("/register", async (req: Request, res: Response) => {
   // Destructure data from req
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password }: ICustomerPayload = req.body;
 
   // If a value isn't provided
   if (!firstName || !lastName || !email || !password) {

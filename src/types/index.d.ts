@@ -149,3 +149,10 @@ export interface ICompanyPayload {
   addressLine1: string;
   addressLine2: string;
 }
+
+export interface ICustomerPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
