@@ -183,3 +183,20 @@ export interface ILoginPayload {
   email: string;
   password: string;
 }
+
+export interface IVendorPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  city: string;
+  state: string;
+  zip: string;
+  restaurantName: string;
+  addressLine1: string;
+  addressLine2: string;
+}
+
+export interface IVendorStatusPayload {
+  action: string;
+}

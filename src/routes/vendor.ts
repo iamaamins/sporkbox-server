@@ -4,6 +4,7 @@ import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
+import { IVendorPayload, IVendorStatusPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -88,11 +89,10 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     city,
     state,
     zip,
-    confirmPassword,
     restaurantName,
-    address_line_1,
-    address_line_2,
-  } = req.body;
+    addressLine1,
+    addressLine2,
+  }: IVendorPayload = req.body;
 
   // If a value isn't provided
   if (
@@ -103,10 +103,9 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     !city ||
     !state ||
     !zip ||
-    !confirmPassword ||
     !restaurantName ||
-    !address_line_1 ||
-    !address_line_2
+    !addressLine1 ||
+    !addressLine2
   ) {
     res.status(400);
     throw new Error("Please fill all the fields");
@@ -131,7 +130,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
       // Create the restaurant
       const restaurant = await Restaurant.create({
         name: restaurantName,
-        address: `${address_line_1}, ${address_line_2}, ${city}, ${state} ${zip}`,
+        address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
       });
 
       // If restaurant is created successfully
@@ -230,8 +229,8 @@ router.put(
   authUser,
   async (req: Request, res: Response) => {
     // Get the role from req
-    const { action } = req.body;
     const { vendorId } = req.params;
+    const { action }: IVendorStatusPayload = req.body;
 
     // If action or restaurant id aren't provided
     if (!action) {
