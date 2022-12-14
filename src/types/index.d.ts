@@ -156,3 +156,8 @@ export interface ICustomerPayload {
   email: string;
   password: string;
 }
+
+export interface IFavoritePayload {
+  restaurantId: string;
+  itemId: string;
+}

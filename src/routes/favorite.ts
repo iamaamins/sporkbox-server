@@ -1,4 +1,4 @@
-import { IFavoriteRestaurant } from "../types";
+import { IFavoritePayload, IFavoriteRestaurant } from "../types";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -9,7 +9,7 @@ const router = express.Router();
 // Add a favorite
 router.post("/add", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
-  const { restaurantId, itemId } = req.body;
+  const { restaurantId, itemId }: IFavoritePayload = req.body;
 
   // If all the fields aren't provided
   if (!restaurantId || !itemId) {
