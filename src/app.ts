@@ -32,13 +32,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "https://www.araqo.com",
+    origin: "https://www.sporkbox.octib.com",
   })
 );
 
-// https://www.araqo.com
 // http://localhost:3000
 // https://www.sporkbox.app
+// https://www.sporkbox.octib.com
 
 // Routes
 app.use("/users", User);
