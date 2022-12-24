@@ -200,3 +200,39 @@ export interface IVendorPayload {
 export interface IVendorStatusPayload {
   action: string;
 }
+
+export interface IOrdersStatusPayload {
+  orderIds: string[];
+}
+
+export interface IOrder {
+  _id: string;
+  customer: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  restaurant: {
+    _id: string;
+    name: string;
+  };
+  company: {
+    name: string;
+  };
+  delivery: {
+    date: string;
+    address: string;
+  };
+  status: string;
+  hasReviewed: boolean;
+  createdAt: string;
+  item: {
+    _id: string;
+    name: string;
+    tags: string;
+    description: string;
+    quantity: number;
+    total: number;
+  };
+}

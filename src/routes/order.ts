@@ -1,4 +1,4 @@
-import { IOrdersPayload } from "./../types/index.d";
+import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
 import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -422,66 +422,51 @@ router.get(
   }
 );
 
-// Update order status
-// router.put(
-//   "/:orderId/status",
-//   authUser,
-//   async (req: Request, res: Response) => {
-//     // Destructure data from req
-//     const { orderId } = req.params;
+// Update orders status
+router.put("/update-status", authUser, async (req: Request, res: Response) => {
+  // Destructure data from req
+  const { orderIds }: IOrdersStatusPayload = req.body;
 
-//     // Check if there is an user
-//     if (req.user) {
-//       // Destructure data from req
-//       const { role } = req.user;
+  // Check if there is an user
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
 
-//       // If role is admin
-//       if (role === "ADMIN") {
-//         // Find the order and update the status
-//         const response = await Order.findByIdAndUpdate(
-//           orderId,
-//           {
-//             status: "DELIVERED",
-//           },
-//           {
-//             returnDocument: "after",
-//           }
-//         )
-//           .select("-__v -updatedAt")
-//           .lean();
+    // If role is admin
+    if (role === "ADMIN") {
+      // Update orders status
+      const response = await Order.updateMany(
+        { _id: { $in: orderIds } },
+        { $set: { status: "DELIVERED" } }
+      );
 
-//         // If order is updated successfully
-//         if (response) {
-//           // Get customer name and email from the order
-//           const { customer } = response;
+      // If orders status are updated successfully
+      if (response) {
+        // Find the orders
+        const orders = await Order.find({ _id: { $in: orderIds } });
 
-//           // Send email to the customer
-//           sendEmail(`${customer.firstName} ${customer.lastName}`, customer.email);
+        // Send emails
+        await Promise.all(
+          orders.map(async (order) => await sendEmail(order.toObject()))
+        );
 
-//           // Format delivery date date
-//           const updatedOrder = {
-//             ...response,
-//             deliveryDate: convertDateToText(response.delivery.date),
-//           };
-
-//           // Send the update
-//           res.status(200).json(updatedOrder);
-//         } else {
-//           // If order isn't updated successfully
-//           res.status(500);
-//           throw new Error("Something went wrong");
-//         }
-//       } else {
-//         // If role isn't admin
-//         res.status(401);
-//         throw new Error("Not authorized");
-//       }
-//     } else {
-//       // If there is no user
-//       res.status(401);
-//       throw new Error("Not authorized");
-//     }
-//   }
-// );
+        // Send the update
+        res.status(200).json("Delivery email sent");
+      } else {
+        // If order isn't updated successfully
+        res.status(500);
+        throw new Error("Something went wrong");
+      }
+    } else {
+      // If role isn't admin
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  } else {
+    // If there is no user
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
 
 export default router;

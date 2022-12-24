@@ -3,11 +3,13 @@ import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
 import Restaurant from "../models/restaurant";
-import { ISortScheduledRestaurant } from "../types";
+import { IOrder, ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
 
 // Set the sendgrid api key
-mail.setApiKey(process.env.SENDGRID_API_KEY as string);
+mail.setApiKey(
+  "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"
+);
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, id: Types.ObjectId): void => {
@@ -49,26 +51,25 @@ export const convertDateToText = (date: Date | string): string =>
   new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
 
 // General mail
-export const sendEmail = async (
-  name: string,
-  email: string
-): Promise<string> => {
+export const sendEmail = async (order: IOrder): Promise<string> => {
   // Create template
   const template = {
-    to: email,
+    to: order.customer.email,
     from: process.env.SENDER_EMAIL,
     subject: `Order Status Update`,
     html: `
-    <p>Hi ${name}, your sporkbytes order is delivered now! Please collect from the reception point.</p>
+    <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is delivered now! Please collect from the reception point.</p>
     `,
   };
 
   // Send the email
   try {
     await mail.send(template as MailDataRequired);
-    return "Email successfully sent";
+    return "Email is sent successfully";
   } catch (err) {
-    return "Server error";
+    // @ts-ignore
+    console.log(err.response.body.errors);
+    return "Email isn't sent successfully";
   }
 };
 
