@@ -7,9 +7,7 @@ import { IOrder, ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
 
 // Set the sendgrid api key
-mail.setApiKey(
-  "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"
-);
+mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, id: Types.ObjectId): void => {
