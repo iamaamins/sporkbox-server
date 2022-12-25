@@ -24,12 +24,14 @@ router.get("/upcoming-week", authUser, async (req: Request, res: Response) => {
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
-    const { role } = req.user;
+    const { role, company } = req.user;
 
     // If role is customer
-    if (role === "CUSTOMER") {
+    if (role === "CUSTOMER" && company) {
       // Get upcoming week restaurants
-      const upcomingWeekRestaurants = await getUpcomingWeekRestaurants();
+      const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
+        company.name
+      );
 
       // If upcoming week restaurants are found successfully
       if (upcomingWeekRestaurants) {

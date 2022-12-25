@@ -129,12 +129,14 @@ export const lt =
     ? nextWeekSaturdayUTCTimestamp
     : followingWeekSaturdayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants() {
+export async function getUpcomingWeekRestaurants(companyName: string) {
   // Get the scheduled restaurants
   const response = await Restaurant.find({
     schedules: {
-      $gte: gte,
-      $lt: lt,
+      $elemMatch: {
+        date: { $gte: gte },
+        "company.name": companyName,
+      },
     },
   }).select("-__v -updatedAt -createdAt -address");
 
@@ -145,7 +147,7 @@ export async function getUpcomingWeekRestaurants() {
       schedules: upcomingWeekRestaurant.schedules.filter(
         (schedule) =>
           convertDateToMS(schedule.date) >= gte &&
-          convertDateToMS(schedule.date) < lt
+          schedule.company.name === companyName
       ),
     }))
     .map((upcomingWeekRestaurant) =>
