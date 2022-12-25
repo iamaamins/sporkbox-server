@@ -14,6 +14,7 @@ import {
   IReviewPayload,
   IScheduleRestaurantPayload,
 } from "../types";
+import Company from "../models/company";
 
 // Initialize router
 const router = express.Router();
@@ -62,7 +63,7 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       // Get the scheduled restaurants
       const response = await Restaurant.find({
-        schedules: {
+        "schedules.date": {
           $gte: gte,
         },
       }).select("-__v -updatedAt -createdAt -address -items");
@@ -79,7 +80,7 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
               // Create new restaurant object
               return {
                 ...rest,
-                scheduledOn: schedule,
+                scheduledOn: schedule.date,
               };
             })
           )
@@ -110,108 +111,119 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
 });
 
 // Schedule a restaurant
-router.put(
-  "/schedule/:restaurantId",
-  authUser,
-  async (req: Request, res: Response) => {
+router.put("/schedule", authUser, async (req: Request, res: Response) => {
+  // Destructure data from req
+  const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
+    req.body;
+
+  // If full data isn't provided
+  if (!date || !companyId || !restaurantId) {
+    res.status(400);
+    throw new Error("Please fill all the fields");
+  }
+
+  // If provided date is a past date
+  if (convertDateToMS(date) < Date.now()) {
+    res.status(400);
+    throw new Error("Cant' schedule a restaurant in the past");
+  }
+
+  // Get the day from provided date
+  const day = new Date(date).toUTCString().split(",")[0];
+
+  // Restrict scheduling on saturday and sunday
+  if (day === "Sat" || day === "Sun") {
+    res.status(400);
+    throw new Error(
+      `Can't schedule a restaurant on ${day === "Sat" ? "Saturday" : "Sunday"}`
+    );
+  }
+
+  // Check if there is an user
+  if (req.user) {
     // Destructure data from req
-    const { restaurantId } = req.params;
-    const { date }: IScheduleRestaurantPayload = req.body;
+    const { role } = req.user;
 
-    // If date isn't provided
-    if (!date) {
-      res.status(400);
-      throw new Error("Please fill all the fields");
-    }
-
-    // If provided date is a past date
-    if (convertDateToMS(date) < Date.now()) {
-      res.status(400);
-      throw new Error("Cant' schedule a restaurant in the past");
-    }
-
-    // Get the day from provided date
-    const day = new Date(date).toUTCString().split(",")[0];
-
-    // Restrict scheduling on saturday and sunday
-    if (day === "Sat" || day === "Sun") {
-      res.status(400);
-      throw new Error(
-        `Can't schedule a restaurant on ${
-          day === "Sat" ? "Saturday" : "Sunday"
-        }`
-      );
-    }
-
-    // Check if there is an user
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
-
-      // If role is admin
-      if (role === "ADMIN") {
-        // Find the restaurant and remove past dates
-        const restaurant = await Restaurant.findByIdAndUpdate(
-          restaurantId,
-          {
-            $pull: {
-              schedules: {
-                $lt: Date.now(),
-              },
+    // If role is admin
+    if (role === "ADMIN") {
+      // Find the restaurant and remove past dates
+      const restaurant = await Restaurant.findByIdAndUpdate(
+        restaurantId,
+        {
+          $pull: {
+            schedules: {
+              date: { $lt: Date.now() },
             },
           },
-          {
-            returnDocument: "after",
-          }
-        ).select("-__v -updatedAt -createdAt -address");
+        },
+        {
+          returnDocument: "after",
+        }
+      ).select("-__v -updatedAt -createdAt -address -items");
 
-        // If restaurant is found
-        if (restaurant) {
-          // Check if the restaurant is schedule on the same date
-          const isScheduled = restaurant.schedules.find(
-            (schedule) => convertDateToMS(schedule) === convertDateToMS(date)
-          );
+      // If restaurant is found
+      if (restaurant) {
+        // Check if the restaurant is schedule
+        // on the same date for the same company
+        const isScheduled = restaurant.schedules.some(
+          (schedule) =>
+            companyId === schedule.companyId.toString() &&
+            convertDateToMS(schedule.date) === convertDateToMS(date)
+        );
 
-          // If the restaurant is already scheduled
-          if (isScheduled) {
-            res.status(401);
-            throw new Error("Already scheduled on the provided date");
-          }
+        // If the restaurant is already scheduled
+        if (isScheduled) {
+          res.status(401);
+          throw new Error("Already scheduled on the provided date");
+        }
 
-          // Add the date to schedules
-          restaurant.schedules.push(date);
+        // Add the schedule details to schedules
+        restaurant.schedules.push({ date, companyId, restaurantId });
 
-          // Save the restaurant
-          await restaurant.save();
+        // Save the restaurant
+        await restaurant.save();
 
+        // Find the company
+        const company = await Company.findById(companyId);
+
+        // If company is found successfully
+        if (company) {
           // Destructure the restaurant object
           const { schedules, ...rest } = restaurant.toObject();
 
           // Create restaurant with scheduled date
-          const scheduledRestaurant = { ...rest, scheduledOn: date };
+          const scheduledRestaurant = {
+            ...rest,
+            date,
+            company: company.name,
+          };
 
           // Delete fields
-          deleteFields(scheduledRestaurant, ["items"]);
+          deleteFields(scheduledRestaurant);
 
           // Send updated restaurant with response
           res.status(201).json(scheduledRestaurant);
         } else {
-          // If scheduled restaurants aren't found successfully
+          // If company isn't found successfully
           res.status(500);
           throw new Error("Something went wrong");
         }
       } else {
-        // If role isn't admin
-        res.status(401);
-        throw new Error("Not authorized");
+        // If scheduled restaurants aren't found successfully
+        res.status(500);
+        throw new Error("Something went wrong");
       }
     } else {
-      // If there is no user
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
+  } else {
+    // If there is no user
+    res.status(401);
+    throw new Error("Not authorized");
   }
-);
+});
 
 // Add an item to a restaurant
 router.post(

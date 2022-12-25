@@ -144,7 +144,8 @@ export async function getUpcomingWeekRestaurants() {
       ...upcomingWeekRestaurant.toObject(),
       schedules: upcomingWeekRestaurant.schedules.filter(
         (schedule) =>
-          convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
+          convertDateToMS(schedule.date) >= gte &&
+          convertDateToMS(schedule.date) < lt
       ),
     }))
     .map((upcomingWeekRestaurant) =>
@@ -155,7 +156,7 @@ export async function getUpcomingWeekRestaurants() {
         // Create new restaurant object
         return {
           ...rest,
-          scheduledOn: schedule,
+          scheduledOn: schedule.date,
         };
       })
     )

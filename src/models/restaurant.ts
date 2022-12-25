@@ -12,9 +12,22 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       required: [true, "Please provide an email"],
     },
     schedules: [
-      {
-        type: Date,
-      },
+      new Schema({
+        date: {
+          type: Date,
+          required: [true, "Please provide a date"],
+        },
+        companyId: {
+          type: Schema.Types.ObjectId,
+          ref: "Company",
+          required: [true, "Please provide a company"],
+        },
+        restaurantId: {
+          type: Schema.Types.ObjectId,
+          ref: "Restaurant",
+          required: [true, "Please provide a restaurant"],
+        },
+      }),
     ],
     items: [
       new Schema({
