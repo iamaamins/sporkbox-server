@@ -69,8 +69,10 @@ interface IItemSchema {
 
 export interface ISchedulesSchema {
   date: Date;
-  companyId: Types.ObjectId;
-  restaurantId: Types.ObjectId;
+  company: {
+    _id: Types.ObjectId;
+    name: string;
+  };
 }
 
 export interface IRestaurantSchema {
@@ -99,7 +101,7 @@ export interface IUserSchema {
 }
 
 export interface ISortScheduledRestaurant {
-  scheduledOn: Date;
+  date: Date;
 }
 
 interface IRestaurantItem {

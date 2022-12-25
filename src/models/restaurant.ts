@@ -17,15 +17,15 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: Date,
           required: [true, "Please provide a date"],
         },
-        companyId: {
-          type: Schema.Types.ObjectId,
-          ref: "Company",
-          required: [true, "Please provide a company"],
-        },
-        restaurantId: {
-          type: Schema.Types.ObjectId,
-          ref: "Restaurant",
-          required: [true, "Please provide a restaurant"],
+        company: {
+          _id: {
+            type: Schema.Types.ObjectId,
+            required: [true, "Please provide a company id"],
+          },
+          name: {
+            type: String,
+            required: [true, "Please provide a company name"],
+          },
         },
       }),
     ],

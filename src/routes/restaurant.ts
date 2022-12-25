@@ -80,14 +80,15 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
               // Create new restaurant object
               return {
                 ...rest,
-                scheduledOn: schedule.date,
+                date: schedule.date,
+                company: schedule.company,
               };
             })
           )
           .flat(2)
           .filter(
             (scheduledRestaurant) =>
-              convertDateToMS(scheduledRestaurant.scheduledOn) >= gte
+              convertDateToMS(scheduledRestaurant.date) >= gte
           )
           .sort(sortByDate);
 
@@ -167,7 +168,7 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
         // on the same date for the same company
         const isScheduled = restaurant.schedules.some(
           (schedule) =>
-            companyId === schedule.companyId.toString() &&
+            companyId === schedule.company._id.toString() &&
             convertDateToMS(schedule.date) === convertDateToMS(date)
         );
 
@@ -177,25 +178,30 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
           throw new Error("Already scheduled on the provided date");
         }
 
-        // Add the schedule details to schedules
-        restaurant.schedules.push({ date, companyId, restaurantId });
-
-        // Save the restaurant
-        await restaurant.save();
-
         // Find the company
         const company = await Company.findById(companyId);
 
         // If company is found successfully
         if (company) {
+          // Create the schedule
+          const schedule = {
+            date,
+            company: { _id: company.id, name: company.name },
+          };
+
+          // Add the schedule details to schedules
+          restaurant.schedules.push(schedule);
+
+          // Save the restaurant
+          await restaurant.save();
+
           // Destructure the restaurant object
           const { schedules, ...rest } = restaurant.toObject();
 
-          // Create restaurant with scheduled date
+          // Create restaurant with scheduled date and company details
           const scheduledRestaurant = {
             ...rest,
-            date,
-            company: company.name,
+            ...schedule,
           };
 
           // Delete fields

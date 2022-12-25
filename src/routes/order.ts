@@ -138,7 +138,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             (upcomingWeekRestaurant) =>
               upcomingWeekRestaurant._id.toString() ===
                 orderPayload.restaurantId &&
-              convertDateToMS(upcomingWeekRestaurant.scheduledOn) ===
+              convertDateToMS(upcomingWeekRestaurant.date) ===
                 orderPayload.deliveryDate &&
               upcomingWeekRestaurant.items.some(
                 (item) => item._id?.toString() === orderPayload.itemId
@@ -216,7 +216,7 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
           // Get next week dates and budget on hand
           const nextWeekBudgetAndDates = upcomingWeekRestaurants
             .map((upcomingWeekRestaurant) =>
-              convertDateToMS(upcomingWeekRestaurant.scheduledOn)
+              convertDateToMS(upcomingWeekRestaurant.date)
             )
             .filter((date, index, dates) => dates.indexOf(date) === index)
             .map((nextWeekDate) => {

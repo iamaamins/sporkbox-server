@@ -81,7 +81,7 @@ export const convertDateToMS = (date: Date | string): number =>
 export const sortByDate = (
   a: ISortScheduledRestaurant,
   b: ISortScheduledRestaurant
-): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
+): number => convertDateToMS(a.date) - convertDateToMS(b.date);
 
 // Get future date in UTC as the restaurant
 // schedule date and delivery date has no timezone
@@ -156,7 +156,7 @@ export async function getUpcomingWeekRestaurants() {
         // Create new restaurant object
         return {
           ...rest,
-          scheduledOn: schedule.date,
+          date: schedule.date,
         };
       })
     )
