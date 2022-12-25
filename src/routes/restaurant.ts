@@ -126,7 +126,7 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
   }
 
   // If provided date is a past date
-  if (convertDateToMS(date) < Date.now()) {
+  if (convertDateToMS(date) < gte) {
     res.status(400);
     throw new Error("Cant' schedule a restaurant in the past");
   }
