@@ -67,11 +67,19 @@ interface IItemSchema {
   reviews: Types.DocumentArray<IReviewSchema>;
 }
 
+export interface ISchedulesSchema {
+  date: Date;
+  company: {
+    _id: Types.ObjectId;
+    name: string;
+  };
+}
+
 export interface IRestaurantSchema {
   name: string;
   address: string;
-  schedules: Date[];
   items: Types.DocumentArray<IItemSchema>;
+  schedules: Types.DocumentArray<ISchedulesSchema>;
 }
 
 export interface IUpcomingWeekRestaurant {
@@ -93,7 +101,7 @@ export interface IUserSchema {
 }
 
 export interface ISortScheduledRestaurant {
-  scheduledOn: Date;
+  date: Date;
 }
 
 interface IRestaurantItem {
@@ -164,6 +172,8 @@ export interface IFavoritePayload {
 
 export interface IScheduleRestaurantPayload {
   date: Date;
+  companyId: string;
+  restaurantId: string;
 }
 
 export interface IItemPayload {

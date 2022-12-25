@@ -79,7 +79,7 @@ export const convertDateToMS = (date: Date | string): number =>
 export const sortByDate = (
   a: ISortScheduledRestaurant,
   b: ISortScheduledRestaurant
-): number => convertDateToMS(a.scheduledOn) - convertDateToMS(b.scheduledOn);
+): number => convertDateToMS(a.date) - convertDateToMS(b.date);
 
 // Get future date in UTC as the restaurant
 // schedule date and delivery date has no timezone
@@ -127,12 +127,14 @@ export const lt =
     ? nextWeekSaturdayUTCTimestamp
     : followingWeekSaturdayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants() {
+export async function getUpcomingWeekRestaurants(companyName: string) {
   // Get the scheduled restaurants
   const response = await Restaurant.find({
     schedules: {
-      $gte: gte,
-      $lt: lt,
+      $elemMatch: {
+        date: { $gte: gte },
+        "company.name": companyName,
+      },
     },
   }).select("-__v -updatedAt -createdAt -address");
 
@@ -142,7 +144,8 @@ export async function getUpcomingWeekRestaurants() {
       ...upcomingWeekRestaurant.toObject(),
       schedules: upcomingWeekRestaurant.schedules.filter(
         (schedule) =>
-          convertDateToMS(schedule) >= gte && convertDateToMS(schedule) < lt
+          convertDateToMS(schedule.date) >= gte &&
+          schedule.company.name === companyName
       ),
     }))
     .map((upcomingWeekRestaurant) =>
@@ -153,7 +156,7 @@ export async function getUpcomingWeekRestaurants() {
         // Create new restaurant object
         return {
           ...rest,
-          scheduledOn: schedule,
+          date: schedule.date,
         };
       })
     )
