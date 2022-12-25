@@ -20,7 +20,7 @@ import Company from "../models/company";
 const router = express.Router();
 
 // Get upcoming week restaurants
-router.get("/upcoming-week", authUser, async (req: Request, res: Response) => {
+router.get("/upcoming", authUser, async (req: Request, res: Response) => {
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
