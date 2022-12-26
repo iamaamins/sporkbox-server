@@ -13,7 +13,6 @@ import {
   IItemPayload,
   IReviewPayload,
   IScheduleRestaurantPayload,
-  IUpcomingWeekRestaurant,
 } from "../types";
 import Company from "../models/company";
 
@@ -32,6 +31,7 @@ router.get("/upcoming", authUser, async (req: Request, res: Response) => {
       try {
         // Get upcoming week restaurants
         const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
+          res,
           company.name
         );
 
@@ -40,7 +40,7 @@ router.get("/upcoming", authUser, async (req: Request, res: Response) => {
       } catch (err) {
         // If upcoming week restaurants aren't fetched successfully
         res.status(500);
-        throw new Error("Something wen't wrong");
+        throw new Error("Failed to fetch upcoming week restaurants");
       }
     } else {
       // If role isn't customer
@@ -71,37 +71,34 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
           },
         }).select("-__v -updatedAt -createdAt -address -items");
 
-        // If restaurants are found successfully
-        if (response) {
-          // Create scheduled restaurants, then flat and sort
-          const scheduledRestaurants = response
-            .map((scheduledRestaurant) =>
-              scheduledRestaurant.schedules.map((schedule) => {
-                // Destructure scheduled restaurant
-                const { schedules, ...rest } = scheduledRestaurant.toObject();
+        // Create scheduled restaurants, then flat and sort
+        const scheduledRestaurants = response
+          .map((scheduledRestaurant) =>
+            scheduledRestaurant.schedules.map((schedule) => {
+              // Destructure scheduled restaurant
+              const { schedules, ...rest } = scheduledRestaurant.toObject();
 
-                // Create new restaurant object
-                return {
-                  ...rest,
-                  date: schedule.date,
-                  company: schedule.company,
-                };
-              })
-            )
-            .flat(2)
-            .filter(
-              (scheduledRestaurant) =>
-                convertDateToMS(scheduledRestaurant.date) >= gte
-            )
-            .sort(sortByDate);
+              // Create new restaurant object
+              return {
+                ...rest,
+                date: schedule.date,
+                company: schedule.company,
+              };
+            })
+          )
+          .flat(2)
+          .filter(
+            (scheduledRestaurant) =>
+              convertDateToMS(scheduledRestaurant.date) >= gte
+          )
+          .sort(sortByDate);
 
-          // Return the scheduled restaurants with response
-          res.status(200).json(scheduledRestaurants);
-        }
+        // Return the scheduled restaurants with response
+        res.status(200).json(scheduledRestaurants);
       } catch (err) {
         // If scheduled restaurants aren't found successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch scheduled restaurants");
       }
     } else {
       // If role isn't admin
@@ -153,7 +150,7 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       try {
         // Find the restaurant and remove past dates
-        const restaurant = await Restaurant.findByIdAndUpdate(
+        const updatedRestaurant = await Restaurant.findByIdAndUpdate(
           restaurantId,
           {
             $pull: {
@@ -168,10 +165,10 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
         ).select("-__v -updatedAt -createdAt -address -items");
 
         // If restaurant is found
-        if (restaurant) {
+        if (updatedRestaurant) {
           // Check if the restaurant is schedule
           // on the same date for the same company
-          const isScheduled = restaurant.schedules.some(
+          const isScheduled = updatedRestaurant.schedules.some(
             (schedule) =>
               companyId === schedule.company._id.toString() &&
               convertDateToMS(schedule.date) === convertDateToMS(date)
@@ -197,15 +194,15 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
               };
 
               // Add the schedule details to schedules
-              restaurant.schedules.push(schedule);
+              updatedRestaurant.schedules.push(schedule);
 
               // Save the restaurant and send the data with response
               try {
                 // Save the restaurant
-                await restaurant.save();
+                await updatedRestaurant.save();
 
                 // Destructure the restaurant object
-                const { schedules, ...rest } = restaurant.toObject();
+                const { schedules, ...rest } = updatedRestaurant.toObject();
 
                 // Create restaurant with scheduled date and company details
                 const scheduledRestaurant = {
@@ -221,19 +218,19 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
               } catch (err) {
                 // If restaurant isn't saved successfully
                 res.status(500);
-                throw new Error("Something went wrong");
+                throw new Error("Failed to save new schedule");
               }
             }
           } catch (err) {
             // If company isn't found successfully
             res.status(500);
-            throw new Error("Something went wrong");
+            throw new Error("Failed to fetch company");
           }
         }
       } catch (err) {
         // If scheduled restaurants aren't found successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to remove past dates");
       }
     } else {
       // If role isn't admin
@@ -288,7 +285,7 @@ router.post(
         } catch (err) {
           // If item isn't successfully added
           res.status(500);
-          throw new Error("Something went wrong!");
+          throw new Error("Failed to add item");
         }
       } else {
         // If role isn't admin or vendor
@@ -304,65 +301,69 @@ router.post(
 );
 
 // Edit an item
-router.put("/:itemId/update", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { itemId } = req.params;
-  const { name, description, tags, price }: IItemPayload = req.body;
-
-  // If restaurant id, name, description, tags, price aren't provided
-  if (!itemId || !name || !description || !tags || !price) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // If there is an user
-  if (req.user) {
+router.put(
+  "/:restaurantId/:itemId/update",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { restaurantId, itemId } = req.params;
+    const { name, description, tags, price }: IItemPayload = req.body;
 
-    // If the role is either admin or vendor
-    if (role === "ADMIN" || role === "VENDOR") {
-      // Find and update the item
-      try {
-        const updatedRestaurant = await Restaurant.findOneAndUpdate(
-          { "items._id": itemId },
-          {
-            $set: {
-              "items.$.name": name,
-              "items.$.tags": tags,
-              "items.$.price": price,
-              "items.$.description": description,
+    // If restaurant id, name, description, tags, price aren't provided
+    if (!itemId || !name || !description || !tags || !price) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // If there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If the role is either admin or vendor
+      if (role === "ADMIN" || role === "VENDOR") {
+        try {
+          // Find and update the item
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId, "items._id": itemId },
+            {
+              $set: {
+                "items.$.name": name,
+                "items.$.tags": tags,
+                "items.$.price": price,
+                "items.$.description": description,
+              },
             },
-          },
-          {
-            returnDocument: "after",
+            {
+              returnDocument: "after",
+            }
+          ).lean();
+
+          // If item is updated successfully
+          if (updatedRestaurant) {
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+
+            // Return the updated restaurant with response
+            res.status(201).json(updatedRestaurant);
           }
-        ).lean();
-
-        // If item is updated successfully
-        if (updatedRestaurant) {
-          // Delete fields
-          deleteFields(updatedRestaurant, ["createdAt"]);
-
-          // Return the updated restaurant with response
-          res.status(201).json(updatedRestaurant);
+        } catch (err) {
+          // If item isn't updated successfully
+          res.status(401);
+          throw new Error("Failed to update item");
         }
-      } catch (err) {
-        // If item isn't updated successfully
+      } else {
+        // If role isn't admin or vendor
         res.status(401);
-        throw new Error("Something went wrong");
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin or vendor
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Delete an item
 router.delete(
@@ -379,8 +380,8 @@ router.delete(
 
       // If role is admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
-        // Find the restaurant and remove the item
         try {
+          // Find the restaurant and delete the item
           const updatedRestaurant = await Restaurant.findByIdAndUpdate(
             { _id: restaurantId },
             {
@@ -398,7 +399,7 @@ router.delete(
         } catch (err) {
           // If the item isn't removed successfully
           res.status(500);
-          throw new Error("Something went wrong");
+          throw new Error("Failed to delete the item");
         }
       } else {
         // If role isn't admin or vendor
@@ -474,15 +475,15 @@ router.post(
                 // Add the review
                 item.reviews.push({ customer: _id, rating, comment });
 
-                // Save the restaurant
                 try {
+                  // Save the restaurant
                   await restaurant.save();
 
                   // Update the order
                   order.hasReviewed = true;
 
-                  // Save the order
                   try {
+                    // Save the order
                     await order.save();
 
                     // Return the updated order item
@@ -490,24 +491,24 @@ router.post(
                   } catch (err) {
                     // If order isn't saved successfully
                     res.status(500);
-                    throw new Error("Something wen't wrong");
+                    throw new Error("Failed to save order");
                   }
                 } catch (err) {
                   // If restaurant isn't saved successfully
                   res.status(500);
-                  throw new Error("Something wen't wrong");
+                  throw new Error("Failed to save restaurant");
                 }
               }
             } catch (err) {
               // If restaurant isn't found
               res.status(500);
-              throw new Error("Something wen't wrong");
+              throw new Error("Failed to fetch restaurant");
             }
           }
         } catch (err) {
           // If order isn't found
           res.status(500);
-          throw new Error("Something went wrong");
+          throw new Error("Failed to fetch order");
         }
       } else {
         // If role isn't customer

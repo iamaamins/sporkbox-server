@@ -18,30 +18,36 @@ router.post("/login", async (req: Request, res: Response) => {
     throw new Error("Please fill all the fields");
   }
 
-  // Find the user
-  const user = await User.findOne({ email })
-    // .populate(
-    //   "restaurant",
-    //   "-__v -updatedAt -createdAt"
-    // )
-    .populate("company", "-__v -updatedAt -createdAt -code -website")
-    .lean();
+  try {
+    // Find the user
+    const user = await User.findOne({ email })
+      // .populate(
+      //   "restaurant",
+      //   "-__v -updatedAt -createdAt"
+      // )
+      .populate("company", "-__v -updatedAt -createdAt -code -website")
+      .lean();
 
-  // If user exists and password matches
-  if (user && (await bcrypt.compare(password, user.password))) {
-    // Generate jwt token and set
-    // cookie to the response header
-    setCookie(res, user._id);
+    // If user exists and password matches
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // Generate jwt token and set
+      // cookie to the response header
+      setCookie(res, user._id);
 
-    // Delete fields
-    deleteFields(user, ["password", "createdAt"]);
+      // Delete fields
+      deleteFields(user, ["password", "createdAt"]);
 
-    // Send user data with the response
-    res.status(200).json(user);
-  } else {
-    // If user doesn't exist or password doesn't match
-    res.status(401);
-    throw new Error("Invalid credentials");
+      // Send user data with the response
+      res.status(200).json(user);
+    } else {
+      // If user doesn't exist or password doesn't match
+      res.status(401);
+      throw new Error("Invalid credentials");
+    }
+  } catch (err) {
+    // If user isn't found
+    res.status(500);
+    throw new Error("Failed to fetch user");
   }
 });
 
