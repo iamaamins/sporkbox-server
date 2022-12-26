@@ -223,6 +223,111 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
   }
 });
 
+// Update a vendor
+router.put(
+  "/:vendorId/update",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { vendorId } = req.params;
+    const {
+      firstName,
+      lastName,
+      email,
+      city,
+      state,
+      zip,
+      restaurantName,
+      addressLine1,
+      addressLine2,
+    }: IVendorPayload = req.body;
+
+    // If a value isn't provided
+    if (
+      !vendorId ||
+      !firstName ||
+      !lastName ||
+      !email ||
+      !city ||
+      !state ||
+      !zip ||
+      !restaurantName ||
+      !addressLine1 ||
+      !addressLine2
+    ) {
+      res.status(400);
+      throw new Error("Please fill all the fields");
+    }
+
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        // Find and update the vendor
+        const updatedVendor = await User.findByIdAndUpdate(
+          vendorId,
+          {
+            firstName,
+            lastName,
+            email,
+          },
+          { returnDocument: "after" }
+        ).lean();
+
+        // If the vendor is updated successfully
+        if (updatedVendor) {
+          // Find and update the restaurant
+          const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+            updatedVendor.restaurant._id,
+            {
+              name: restaurantName,
+              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+            },
+            {
+              returnDocument: "after",
+            }
+          ).lean();
+
+          // If restaurant is update successfully
+          if (updatedRestaurant) {
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+            deleteFields(updatedVendor, ["createdAt", "password"]);
+
+            // Create updated vendor with restaurant
+            const updatedVendorAndRestaurant = {
+              ...updatedVendor,
+              restaurant: updatedRestaurant,
+            };
+
+            // Send the data with response
+            res.status(201).json(updatedVendorAndRestaurant);
+          } else {
+            // If restaurant isn't updated successfully
+            res.status(500);
+            throw new Error("Something went wrong");
+          }
+        } else {
+          // If restaurant isn't created successfully
+          res.status(500);
+          throw new Error("Something went wrong");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
+
 // Update vendor status
 router.put(
   "/:vendorId/status",

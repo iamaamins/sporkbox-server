@@ -38,6 +38,15 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
+  // Check if there is a company already
+  const company = await Company.findOne({ code }).lean();
+
+  // If a company exists
+  if (company) {
+    res.status(401);
+    throw new Error("A company with the same code already exists");
+  }
+
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
