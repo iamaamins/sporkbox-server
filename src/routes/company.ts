@@ -9,6 +9,7 @@ const router = express.Router();
 
 // Add a company
 router.post("/add", authUser, async (req: Request, res: Response) => {
+  // Destructure body data
   const {
     name,
     code,
@@ -113,6 +114,87 @@ router.get("/", authUser, async (req: Request, res: Response) => {
     throw new Error("Not authorized");
   }
 });
+
+// Edit a company
+router.put(
+  "/:companyId/update",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { companyId } = req.params;
+    const {
+      name,
+      code,
+      city,
+      state,
+      zip,
+      website,
+      dailyBudget,
+      addressLine1,
+      addressLine2,
+    }: ICompanyPayload = req.body;
+
+    // If all the fields aren't provided
+    if (
+      !companyId ||
+      !name ||
+      !code ||
+      !city ||
+      !state ||
+      !zip ||
+      !website ||
+      !dailyBudget ||
+      !addressLine1 ||
+      !addressLine2
+    ) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        // Find and update the company
+        const updatedCompany = await Company.findByIdAndUpdate(
+          companyId,
+          {
+            name,
+            website,
+            code,
+            dailyBudget,
+            address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+          },
+          { returnDocument: "after" }
+        ).lean();
+
+        // If company is updated successfully
+        if (updatedCompany) {
+          // Delete fields
+          deleteFields(updatedCompany);
+
+          // Send the updated company with response
+          res.status(201).json(updatedCompany);
+        } else {
+          // If company isn't updated successfully
+          res.status(500);
+          throw new Error("Something went wrong");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 // Delete a company
 router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
