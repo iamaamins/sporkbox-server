@@ -361,6 +361,7 @@ router.put(
           }
         )
           .select("-__v -password -updatedAt")
+          .populate("restaurant", "-__v -createdAt -updatedAt")
           .lean();
 
         // If status is updated successfully
