@@ -55,7 +55,7 @@ router.post("/register", async (req: Request, res: Response) => {
                     name,
                     email,
                     role: "VENDOR",
-                    status: "PENDING",
+                    status: "ARCHIVED",
                     password: hashedPassword,
                     restaurant: restaurant.id,
                   })
@@ -178,7 +178,7 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
                         lastName,
                         email,
                         role: "VENDOR",
-                        status: "PENDING",
+                        status: "ARCHIVED",
                         password: hashedPassword,
                         restaurant: restaurant.id,
                       })
@@ -406,14 +406,14 @@ router.put(
           const updatedVendor = await User.findByIdAndUpdate(
             vendorId,
             {
-              status: action === "Approve" ? "APPROVED" : "PENDING",
+              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
             },
             {
               returnDocument: "after",
             }
           )
             .select("-__v -password -updatedAt")
-            .populate("restaurant", "-__v -createdAt -updatedAt")
+            .populate("restaurant", "-__v -updatedAt")
             .lean();
 
           // Return the updated restaurant

@@ -5,17 +5,17 @@ const userSchema = new Schema<IUserSchema>(
   {
     firstName: {
       type: String,
-      required: [true, "Please add a name"],
+      required: [true, "Please provide a name"],
     },
     lastName: {
       type: String,
-      required: [true, "Please add a name"],
+      required: [true, "Please provide a name"],
     },
     email: {
       type: String,
       unique: true,
       lowercase: true,
-      required: [true, "Please add an email"],
+      required: [true, "Please provide an email"],
     },
     role: {
       type: String,
@@ -24,11 +24,12 @@ const userSchema = new Schema<IUserSchema>(
     },
     password: {
       type: String,
-      required: [true, "Please add a password"],
+      required: [true, "Please provide a password"],
     },
     status: {
       type: String,
-      enum: ["APPROVED", "PENDING"],
+      enum: ["ARCHIVED", "ACTIVE"],
+      required: [true, "Please provide a status"],
     },
     company: {
       type: Schema.Types.ObjectId,

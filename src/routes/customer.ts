@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
 import { ICustomerPayload } from "../types";
+import authUser from "../middleware/authUser";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
 
@@ -58,6 +59,7 @@ router.post("/register", async (req: Request, res: Response) => {
                   firstName,
                   lastName,
                   email,
+                  status: "ACTIVE",
                   role: "CUSTOMER",
                   company: company._id,
                   password: hashedPassword,
@@ -101,6 +103,49 @@ router.post("/register", async (req: Request, res: Response) => {
     // If company isn't fetched successfully
     res.status(500);
     throw new Error("Failed to fetch company");
+  }
+});
+
+// Get all customers of a company
+router.get("/:companyId", authUser, async (req: Request, res: Response) => {
+  // Destructure data from req
+  const { companyId } = req.params;
+
+  // If all the fields aren't provided
+  if (!companyId) {
+    res.status(401);
+    throw new Error("Please provide all the fields");
+  }
+
+  // If there is a user
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    // If role is admin
+    if (role === "ADMIN") {
+      try {
+        // Get all the registered customers of a company
+        const customers = await User.find({ company: companyId }).select(
+          "-__v -updatedAt -password -role -company"
+        );
+
+        // Send the customers data with response
+        res.status(200).json(customers);
+      } catch (err) {
+        // If users aren't fetched successfully
+        res.status(500);
+        throw new Error("Failed to fetch users");
+      }
+    } else {
+      // If role isn't admin
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  } else {
+    // If there is no user
+    res.status(401);
+    throw new Error("Not authorized");
   }
 });
 
