@@ -1,3 +1,4 @@
+import { IEditCustomerPayload } from "./../types/index.d";
 import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
@@ -106,14 +107,49 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 });
 
-// Get all customers of a company
-router.get("/:companyId", authUser, async (req: Request, res: Response) => {
+// Get all customers
+router.get("", authUser, async (req: Request, res: Response) => {
+  // If there is a user
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    // If role is admin
+    if (role === "ADMIN") {
+      try {
+        // Get all customers
+        const customers = await User.find({ role: "CUSTOMER" })
+          .select("-__v -updatedAt -password -role")
+          .populate("company", "address name");
+
+        // Send the customers data with response
+        res.status(200).json(customers);
+      } catch (err) {
+        // If users aren't fetched successfully
+        res.status(500);
+        throw new Error("Failed to fetch users");
+      }
+    } else {
+      // If role isn't admin
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  } else {
+    // If there is no user
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+});
+
+// Edit customer details
+router.put("/:customerId", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
-  const { companyId } = req.params;
+  const { customerId } = req.params;
+  const { firstName, lastName, email }: IEditCustomerPayload = req.body;
 
   // If all the fields aren't provided
-  if (!companyId) {
-    res.status(401);
+  if (!customerId || !firstName || !lastName || !email) {
+    res.status(400);
     throw new Error("Please provide all the fields");
   }
 
@@ -125,17 +161,23 @@ router.get("/:companyId", authUser, async (req: Request, res: Response) => {
     // If role is admin
     if (role === "ADMIN") {
       try {
-        // Get all the registered customers of a company
-        const customers = await User.find({ company: companyId }).select(
-          "-__v -updatedAt -password -role -company"
-        );
+        // Get all customers
+        const updatedCustomer = await User.findByIdAndUpdate(
+          customerId,
+          {
+            firstName,
+            lastName,
+            email,
+          },
+          { returnDocument: "after" }
+        ).lean();
 
-        // Send the customers data with response
-        res.status(200).json(customers);
+        // Send the updated customer data with response
+        res.status(200).json(updatedCustomer);
       } catch (err) {
-        // If users aren't fetched successfully
+        // If customer isn't updated successfully
         res.status(500);
-        throw new Error("Failed to fetch users");
+        throw new Error("Failed to update customer");
       }
     } else {
       // If role isn't admin

@@ -246,3 +246,9 @@ export interface IOrder {
     total: number;
   };
 }
+
+export interface IEditCustomerPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
