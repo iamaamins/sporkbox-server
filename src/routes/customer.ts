@@ -191,4 +191,59 @@ router.put("/:customerId", authUser, async (req: Request, res: Response) => {
   }
 });
 
+// Update customer status
+router.put(
+  "/:customerId/status",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from request
+    const { customerId } = req.params;
+    const { action } = req.body;
+
+    // If all the fields aren't provided
+    if (!customerId || !action) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // If there is a user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Get all customers
+          const updatedCustomer = await User.findByIdAndUpdate(
+            customerId,
+            {
+              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+            },
+            { returnDocument: "after" }
+          )
+            .select("-__v -password -updatedAt -role")
+            .populate("company", "name address")
+            .lean();
+
+          // Send the updated customer data with response
+          res.status(201).json(updatedCustomer);
+        } catch (err) {
+          // If customer isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update customer");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
+
 export default router;
