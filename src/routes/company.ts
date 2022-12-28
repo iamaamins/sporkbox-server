@@ -211,39 +211,58 @@ router.put(
   }
 );
 
-// Delete a company
-router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { companyId } = req.params;
-
-  // Check if there is an user
-  if (req.user) {
+// Update company status
+router.put(
+  "/:companyId/status",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { companyId } = req.params;
+    const { action } = req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Find and delete the company
-        await Company.findByIdAndDelete(companyId);
+    // If all the fields aren't provided
+    if (!companyId || !action) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
 
-        // Send data with response
-        res.status(200).json({ message: "Successfully deleted" });
-      } catch (err) {
-        // If company isn't deleted successfully
-        res.status(500);
-        throw new Error("Failed to delete company");
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Find and update company status
+          const updatedCompany = await Company.findByIdAndUpdate(
+            companyId,
+            {
+              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+            },
+            { returnDocument: "after" }
+          )
+            .select("-__v -updatedAt")
+            .lean();
+
+          // Send data with response
+          res.status(200).json(updatedCompany);
+        } catch (err) {
+          // If company status isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update company status");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 export default router;

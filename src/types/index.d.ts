@@ -13,6 +13,7 @@ export interface ICompanySchema {
   website: string;
   address: string;
   code: string;
+  status: string;
   dailyBudget: number;
 }
 
