@@ -26,6 +26,11 @@ const companySchema = new Schema<ICompanySchema>(
       type: Number,
       required: [true, "Please provide a daily budget"],
     },
+    status: {
+      type: String,
+      enum: ["ARCHIVED", "ACTIVE"],
+      required: [true, "Please provide a status"],
+    },
   },
   {
     timestamps: true,
