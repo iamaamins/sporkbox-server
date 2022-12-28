@@ -9,6 +9,7 @@ const router = express.Router();
 
 // Add a company
 router.post("/add", authUser, async (req: Request, res: Response) => {
+  // Destructure body data
   const {
     name,
     code,
@@ -37,45 +38,59 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
-  // Check if there is an user
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+  try {
+    // Check if there is a company already
+    const company = await Company.findOne({ code }).lean();
 
-    // If role is admin
-    if (role === "ADMIN") {
-      // Create a new company
-      const company = (
-        await Company.create({
-          name,
-          website,
-          code,
-          dailyBudget,
-          address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
-        })
-      ).toObject();
+    // If a company exists
+    if (company) {
+      res.status(401);
+      throw new Error("A company with the same code already exists");
+    }
 
-      // If company is created successfully
-      if (company) {
-        // Delete fields
-        deleteFields(company);
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
 
-        // // Send the company with response
-        res.status(201).json(company);
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Create a new company
+          const company = (
+            await Company.create({
+              name,
+              website,
+              code,
+              dailyBudget,
+              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+            })
+          ).toObject();
+
+          // Delete fields
+          deleteFields(company);
+
+          // Send the company with response
+          res.status(201).json(company);
+        } catch (err) {
+          // If company isn't created successfully
+          res.status(500);
+          throw new Error("Failed to create company");
+        }
       } else {
-        // If company isn't created successfully
-        res.status(500);
-        throw new Error("Something went wrong");
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
+  } catch (err) {
+    // If company isn't fetched successfully
+    res.status(500);
+    throw new Error("Failed to fetch company");
   }
 });
 
@@ -88,19 +103,18 @@ router.get("/", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Create a new company
-      const companies = await Company.find()
-        .select("-__v -updatedAt")
-        .sort({ createdAt: -1 });
+      try {
+        // Create a new company
+        const companies = await Company.find()
+          .select("-__v -updatedAt")
+          .sort({ createdAt: -1 });
 
-      // If companies are found successfully
-      if (companies) {
         // Send the companies with response
         res.status(201).json(companies);
-      } else {
-        // If companies aren't found successfully
+      } catch (err) {
+        // If companies aren't fetched successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch companies");
       }
     } else {
       // If role isn't admin
@@ -113,6 +127,89 @@ router.get("/", authUser, async (req: Request, res: Response) => {
     throw new Error("Not authorized");
   }
 });
+
+// Edit a company
+router.put(
+  "/:companyId/update",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { companyId } = req.params;
+    const {
+      name,
+      code,
+      city,
+      state,
+      zip,
+      website,
+      dailyBudget,
+      addressLine1,
+      addressLine2,
+    }: ICompanyPayload = req.body;
+
+    // If all the fields aren't provided
+    if (
+      !companyId ||
+      !name ||
+      !code ||
+      !city ||
+      !state ||
+      !zip ||
+      !website ||
+      !dailyBudget ||
+      !addressLine1 ||
+      !addressLine2
+    ) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Find and update the company
+          const updatedCompany = await Company.findByIdAndUpdate(
+            companyId,
+            {
+              name,
+              website,
+              code,
+              dailyBudget,
+              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+            },
+            { returnDocument: "after" }
+          ).lean();
+
+          // If company is updated successfully
+          if (updatedCompany) {
+            // Delete fields
+            deleteFields(updatedCompany);
+
+            // Send the updated company with response
+            res.status(201).json(updatedCompany);
+          }
+        } catch (err) {
+          // If company isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update company");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 // Delete a company
 router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
@@ -126,17 +223,16 @@ router.delete("/:companyId", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Find and delete the company
-      const deleted = await Company.findByIdAndDelete(companyId);
+      try {
+        // Find and delete the company
+        await Company.findByIdAndDelete(companyId);
 
-      // If is successfully deleted
-      if (deleted) {
         // Send data with response
         res.status(200).json({ message: "Successfully deleted" });
-      } else {
-        // If is not deleted successfully
+      } catch (err) {
+        // If company isn't deleted successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to delete company");
       }
     } else {
       // If role isn't admin

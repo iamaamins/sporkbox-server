@@ -127,42 +127,51 @@ export const lt =
     ? nextWeekSaturdayUTCTimestamp
     : followingWeekSaturdayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants(companyName: string) {
-  // Get the scheduled restaurants
-  const response = await Restaurant.find({
-    schedules: {
-      $elemMatch: {
-        date: { $gte: gte },
-        "company.name": companyName,
+export async function getUpcomingWeekRestaurants(
+  res: Response,
+  companyName: string
+) {
+  try {
+    // Get the scheduled restaurants
+    const response = await Restaurant.find({
+      schedules: {
+        $elemMatch: {
+          date: { $gte: gte },
+          "company.name": companyName,
+        },
       },
-    },
-  }).select("-__v -updatedAt -createdAt -address");
+    }).select("-__v -updatedAt -createdAt -address");
 
-  // Create upcoming week restaurants, then flat and sort
-  const upcomingWeekRestaurants = response
-    .map((upcomingWeekRestaurant) => ({
-      ...upcomingWeekRestaurant.toObject(),
-      schedules: upcomingWeekRestaurant.schedules.filter(
-        (schedule) =>
-          convertDateToMS(schedule.date) >= gte &&
-          schedule.company.name === companyName
-      ),
-    }))
-    .map((upcomingWeekRestaurant) =>
-      upcomingWeekRestaurant.schedules.map((schedule) => {
-        // Destructure scheduled restaurant
-        const { schedules, ...rest } = upcomingWeekRestaurant;
+    // Create upcoming week restaurants, then flat and sort
+    const upcomingWeekRestaurants = response
+      .map((upcomingWeekRestaurant) => ({
+        ...upcomingWeekRestaurant.toObject(),
+        schedules: upcomingWeekRestaurant.schedules.filter(
+          (schedule) =>
+            convertDateToMS(schedule.date) >= gte &&
+            schedule.company.name === companyName
+        ),
+      }))
+      .map((upcomingWeekRestaurant) =>
+        upcomingWeekRestaurant.schedules.map((schedule) => {
+          // Destructure scheduled restaurant
+          const { schedules, ...rest } = upcomingWeekRestaurant;
 
-        // Create new restaurant object
-        return {
-          ...rest,
-          date: schedule.date,
-        };
-      })
-    )
-    .flat(2)
-    .sort(sortByDate);
+          // Create new restaurant object
+          return {
+            ...rest,
+            date: schedule.date,
+          };
+        })
+      )
+      .flat(2)
+      .sort(sortByDate);
 
-  // Return the scheduled restaurants with response
-  return upcomingWeekRestaurants;
+    // Return the scheduled restaurants with response
+    return upcomingWeekRestaurants;
+  } catch (err) {
+    // If scheduled restaurants aren't fetched successfully
+    res.status(500);
+    throw new Error("Failed to fetch scheduled restaurants");
+  }
 }

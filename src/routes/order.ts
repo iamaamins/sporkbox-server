@@ -22,20 +22,19 @@ router.get("/me/upcoming", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER") {
-      // Find the upcoming orders of the customer
-      const customerUpcomingOrders = await Order.find({ "customer._id": _id })
-        .where("status", "PROCESSING")
-        .sort({ "delivery.date": 1 })
-        .select("-__v -updatedAt -customer -delivery.address -company");
+      try {
+        // Find the upcoming orders of the customer
+        const customerUpcomingOrders = await Order.find({ "customer._id": _id })
+          .where("status", "PROCESSING")
+          .sort({ "delivery.date": 1 })
+          .select("-__v -updatedAt -customer -delivery.address -company");
 
-      // If upcoming orders are found successfully
-      if (customerUpcomingOrders) {
         // Send the data with response
         res.status(200).json(customerUpcomingOrders);
-      } else {
-        // If orders aren't found successfully
+      } catch (err) {
+        // If upcoming orders aren't fetched successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch upcoming orders");
       }
     } else {
       // If role isn't customer
@@ -63,23 +62,22 @@ router.get(
       // If role is customer
 
       if (role === "CUSTOMER") {
-        // Find the upcoming orders of the customer
-        const customerDeliveredOrders = await Order.find({
-          "customer._id": _id,
-        })
-          .where("status", "DELIVERED")
-          .limit(+limit)
-          .sort({ "delivery.date": -1 })
-          .select("-__v -updatedAt -customer -delivery.address -company");
+        try {
+          // Find the delivered orders of the customer
+          const customerDeliveredOrders = await Order.find({
+            "customer._id": _id,
+          })
+            .where("status", "DELIVERED")
+            .limit(+limit)
+            .sort({ "delivery.date": -1 })
+            .select("-__v -updatedAt -customer -delivery.address -company");
 
-        // If customer deliveredOrders are found successfully
-        if (customerDeliveredOrders) {
           // Send the data with response
           res.status(200).json(customerDeliveredOrders);
-        } else {
-          // If delivered orders aren't found successfully
+        } catch (err) {
+          // If delivered orders aren't fetched successfully
           res.status(500);
-          throw new Error("Something went wrong");
+          throw new Error("Failed to fetch delivered orders");
         }
       } else {
         // If role isn't customer
@@ -121,35 +119,42 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER" && company) {
-      // Get upcoming week restaurants
-      const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
-        company.name
-      );
-
-      // Get customer upcoming orders
-      const customerUpcomingOrders = await Order.find({ "customer._id": _id })
-        .where("status", "PROCESSING")
-        .select("delivery item")
-        .sort({ "delivery.date": 1 });
-
-      // If upcoming weeks restaurants and upcoming orders are fetched successfully
-      if (upcomingWeekRestaurants && customerUpcomingOrders) {
-        // Check if the provided items are valid
-        const itemsAreValid = ordersPayload.every((orderPayload) =>
-          upcomingWeekRestaurants.some(
-            (upcomingWeekRestaurant) =>
-              upcomingWeekRestaurant._id.toString() ===
-                orderPayload.restaurantId &&
-              convertDateToMS(upcomingWeekRestaurant.date) ===
-                orderPayload.deliveryDate &&
-              upcomingWeekRestaurant.items.some(
-                (item) => item._id?.toString() === orderPayload.itemId
-              )
-          )
+      try {
+        // Get upcoming week restaurants
+        const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
+          res,
+          company.name
         );
 
-        // If provided items are valid
-        if (itemsAreValid) {
+        try {
+          // Get customer upcoming orders
+          const customerUpcomingOrders = await Order.find({
+            "customer._id": _id,
+          })
+            .where("status", "PROCESSING")
+            .select("delivery item")
+            .sort({ "delivery.date": 1 });
+
+          // Check if the provided items are valid
+          const itemsAreValid = ordersPayload.every((orderPayload) =>
+            upcomingWeekRestaurants.some(
+              (upcomingWeekRestaurant) =>
+                upcomingWeekRestaurant._id.toString() ===
+                  orderPayload.restaurantId &&
+                convertDateToMS(upcomingWeekRestaurant.date) ===
+                  orderPayload.deliveryDate &&
+                upcomingWeekRestaurant.items.some(
+                  (item) => item._id?.toString() === orderPayload.itemId
+                )
+            )
+          );
+
+          // If items are not valid
+          if (!itemsAreValid) {
+            res.status(400);
+            throw new Error("Orders are not valid");
+          }
+
           // Create orders
           const orders = ordersPayload.map((orderPayload) => {
             // Find the restaurant
@@ -280,11 +285,10 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
             throw new Error("One of your orders has exceeded the daily budget");
           }
 
-          // Create orders
-          const response = await Order.insertMany(orders);
+          try {
+            // Create orders
+            const response = await Order.insertMany(orders);
 
-          // If orders are created successfully
-          if (response) {
             // Format orders for customer
             const customerOrders = response.map((order) => ({
               _id: order._id,
@@ -300,21 +304,20 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 
             // Send the data with response
             res.status(201).json(customerOrders);
-          } else {
+          } catch (err) {
             // If orders aren't created successfully
             res.status(500);
-            throw new Error("Something went wrong");
+            throw new Error("Failed to create orders");
           }
-        } else {
-          // If there is an invalid item
-          res.status(400);
-          throw new Error("Invalid orders");
+        } catch (err) {
+          // If upcoming orders aren't fetched successfully
+          res.status(500);
+          throw new Error("Failed to fetch upcoming orders");
         }
-      } else {
-        // If upcoming weeks restaurants and customer
-        // upcoming orders aren't fetched successfully
+      } catch (err) {
+        // If upcoming week restaurants aren't fetched successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch upcoming week restaurants");
       }
     } else {
       // If role isn't customer
@@ -337,13 +340,12 @@ router.get("/upcoming", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Find the upcoming orders
-      const response = await Order.find({ status: "PROCESSING" })
-        .select("-__v -updatedAt")
-        .sort({ "delivery.date": 1 });
+      try {
+        // Find the upcoming orders
+        const response = await Order.find({ status: "PROCESSING" })
+          .select("-__v -updatedAt")
+          .sort({ "delivery.date": 1 });
 
-      // If upcoming orders are found successfully
-      if (response) {
         // Format the delivery date of each order
         const upcomingOrders = response.map((upcomingOrder) => ({
           ...upcomingOrder.toObject(),
@@ -355,10 +357,10 @@ router.get("/upcoming", authUser, async (req: Request, res: Response) => {
 
         // Send the data with response
         res.status(200).json(upcomingOrders);
-      } else {
-        // If upcoming orders aren't found successfully
+      } catch (err) {
+        // If upcoming orders aren't fetched successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch upcoming orders");
       }
     } else {
       // If role isn't admin
@@ -387,14 +389,13 @@ router.get(
 
       // If role is admin
       if (role === "ADMIN") {
-        // Get delivered orders
-        const response = await Order.find({ status: "DELIVERED" })
-          .limit(+limit)
-          .select("-__v -updatedAt")
-          .sort({ "delivery.date": -1 });
+        try {
+          // Get delivered orders
+          const response = await Order.find({ status: "DELIVERED" })
+            .limit(+limit)
+            .select("-__v -updatedAt")
+            .sort({ "delivery.date": -1 });
 
-        // If orders are found successfully
-        if (response) {
           // Convert date
           const deliveredOrders = response.map((deliveredOrder) => ({
             ...deliveredOrder.toObject(),
@@ -406,10 +407,10 @@ router.get(
 
           // Send delivered orders with response
           res.status(200).json(deliveredOrders);
-        } else {
-          // If orders aren't found successfully
+        } catch (err) {
+          // If delivered orders aren't fetched successfully
           res.status(500);
-          throw new Error("Something went wrong");
+          throw new Error("Failed to fetch delivered orders");
         }
       } else {
         // If role isn't admin
@@ -436,28 +437,39 @@ router.put("/update-status", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Update orders status
-      const response = await Order.updateMany(
-        { _id: { $in: orderIds } },
-        { $set: { status: "DELIVERED" } }
-      );
-
-      // If orders status are updated successfully
-      if (response) {
-        // Find the orders
-        const orders = await Order.find({ _id: { $in: orderIds } });
-
-        // Send emails
-        await Promise.all(
-          orders.map(async (order) => await sendEmail(order.toObject()))
+      try {
+        // Update orders status
+        await Order.updateMany(
+          { _id: { $in: orderIds } },
+          { $set: { status: "DELIVERED" } }
         );
 
-        // Send the update
-        res.status(200).json("Delivery email sent");
-      } else {
-        // If order isn't updated successfully
+        try {
+          // Find the orders
+          const orders = await Order.find({ _id: { $in: orderIds } });
+
+          try {
+            // Send emails
+            await Promise.all(
+              orders.map(async (order) => await sendEmail(order.toObject()))
+            );
+
+            // Send the update
+            res.status(200).json("Delivery email sent");
+          } catch (err) {
+            // If emails aren't sent successfully
+            res.status(500);
+            throw new Error("Failed to send emails");
+          }
+        } catch (err) {
+          // If orders aren't fetched successfully
+          res.status(500);
+          throw new Error("Failed to fetch orders");
+        }
+      } catch (err) {
+        // If order status isn't updated successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to update order status");
       }
     } else {
       // If role isn't admin

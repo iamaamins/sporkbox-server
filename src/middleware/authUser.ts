@@ -30,29 +30,31 @@ export default async function handler(
     process.env.JWT_SECRET as string
   ) as JwtPayload;
 
-  // Get the User data from DB
-  const user = await User.findById(decoded.id)
-    .select("-__v -password -updatedAt -createdAt")
-    // .populate<{restaurant: IRestaurant}>(
-    //   "restaurant",
-    //   "-__v -updatedAt -createdAt"
-    // )
-    .populate<{ company: IUserCompany }>(
-      "company",
-      "-__v -updatedAt -createdAt -code -website"
-    )
-    .lean();
+  try {
+    // Get the User data from DB
+    const user = await User.findById(decoded.id)
+      .select("-__v -password -updatedAt -createdAt")
+      // .populate<{restaurant: IRestaurant}>(
+      //   "restaurant",
+      //   "-__v -updatedAt -createdAt"
+      // )
+      .populate<{ company: IUserCompany }>(
+        "company",
+        "-__v -updatedAt -createdAt -code -website"
+      )
+      .lean();
 
-  // If there is a user in db
-  if (user) {
-    // Send User data to the next middleware
-    req.user = user;
+    // If there is a user in db
+    if (user) {
+      // Send User data to the next middleware
+      req.user = user;
 
-    // Call the next middleware
-    next();
-  } else {
-    // If the token is invalid and user isn't found
-    res.status(401);
-    throw new Error("Not authorized");
+      // Call the next middleware
+      next();
+    }
+  } catch (err) {
+    // If user isn't found
+    res.status(500);
+    throw new Error("Failed to fetch user");
   }
 }

@@ -24,20 +24,19 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER") {
-      // Add favorite to db and populate the restaurant
-      const response = await (
-        await Favorite.create({
-          customerId: _id,
-          itemId: itemId,
-          restaurant: restaurantId,
-        })
-      ).populate<{ restaurant: IFavoriteRestaurant }>(
-        "restaurant",
-        "_id name items"
-      );
+      try {
+        // Add favorite to db and populate the restaurant
+        const response = await (
+          await Favorite.create({
+            customerId: _id,
+            itemId: itemId,
+            restaurant: restaurantId,
+          })
+        ).populate<{ restaurant: IFavoriteRestaurant }>(
+          "restaurant",
+          "_id name items"
+        );
 
-      // If favorite is created successfully
-      if (response) {
         // Find the item
         const item = response.restaurant.items.find(
           (item) => item._id.toString() === response.itemId.toString()
@@ -57,15 +56,11 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
 
           // Send data with response
           res.status(201).json(favorite);
-        } else {
-          // If item isn't found
-          res.status(500);
-          throw new Error("Something went wrong");
         }
-      } else {
-        // If favorite isn't created successfully
+      } catch (err) {
+        // If item isn't added to favorite successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to favorite item");
       }
     } else {
       // If role isn't customer
@@ -94,19 +89,18 @@ router.delete(
 
       // If role is customer
       if (role === "CUSTOMER") {
-        // Delete the favorite
-        const removedFavorite = await Favorite.findByIdAndDelete({
-          _id: favoriteId,
-        });
+        try {
+          // Remove the favorite
+          await Favorite.findByIdAndDelete({
+            _id: favoriteId,
+          });
 
-        // If favorite is deleted successfully
-        if (removedFavorite) {
           // Send data with response
           res.status(200).json({ message: "Favorite removed" });
-        } else {
-          // If favorite isn't deleted successfully
+        } catch (err) {
+          // If favorite isn't removed successfully
           res.status(500);
-          throw new Error("Something went wrong");
+          throw new Error("Failed to remove favorite");
         }
       } else {
         // If role isn't customer
@@ -130,16 +124,15 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
 
     // If role is customer
     if (role === "CUSTOMER") {
-      // Find the favorites
-      const response = await Favorite.find({
-        customerId: _id,
-      }).populate<{ restaurant: IFavoriteRestaurant }>(
-        "restaurant",
-        "_id name items"
-      );
+      try {
+        // Find the favorites
+        const response = await Favorite.find({
+          customerId: _id,
+        }).populate<{ restaurant: IFavoriteRestaurant }>(
+          "restaurant",
+          "_id name items"
+        );
 
-      // If favorites are found successfully
-      if (response) {
         // Create favorites
         const favorites = response.map((favorite) => {
           // Get the item
@@ -162,10 +155,10 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
 
         // Send the data with response
         res.status(200).json(favorites);
-      } else {
-        // If favorites aren't found successfully
+      } catch (err) {
+        // If favorites aren't fetched successfully
         res.status(500);
-        throw new Error("Something went wrong");
+        throw new Error("Failed to fetch favorites");
       }
     } else {
       // If role isn't customer
