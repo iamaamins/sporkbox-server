@@ -271,7 +271,9 @@ router.post(
           const updatedRestaurant = await Restaurant.findByIdAndUpdate(
             restaurantId,
             {
-              $push: { items: { name, description, tags, price } },
+              $push: {
+                items: { name, tags, price, description, status: "ACTIVE" },
+              },
             },
             {
               returnDocument: "after",
@@ -351,6 +353,64 @@ router.put(
           // If item isn't updated successfully
           res.status(401);
           throw new Error("Failed to update item");
+        }
+      } else {
+        // If role isn't admin or vendor
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
+
+// Update item status
+router.put(
+  "/:restaurantId/:itemId/status",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { action } = req.body;
+    const { restaurantId, itemId } = req.params;
+
+    // If all the fields aren't provided
+    if (!action || !restaurantId || !itemId) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // If there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin or vendor
+      if (role === "ADMIN" || role === "VENDOR") {
+        try {
+          // Find and update the item
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId, "items._id": itemId },
+            {
+              $set: {
+                "items.$.status": action === "Archive" ? "ARCHIVED" : "ACTIVE",
+              },
+            },
+            {
+              returnDocument: "after",
+            }
+          )
+            .select("-__v -updatedAt")
+            .lean();
+
+          // Send the updated restaurant with response
+          res.status(200).json(updatedRestaurant);
+        } catch (err) {
+          // If item status isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update item status");
         }
       } else {
         // If role isn't admin or vendor
