@@ -266,12 +266,14 @@ router.post(
 
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
-        // Find the restaurant and add the item
         try {
+          // Find the restaurant and add the item
           const updatedRestaurant = await Restaurant.findByIdAndUpdate(
             restaurantId,
             {
-              $push: { items: { name, description, tags, price } },
+              $push: {
+                items: { name, tags, price, description, status: "ACTIVE" },
+              },
             },
             {
               returnDocument: "after",
@@ -365,13 +367,20 @@ router.put(
   }
 );
 
-// Delete an item
-router.delete(
-  "/:restaurantId/:itemId/delete-item",
+// Update item status
+router.put(
+  "/:restaurantId/:itemId/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
+    const { action } = req.body;
     const { restaurantId, itemId } = req.params;
+
+    // If all the fields aren't provided
+    if (!action || !restaurantId || !itemId) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
 
     // If there is an user
     if (req.user) {
@@ -381,25 +390,27 @@ router.delete(
       // If role is admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
         try {
-          // Find the restaurant and delete the item
-          const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-            { _id: restaurantId },
+          // Find and update the item
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId, "items._id": itemId },
             {
-              $pull: {
-                items: { _id: itemId },
+              $set: {
+                "items.$.status": action === "Archive" ? "ARCHIVED" : "ACTIVE",
               },
             },
             {
               returnDocument: "after",
             }
-          ).lean();
+          )
+            .select("-__v -updatedAt")
+            .lean();
 
           // Send the updated restaurant with response
           res.status(200).json(updatedRestaurant);
         } catch (err) {
-          // If the item isn't removed successfully
+          // If item status isn't updated successfully
           res.status(500);
-          throw new Error("Failed to delete the item");
+          throw new Error("Failed to update item status");
         }
       } else {
         // If role isn't admin or vendor
@@ -424,7 +435,7 @@ router.post(
     const { rating, comment, orderId }: IReviewPayload = req.body;
 
     // If rating or comment isn't provided
-    if (!rating || !comment) {
+    if (!restaurantId || !itemId || !rating || !comment || !orderId) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
@@ -438,9 +449,10 @@ router.post(
       if (role === "CUSTOMER") {
         try {
           // Find the order
-          const order = await Order.findById({ customerId: _id })
-            .where("status", "DELIVERED")
-            .where("_id", orderId);
+          const order = await Order.findById(orderId).where(
+            "status",
+            "DELIVERED"
+          );
 
           // If order is found successfully
           if (order) {
