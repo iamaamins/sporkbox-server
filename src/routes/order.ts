@@ -58,8 +58,8 @@ router.get(
     // If there is an user
     if (req.user) {
       const { role, _id } = req.user;
-      // If role is customer
 
+      // If role is customer
       if (role === "CUSTOMER") {
         try {
           // Find the delivered orders of the customer

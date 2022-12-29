@@ -266,8 +266,8 @@ router.post(
 
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
-        // Find the restaurant and add the item
         try {
+          // Find the restaurant and add the item
           const updatedRestaurant = await Restaurant.findByIdAndUpdate(
             restaurantId,
             {
@@ -351,55 +351,6 @@ router.put(
           // If item isn't updated successfully
           res.status(401);
           throw new Error("Failed to update item");
-        }
-      } else {
-        // If role isn't admin or vendor
-        res.status(401);
-        throw new Error("Not authorized");
-      }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
-    }
-  }
-);
-
-// Delete an item
-router.delete(
-  "/:restaurantId/:itemId/delete-item",
-  authUser,
-  async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId } = req.params;
-
-    // If there is an user
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
-
-      // If role is admin or vendor
-      if (role === "ADMIN" || role === "VENDOR") {
-        try {
-          // Find the restaurant and delete the item
-          const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-            { _id: restaurantId },
-            {
-              $pull: {
-                items: { _id: itemId },
-              },
-            },
-            {
-              returnDocument: "after",
-            }
-          ).lean();
-
-          // Send the updated restaurant with response
-          res.status(200).json(updatedRestaurant);
-        } catch (err) {
-          // If the item isn't removed successfully
-          res.status(500);
-          throw new Error("Failed to delete the item");
         }
       } else {
         // If role isn't admin or vendor
