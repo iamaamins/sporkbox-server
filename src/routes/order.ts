@@ -5,7 +5,6 @@ import express, { Request, Response } from "express";
 import {
   sendEmail,
   convertDateToMS,
-  convertDateToText,
   formatNumberToUS,
   getUpcomingWeekRestaurants,
 } from "../utils";
@@ -342,18 +341,9 @@ router.get("/upcoming", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       try {
         // Find the upcoming orders
-        const response = await Order.find({ status: "PROCESSING" })
+        const upcomingOrders = await Order.find({ status: "PROCESSING" })
           .select("-__v -updatedAt")
           .sort({ "delivery.date": 1 });
-
-        // Format the delivery date of each order
-        const upcomingOrders = response.map((upcomingOrder) => ({
-          ...upcomingOrder.toObject(),
-          delivery: {
-            ...upcomingOrder.delivery,
-            date: convertDateToText(upcomingOrder.delivery.date),
-          },
-        }));
 
         // Send the data with response
         res.status(200).json(upcomingOrders);
@@ -391,19 +381,10 @@ router.get(
       if (role === "ADMIN") {
         try {
           // Get delivered orders
-          const response = await Order.find({ status: "DELIVERED" })
+          const deliveredOrders = await Order.find({ status: "DELIVERED" })
             .limit(+limit)
             .select("-__v -updatedAt")
             .sort({ "delivery.date": -1 });
-
-          // Convert date
-          const deliveredOrders = response.map((deliveredOrder) => ({
-            ...deliveredOrder.toObject(),
-            delivery: {
-              ...deliveredOrder.delivery,
-              date: convertDateToText(deliveredOrder.delivery.date),
-            },
-          }));
 
           // Send delivered orders with response
           res.status(200).json(deliveredOrders);

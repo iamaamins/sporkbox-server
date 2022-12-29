@@ -46,10 +46,6 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
 export const formatNumberToUS = (number: number) =>
   +number.toLocaleString("en-US");
 
-// Convert date to string
-export const convertDateToText = (date: Date | string): string =>
-  new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
-
 // General mail
 export const sendEmail = async (order: IOrder): Promise<string> => {
   // Create template
