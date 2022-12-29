@@ -424,7 +424,7 @@ router.post(
     const { rating, comment, orderId }: IReviewPayload = req.body;
 
     // If rating or comment isn't provided
-    if (!rating || !comment) {
+    if (!restaurantId || !itemId || !rating || !comment || !orderId) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
@@ -438,9 +438,10 @@ router.post(
       if (role === "CUSTOMER") {
         try {
           // Find the order
-          const order = await Order.findById({ customerId: _id })
-            .where("status", "DELIVERED")
-            .where("_id", orderId);
+          const order = await Order.findById(orderId).where(
+            "status",
+            "DELIVERED"
+          );
 
           // If order is found successfully
           if (order) {
