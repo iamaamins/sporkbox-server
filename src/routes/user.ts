@@ -39,6 +39,10 @@ router.post("/login", async (req: Request, res: Response) => {
 
       // Send user data with the response
       res.status(200).json(user);
+    } else {
+      // If user isn't found
+      res.status(401);
+      throw new Error("Invalid credentials");
     }
   } catch (err) {
     // If user isn't found

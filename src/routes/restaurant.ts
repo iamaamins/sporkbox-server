@@ -148,89 +148,83 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      try {
-        // Find the restaurant and remove past dates
-        const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-          restaurantId,
-          {
-            $pull: {
-              schedules: {
-                date: { $lt: Date.now() },
-              },
+      // Find the restaurant and remove past dates
+      const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        { _id: restaurantId },
+        {
+          $pull: {
+            schedules: {
+              date: { $lt: Date.now() },
             },
           },
-          {
-            returnDocument: "after",
-          }
-        ).select("-__v -updatedAt -createdAt -address -items");
+        },
+        {
+          returnDocument: "after",
+        }
+      ).select("-__v -updatedAt -createdAt -address -items");
 
-        // If restaurant is found
-        if (updatedRestaurant) {
-          // Check if the restaurant is schedule
-          // on the same date for the same company
-          const isScheduled = updatedRestaurant.schedules.some(
-            (schedule) =>
-              companyId === schedule.company._id.toString() &&
-              convertDateToMS(schedule.date) === convertDateToMS(date)
-          );
+      // If restaurant is found
+      if (updatedRestaurant) {
+        // Check if the restaurant is schedule
+        // on the same date for the same company
+        const isScheduled = updatedRestaurant.schedules.some(
+          (schedule) =>
+            companyId === schedule.company._id.toString() &&
+            convertDateToMS(schedule.date) === convertDateToMS(date)
+        );
 
-          // If the restaurant is already scheduled
-          if (isScheduled) {
-            res.status(401);
-            throw new Error("Already scheduled on the provided date");
-          }
+        // If the restaurant is already scheduled
+        if (isScheduled) {
+          res.status(401);
+          throw new Error("Already scheduled on the provided date");
+        }
 
-          // Find the company and create the schedule
-          try {
-            // Find the company
-            const company = await Company.findById(companyId);
+        // Find the company and create the schedule
+        try {
+          // Find the company
+          const company = await Company.findById(companyId);
 
-            // If company is found successfully
-            if (company) {
-              // Create the schedule
-              const schedule = {
-                date,
-                company: { _id: company.id, name: company.name },
+          // If company is found successfully
+          if (company) {
+            // Create the schedule
+            const schedule = {
+              date,
+              company: { _id: company.id, name: company.name },
+            };
+
+            // Add the schedule details to schedules
+            updatedRestaurant.schedules.push(schedule);
+
+            // Save the restaurant and send the data with response
+            try {
+              // Save the restaurant
+              await updatedRestaurant.save();
+
+              // Destructure the restaurant object
+              const { schedules, ...rest } = updatedRestaurant.toObject();
+
+              // Create restaurant with scheduled date and company details
+              const scheduledRestaurant = {
+                ...rest,
+                ...schedule,
               };
 
-              // Add the schedule details to schedules
-              updatedRestaurant.schedules.push(schedule);
+              // Delete fields
+              deleteFields(scheduledRestaurant);
 
-              // Save the restaurant and send the data with response
-              try {
-                // Save the restaurant
-                await updatedRestaurant.save();
-
-                // Destructure the restaurant object
-                const { schedules, ...rest } = updatedRestaurant.toObject();
-
-                // Create restaurant with scheduled date and company details
-                const scheduledRestaurant = {
-                  ...rest,
-                  ...schedule,
-                };
-
-                // Delete fields
-                deleteFields(scheduledRestaurant);
-
-                // Send updated restaurant with response
-                res.status(201).json(scheduledRestaurant);
-              } catch (err) {
-                // If restaurant isn't saved successfully
-                res.status(500);
-                throw new Error("Failed to save new schedule");
-              }
+              // Send updated restaurant with response
+              res.status(201).json(scheduledRestaurant);
+            } catch (err) {
+              // If restaurant isn't saved successfully
+              res.status(500);
+              throw new Error("Failed to save new schedule");
             }
-          } catch (err) {
-            // If company isn't found successfully
-            res.status(500);
-            throw new Error("Failed to fetch company");
           }
+        } catch (err) {
+          // If company isn't found successfully
+          res.status(500);
+          throw new Error("Failed to fetch company");
         }
-      } catch (err) {
-        // If scheduled restaurants aren't found successfully
-        res.status(500);
-        throw new Error("Failed to remove past dates");
       }
     } else {
       // If role isn't admin
