@@ -38,59 +38,54 @@ router.post("/add", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
-  try {
-    // Check if there is a company already
-    const company = await Company.findOne({ code }).lean();
+  // Check if there is a company already
+  const company = await Company.findOne({ code }).lean();
 
-    // If a company exists
-    if (company) {
-      res.status(401);
-      throw new Error("A company with the same code already exists");
-    }
+  // If a company exists
+  if (company) {
+    res.status(401);
+    throw new Error("A company with the same code already exists");
+  }
 
-    // Check if there is an user
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+  // Check if there is an user
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
 
-      // If role is admin
-      if (role === "ADMIN") {
-        try {
-          // Create a new company
-          const company = (
-            await Company.create({
-              name,
-              website,
-              code,
-              dailyBudget,
-              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
-            })
-          ).toObject();
+    // If role is admin
+    if (role === "ADMIN") {
+      try {
+        // Create a new company
+        const company = (
+          await Company.create({
+            name,
+            code,
+            website,
+            dailyBudget,
+            status: "ACTIVE",
+            address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+          })
+        ).toObject();
 
-          // Delete fields
-          deleteFields(company);
+        // Delete fields
+        deleteFields(company);
 
-          // Send the company with response
-          res.status(201).json(company);
-        } catch (err) {
-          // If company isn't created successfully
-          res.status(500);
-          throw new Error("Failed to create company");
-        }
-      } else {
-        // If role isn't admin
-        res.status(401);
-        throw new Error("Not authorized");
+        // Send the company with response
+        res.status(201).json(company);
+      } catch (err) {
+        // If company isn't created successfully
+        res.status(500);
+        throw new Error("Failed to create company");
       }
     } else {
-      // If there is no user
+      // If role isn't admin
       res.status(401);
       throw new Error("Not authorized");
     }
-  } catch (err) {
-    // If company isn't fetched successfully
-    res.status(500);
-    throw new Error("Failed to fetch company");
+  } else {
+    // If there is no user
+    res.status(401);
+    throw new Error("Not authorized");
   }
 });
 
