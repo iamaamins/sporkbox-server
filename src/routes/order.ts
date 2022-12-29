@@ -406,8 +406,8 @@ router.get(
   }
 );
 
-// Update orders status
-router.put("/update-status", authUser, async (req: Request, res: Response) => {
+// Update bulk orders and send delivery email
+router.put("/status", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
   const { orderIds }: IOrdersStatusPayload = req.body;
 
@@ -463,5 +463,48 @@ router.put("/update-status", authUser, async (req: Request, res: Response) => {
     throw new Error("Not authorized");
   }
 });
+
+// Update single order status
+router.put(
+  "/:orderId/status",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { orderId } = req.params;
+
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Update order status
+          const updatedOrder = await Order.findByIdAndUpdate(orderId, {
+            status: "ARCHIVED",
+          })
+            .select("-__v -updatedAt")
+            .lean();
+
+          // Send updated order with the response
+          res.status(201).json(updatedOrder);
+        } catch (err) {
+          // If order status isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update order status");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 export default router;

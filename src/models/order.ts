@@ -49,7 +49,8 @@ const orderSchema = new Schema<IOrderSchema>(
     },
     status: {
       type: String,
-      enum: ["PROCESSING", "DELIVERED"],
+      enum: ["PROCESSING", "DELIVERED", "ARCHIVED"],
+      required: [true, "Please provide a status"],
     },
     hasReviewed: {
       type: Boolean,
