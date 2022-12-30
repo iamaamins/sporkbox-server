@@ -36,10 +36,6 @@ app.use(
   })
 );
 
-// http://localhost:3000
-// https://www.sporkbox.app
-// https://sporkbox.octib.com
-
 // Routes
 app.use("/users", User);
 app.use("/orders", Order);
