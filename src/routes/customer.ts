@@ -11,7 +11,7 @@ import express, { Request, Response } from "express";
 const router = express.Router();
 
 // Register customer
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register-customer", async (req: Request, res: Response) => {
   // Destructure data from req
   const { firstName, lastName, email, password }: ICustomerPayload = req.body;
 
@@ -131,7 +131,7 @@ router.get("", authUser, async (req: Request, res: Response) => {
 
 // Edit customer details
 router.patch(
-  "/:customerId/update/details",
+  "/:customerId/update-customer-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -185,12 +185,12 @@ router.patch(
 
 // Update customer status
 router.patch(
-  "/:customerId/update/status",
+  "/:customerId/change-customer-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from request
-    const { customerId } = req.params;
     const { action } = req.body;
+    const { customerId } = req.params;
 
     // If all the fields aren't provided
     if (!customerId || !action) {

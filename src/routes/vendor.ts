@@ -10,7 +10,7 @@ import { IVendorPayload, IVendorStatusPayload } from "../types";
 const router = express.Router();
 
 // Register a vendor and a restaurant
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register-vendor", async (req: Request, res: Response) => {
   // Get data from req body
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
@@ -97,7 +97,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // Add a vendor and a restaurant
-router.post("/add", authUser, async (req: Request, res: Response) => {
+router.post("/add-vendor", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
   const {
     firstName,
@@ -260,7 +260,7 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
 
 // Update a vendor
 router.patch(
-  "/:vendorId/update/details",
+  "/:vendorId/update-vendor-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -369,7 +369,7 @@ router.patch(
 
 // Update vendor status
 router.patch(
-  "/:vendorId/update/status",
+  "/:vendorId/change-vendor-status",
   authUser,
   async (req: Request, res: Response) => {
     // Get the role from req

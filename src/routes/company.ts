@@ -8,7 +8,7 @@ import express, { Request, Response } from "express";
 const router = express.Router();
 
 // Add a company
-router.post("/add", authUser, async (req: Request, res: Response) => {
+router.post("/add-company", authUser, async (req: Request, res: Response) => {
   // Destructure body data
   const {
     name,
@@ -125,7 +125,7 @@ router.get("/", authUser, async (req: Request, res: Response) => {
 
 // Edit a company
 router.patch(
-  "/:companyId/update/details",
+  "/:companyId/update-company-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -208,12 +208,12 @@ router.patch(
 
 // Update company status
 router.patch(
-  "/:companyId/update/status",
+  "/:companyId/change-company-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { companyId } = req.params;
     const { action } = req.body;
+    const { companyId } = req.params;
 
     // If all the fields aren't provided
     if (!companyId || !action) {
