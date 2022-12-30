@@ -2,9 +2,9 @@ import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
+import mail from "@sendgrid/mail";
 import Restaurant from "../models/restaurant";
-import { IEmailTemplate, IOrder, ISortScheduledRestaurant } from "../types";
-import mail, { MailDataRequired } from "@sendgrid/mail";
+import { ISortScheduledRestaurant } from "../types";
 
 // Set the sendgrid api key
 mail.setApiKey(
@@ -45,29 +45,6 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
 // Convert number
 export const formatNumberToUS = (number: number) =>
   +number.toLocaleString("en-US");
-
-// General mail
-export const sendEmail = async (template: IEmailTemplate): Promise<string> => {
-  // Create template
-  // const template = {
-  //   to: order.customer.email,
-  //   from: process.env.SENDER_EMAIL,
-  //   subject: `Order Status Update`,
-  //   html: `
-  //   <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is delivered now! Please collect from the reception point.</p>
-  //   `,
-  // };
-
-  // Send the email
-  try {
-    await mail.send(template as MailDataRequired);
-    return "Email is sent successfully";
-  } catch (err) {
-    // @ts-ignore
-    console.log(err.response.body.errors);
-    return "Email isn't sent successfully";
-  }
-};
 
 // Convert date to slug
 export const convertDateToMS = (date: Date | string): number =>

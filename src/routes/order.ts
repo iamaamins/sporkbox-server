@@ -3,7 +3,6 @@ import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
-  sendEmail,
   convertDateToMS,
   formatNumberToUS,
   getUpcomingWeekRestaurants,
@@ -12,6 +11,7 @@ import {
   orderArchiveTemplate,
   orderDeliveryTemplate,
 } from "../utils/emailTemplates";
+import mail from "@sendgrid/mail";
 
 // Initialize router
 const router = express.Router();
@@ -438,7 +438,7 @@ router.put("/status", authUser, async (req: Request, res: Response) => {
             await Promise.all(
               orders.map(
                 async (order) =>
-                  await sendEmail(orderDeliveryTemplate(order.toObject()))
+                  await mail.send(orderDeliveryTemplate(order.toObject()))
               )
             );
 
@@ -495,8 +495,8 @@ router.put(
           // If order is updated successfully
           if (updatedOrder) {
             try {
-              // Email customer
-              await sendEmail(orderArchiveTemplate(updatedOrder.toObject()));
+              // Send email
+              await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
 
               // Send updated order with the response
               res.status(201).json(updatedOrder);
