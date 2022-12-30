@@ -8,6 +8,10 @@ import {
   formatNumberToUS,
   getUpcomingWeekRestaurants,
 } from "../utils";
+import {
+  orderArchiveTemplate,
+  orderDeliveryTemplate,
+} from "../utils/emailTemplates";
 
 // Initialize router
 const router = express.Router();
@@ -432,7 +436,10 @@ router.put("/status", authUser, async (req: Request, res: Response) => {
           try {
             // Send emails
             await Promise.all(
-              orders.map(async (order) => await sendEmail(order.toObject()))
+              orders.map(
+                async (order) =>
+                  await sendEmail(orderDeliveryTemplate(order.toObject()))
+              )
             );
 
             // Send the update
@@ -483,12 +490,22 @@ router.put(
           // Update order status
           const updatedOrder = await Order.findByIdAndUpdate(orderId, {
             status: "ARCHIVED",
-          })
-            .select("-__v -updatedAt")
-            .lean();
+          }).select("-__v -updatedAt");
 
-          // Send updated order with the response
-          res.status(201).json(updatedOrder);
+          // If order is updated successfully
+          if (updatedOrder) {
+            try {
+              // Email customer
+              await sendEmail(orderArchiveTemplate(updatedOrder.toObject()));
+
+              // Send updated order with the response
+              res.status(201).json(updatedOrder);
+            } catch (err) {
+              // If email isn't sent successfully
+              res.status(500);
+              throw new Error("Failed to send emails");
+            }
+          }
         } catch (err) {
           // If order status isn't updated successfully
           res.status(500);

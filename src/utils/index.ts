@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
 import Restaurant from "../models/restaurant";
-import { IOrder, ISortScheduledRestaurant } from "../types";
+import { IEmailTemplate, IOrder, ISortScheduledRestaurant } from "../types";
 import mail, { MailDataRequired } from "@sendgrid/mail";
 
 // Set the sendgrid api key
@@ -47,16 +47,16 @@ export const formatNumberToUS = (number: number) =>
   +number.toLocaleString("en-US");
 
 // General mail
-export const sendEmail = async (order: IOrder): Promise<string> => {
+export const sendEmail = async (template: IEmailTemplate): Promise<string> => {
   // Create template
-  const template = {
-    to: order.customer.email,
-    from: process.env.SENDER_EMAIL,
-    subject: `Order Status Update`,
-    html: `
-    <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is delivered now! Please collect from the reception point.</p>
-    `,
-  };
+  // const template = {
+  //   to: order.customer.email,
+  //   from: process.env.SENDER_EMAIL,
+  //   subject: `Order Status Update`,
+  //   html: `
+  //   <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is delivered now! Please collect from the reception point.</p>
+  //   `,
+  // };
 
   // Send the email
   try {

@@ -253,3 +253,10 @@ export interface IEditCustomerPayload {
   lastName: string;
   email: string;
 }
+
+export interface IEmailTemplate {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+}
