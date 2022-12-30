@@ -411,69 +411,73 @@ router.get(
 );
 
 // Update bulk orders and send delivery email
-router.put("/status", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { orderIds }: IOrdersStatusPayload = req.body;
-
-  // Check if there is an user
-  if (req.user) {
+router.patch(
+  "/update/status",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { orderIds }: IOrdersStatusPayload = req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Update orders status
-        await Order.updateMany(
-          { _id: { $in: orderIds } },
-          { $set: { status: "DELIVERED" } }
-        );
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
 
+      // If role is admin
+      if (role === "ADMIN") {
         try {
-          // Find the orders
-          const orders = await Order.find({ _id: { $in: orderIds } });
+          // Update orders status
+          await Order.updateMany(
+            { _id: { $in: orderIds } },
+            { $set: { status: "DELIVERED" } }
+          );
 
           try {
-            // Send emails
-            await Promise.all(
-              orders.map(
-                async (order) =>
-                  await mail.send(orderDeliveryTemplate(order.toObject()))
-              )
-            );
+            // Find the orders
+            const orders = await Order.find({ _id: { $in: orderIds } });
 
-            // Send the update
-            res.status(200).json("Delivery email sent");
+            try {
+              // Send emails
+              await Promise.all(
+                orders.map(
+                  async (order) =>
+                    await mail.send(orderDeliveryTemplate(order.toObject()))
+                )
+              );
+
+              // Send the update
+              res.status(200).json("Delivery email sent");
+            } catch (err) {
+              // If emails aren't sent successfully
+              res.status(500);
+              throw new Error("Failed to send emails");
+            }
           } catch (err) {
-            // If emails aren't sent successfully
+            // If orders aren't fetched successfully
             res.status(500);
-            throw new Error("Failed to send emails");
+            throw new Error("Failed to fetch orders");
           }
         } catch (err) {
-          // If orders aren't fetched successfully
+          // If order status isn't updated successfully
           res.status(500);
-          throw new Error("Failed to fetch orders");
+          throw new Error("Failed to update order status");
         }
-      } catch (err) {
-        // If order status isn't updated successfully
-        res.status(500);
-        throw new Error("Failed to update order status");
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Update single order status
-router.put(
-  "/:orderId/status",
+router.patch(
+  "/:orderId/update/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req

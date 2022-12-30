@@ -259,8 +259,8 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
 });
 
 // Update a vendor
-router.put(
-  "/:vendorId/update",
+router.patch(
+  "/:vendorId/update/details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -368,8 +368,8 @@ router.put(
 );
 
 // Update vendor status
-router.put(
-  "/:vendorId/status",
+router.patch(
+  "/:vendorId/update/status",
   authUser,
   async (req: Request, res: Response) => {
     // Get the role from req

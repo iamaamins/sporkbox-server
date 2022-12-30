@@ -130,58 +130,62 @@ router.get("", authUser, async (req: Request, res: Response) => {
 });
 
 // Edit customer details
-router.put("/:customerId", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { customerId } = req.params;
-  const { firstName, lastName, email }: IEditCustomerPayload = req.body;
-
-  // If all the fields aren't provided
-  if (!customerId || !firstName || !lastName || !email) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // If there is a user
-  if (req.user) {
+router.patch(
+  "/:customerId/update/details",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { customerId } = req.params;
+    const { firstName, lastName, email }: IEditCustomerPayload = req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Get all customers
-        const updatedCustomer = await User.findByIdAndUpdate(
-          customerId,
-          {
-            firstName,
-            lastName,
-            email,
-          },
-          { returnDocument: "after" }
-        ).lean();
+    // If all the fields aren't provided
+    if (!customerId || !firstName || !lastName || !email) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
 
-        // Send the updated customer data with response
-        res.status(200).json(updatedCustomer);
-      } catch (err) {
-        // If customer isn't updated successfully
-        res.status(500);
-        throw new Error("Failed to update customer");
+    // If there is a user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Get all customers
+          const updatedCustomer = await User.findByIdAndUpdate(
+            customerId,
+            {
+              firstName,
+              lastName,
+              email,
+            },
+            { returnDocument: "after" }
+          ).lean();
+
+          // Send the updated customer data with response
+          res.status(200).json(updatedCustomer);
+        } catch (err) {
+          // If customer isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update customer");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Update customer status
-router.put(
-  "/:customerId/status",
+router.patch(
+  "/:customerId/update/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from request

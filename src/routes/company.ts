@@ -124,8 +124,8 @@ router.get("/", authUser, async (req: Request, res: Response) => {
 });
 
 // Edit a company
-router.put(
-  "/:companyId/update",
+router.patch(
+  "/:companyId/update/details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -207,8 +207,8 @@ router.put(
 );
 
 // Update company status
-router.put(
-  "/:companyId/status",
+router.patch(
+  "/:companyId/update/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
