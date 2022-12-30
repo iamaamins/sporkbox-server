@@ -1,5 +1,5 @@
 import Company from "../models/company";
-import { deleteFields } from "../utils";
+import { checkActions, deleteFields } from "../utils";
 import authUser from "../middleware/authUser";
 import { ICompanyPayload } from "../types";
 import express, { Request, Response } from "express";
@@ -8,7 +8,7 @@ import express, { Request, Response } from "express";
 const router = express.Router();
 
 // Add a company
-router.post("/add", authUser, async (req: Request, res: Response) => {
+router.post("/add-company", authUser, async (req: Request, res: Response) => {
   // Destructure body data
   const {
     name,
@@ -124,8 +124,8 @@ router.get("/", authUser, async (req: Request, res: Response) => {
 });
 
 // Edit a company
-router.put(
-  "/:companyId/update",
+router.patch(
+  "/:companyId/update-company-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -207,19 +207,22 @@ router.put(
 );
 
 // Update company status
-router.put(
-  "/:companyId/status",
+router.patch(
+  "/:companyId/change-company-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { companyId } = req.params;
     const { action } = req.body;
+    const { companyId } = req.params;
 
     // If all the fields aren't provided
     if (!companyId || !action) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // Check if there is an user
     if (req.user) {

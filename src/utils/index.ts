@@ -110,6 +110,7 @@ export async function getUpcomingWeekRestaurants(
       schedules: {
         $elemMatch: {
           date: { $gte: gte },
+          status: "ACTIVE",
           "company.name": companyName,
         },
       },
@@ -121,6 +122,7 @@ export async function getUpcomingWeekRestaurants(
         ...upcomingWeekRestaurant.toObject(),
         schedules: upcomingWeekRestaurant.schedules.filter(
           (schedule) =>
+            schedule.status === "ACTIVE" &&
             convertDateToMS(schedule.date) >= gte &&
             schedule.company.name === companyName
         ),
@@ -146,5 +148,16 @@ export async function getUpcomingWeekRestaurants(
     // If scheduled restaurants aren't fetched successfully
     res.status(500);
     throw new Error("Failed to fetch scheduled restaurants");
+  }
+}
+
+export function checkActions(
+  actions = ["Archive", "Activate"],
+  action: string,
+  res: Response
+) {
+  if (!actions.includes(action)) {
+    res.status(400);
+    throw new Error("Please provide correct action");
   }
 }

@@ -8,6 +8,7 @@ import {
   deleteFields,
   convertDateToMS,
   getUpcomingWeekRestaurants,
+  checkActions,
 } from "../utils";
 import {
   IItemPayload,
@@ -20,223 +21,315 @@ import Company from "../models/company";
 const router = express.Router();
 
 // Get upcoming week restaurants
-router.get("/upcoming", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
-  if (req.user) {
-    // Destructure data from req
-    const { role, company } = req.user;
+router.get(
+  "/upcoming-restaurants",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role, company } = req.user;
 
-    // If role is customer
-    if (role === "CUSTOMER" && company) {
-      try {
-        // Get upcoming week restaurants
-        const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
-          res,
-          company.name
-        );
+      // If role is customer
+      if (role === "CUSTOMER" && company) {
+        try {
+          // Get upcoming week restaurants
+          const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
+            res,
+            company.name
+          );
 
-        // Send the data with response
-        res.status(200).json(upcomingWeekRestaurants);
-      } catch (err) {
-        // If upcoming week restaurants aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch upcoming week restaurants");
+          // Send the data with response
+          res.status(200).json(upcomingWeekRestaurants);
+        } catch (err) {
+          // If upcoming week restaurants aren't fetched successfully
+          res.status(500);
+          throw new Error("Failed to fetch upcoming week restaurants");
+        }
+      } else {
+        // If role isn't customer
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't customer
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Get all scheduled restaurants
-router.get("/scheduled", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.get(
+  "/scheduled-restaurants",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Get the scheduled restaurants
-        const response = await Restaurant.find({
-          "schedules.date": {
-            $gte: gte,
-          },
-        }).select("-__v -updatedAt -createdAt -address -items");
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Get the scheduled restaurants
+          const response = await Restaurant.find({
+            "schedules.date": {
+              $gte: gte,
+            },
+          }).select("-__v -updatedAt -createdAt -address -items");
 
-        // Create scheduled restaurants, then flat and sort
-        const scheduledRestaurants = response
-          .map((scheduledRestaurant) =>
-            scheduledRestaurant.schedules.map((schedule) => {
-              // Destructure scheduled restaurant
-              const { schedules, ...rest } = scheduledRestaurant.toObject();
+          // Create scheduled restaurants, then flat and sort
+          const scheduledRestaurants = response
+            .map((scheduledRestaurant) =>
+              scheduledRestaurant.schedules.map((schedule) => {
+                // Destructure scheduled restaurant
+                const { schedules, ...rest } = scheduledRestaurant.toObject();
 
-              // Create new restaurant object
-              return {
-                ...rest,
-                date: schedule.date,
-                company: schedule.company,
-              };
-            })
-          )
-          .flat(2)
-          .filter(
-            (scheduledRestaurant) =>
-              convertDateToMS(scheduledRestaurant.date) >= gte
-          )
-          .sort(sortByDate);
+                // Create new scheduled restaurant
+                return {
+                  ...rest,
+                  scheduleId: schedule._id,
+                  date: schedule.date,
+                  status: schedule.status,
+                  company: schedule.company,
+                };
+              })
+            )
+            .flat(2)
+            .filter(
+              (scheduledRestaurant) =>
+                convertDateToMS(scheduledRestaurant.date) >= gte
+            )
+            .sort(sortByDate);
 
-        // Return the scheduled restaurants with response
-        res.status(200).json(scheduledRestaurants);
-      } catch (err) {
-        // If scheduled restaurants aren't found successfully
-        res.status(500);
-        throw new Error("Failed to fetch scheduled restaurants");
+          // Return the scheduled restaurants with response
+          res.status(200).json(scheduledRestaurants);
+        } catch (err) {
+          // If scheduled restaurants aren't found successfully
+          res.status(500);
+          throw new Error("Failed to fetch scheduled restaurants");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Schedule a restaurant
-router.put("/schedule", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
-    req.body;
-
-  // If full data isn't provided
-  if (!date || !companyId || !restaurantId) {
-    res.status(400);
-    throw new Error("Please fill all the fields");
-  }
-
-  // If provided date is a past date
-  if (convertDateToMS(date) < gte) {
-    res.status(400);
-    throw new Error("Cant' schedule a restaurant in the past");
-  }
-
-  // Get the day from provided date
-  const day = new Date(date).toUTCString().split(",")[0];
-
-  // Restrict scheduling on saturday and sunday
-  if (day === "Sat" || day === "Sun") {
-    res.status(400);
-    throw new Error(
-      `Can't schedule a restaurant on ${day === "Sat" ? "Saturday" : "Sunday"}`
-    );
-  }
-
-  // Check if there is an user
-  if (req.user) {
+router.post(
+  "/schedule-restaurant",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
+      req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      // Find the restaurant and remove past dates
-      const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        { _id: restaurantId },
-        {
-          $pull: {
-            schedules: {
-              date: { $lt: Date.now() },
+    // If full data isn't provided
+    if (!date || !companyId || !restaurantId) {
+      res.status(400);
+      throw new Error("Please fill all the fields");
+    }
+
+    // If provided date is a past date
+    if (convertDateToMS(date) < gte) {
+      res.status(400);
+      throw new Error("Cant' schedule a restaurant in the past");
+    }
+
+    // Get the day from provided date
+    const day = new Date(date).toUTCString().split(",")[0];
+
+    // Restrict scheduling on saturday and sunday
+    if (day === "Sat" || day === "Sun") {
+      res.status(400);
+      throw new Error(
+        `Can't schedule a restaurant on ${
+          day === "Sat" ? "Saturday" : "Sunday"
+        }`
+      );
+    }
+
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        // Find the restaurant and remove past dates
+        const updatedRestaurant = await Restaurant.findOneAndUpdate(
+          { _id: restaurantId },
+          {
+            $pull: {
+              schedules: {
+                date: { $lt: Date.now() },
+              },
             },
           },
-        },
-        {
-          returnDocument: "after",
-        }
-      ).select("-__v -updatedAt -createdAt -address -items");
+          {
+            returnDocument: "after",
+          }
+        ).select("-__v -updatedAt -createdAt -address -items");
 
-      // If restaurant is found
-      if (updatedRestaurant) {
-        // Check if the restaurant is schedule
-        // on the same date for the same company
-        const isScheduled = updatedRestaurant.schedules.some(
-          (schedule) =>
-            companyId === schedule.company._id.toString() &&
-            convertDateToMS(schedule.date) === convertDateToMS(date)
-        );
+        // If restaurant is found
+        if (updatedRestaurant) {
+          // Check if the restaurant is schedule
+          // on the same date for the same company
+          const isScheduled = updatedRestaurant.schedules.some(
+            (schedule) =>
+              companyId === schedule.company._id.toString() &&
+              convertDateToMS(schedule.date) === convertDateToMS(date)
+          );
 
-        // If the restaurant is already scheduled
-        if (isScheduled) {
-          res.status(401);
-          throw new Error("Already scheduled on the provided date");
-        }
+          // If the restaurant is already scheduled
+          if (isScheduled) {
+            res.status(401);
+            throw new Error("Already scheduled on the provided date");
+          }
 
-        // Find the company and create the schedule
-        try {
-          // Find the company
-          const company = await Company.findById(companyId);
+          try {
+            // Find the company
+            const company = await Company.findById(companyId);
 
-          // If company is found successfully
-          if (company) {
-            // Create the schedule
-            const schedule = {
-              date,
-              company: { _id: company.id, name: company.name },
-            };
-
-            // Add the schedule details to schedules
-            updatedRestaurant.schedules.push(schedule);
-
-            // Save the restaurant and send the data with response
-            try {
-              // Save the restaurant
-              await updatedRestaurant.save();
-
-              // Destructure the restaurant object
-              const { schedules, ...rest } = updatedRestaurant.toObject();
-
-              // Create restaurant with scheduled date and company details
-              const scheduledRestaurant = {
-                ...rest,
-                ...schedule,
+            // If company is found successfully
+            if (company) {
+              // Create the schedule
+              const schedule = {
+                date,
+                status: "ACTIVE",
+                company: { _id: company.id, name: company.name },
               };
 
-              // Delete fields
-              deleteFields(scheduledRestaurant);
+              // Add the schedule details to schedules
+              updatedRestaurant.schedules.push(schedule);
 
-              // Send updated restaurant with response
-              res.status(201).json(scheduledRestaurant);
-            } catch (err) {
-              // If restaurant isn't saved successfully
-              res.status(500);
-              throw new Error("Failed to save new schedule");
+              try {
+                // Save the restaurant
+                await updatedRestaurant.save();
+
+                // Destructure the restaurant object
+                const { schedules, ...rest } = updatedRestaurant.toObject();
+
+                // Create restaurant with scheduled date and company details
+                const scheduledRestaurant = {
+                  ...rest,
+                  ...schedule,
+                };
+
+                // Delete fields
+                deleteFields(scheduledRestaurant);
+
+                // Send updated restaurant with response
+                res.status(201).json(scheduledRestaurant);
+              } catch (err) {
+                // If restaurant isn't saved successfully
+                res.status(500);
+                throw new Error("Failed to save new schedule");
+              }
             }
+          } catch (err) {
+            // If company isn't found successfully
+            res.status(500);
+            throw new Error("Failed to fetch company");
           }
-        } catch (err) {
-          // If company isn't found successfully
-          res.status(500);
-          throw new Error("Failed to fetch company");
         }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
+
+// Update schedule status
+router.patch(
+  "/:restaurantId/:scheduleId/update-schedule-status",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { action } = req.body;
+    const { restaurantId, scheduleId } = req.params;
+
+    // If all the fields aren't provide
+    if (!action || !restaurantId || !scheduleId) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // Check actions validity
+    checkActions(["Activate", "Deactivate"], action, res);
+
+    // If there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin or vendor
+      if (role === "ADMIN") {
+        try {
+          // Find and update the item
+          const response = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId, "schedules._id": scheduleId },
+            {
+              $set: {
+                "schedules.$.status":
+                  action === "Deactivate" ? "INACTIVE" : "ACTIVE",
+              },
+            },
+            {
+              returnDocument: "after",
+            }
+          )
+            .select("-__v -updatedAt -createdAt -address -items")
+            .lean();
+
+          // If the schedule is updated successfully
+          if (response) {
+            const updatedSchedules = response.schedules.map((schedule) => {
+              // Create new schedule
+              return {
+                _id: response._id,
+                name: response.name,
+                scheduleId: schedule._id,
+                date: schedule.date,
+                status: schedule.status,
+                company: schedule.company,
+              };
+            });
+
+            // Send the updated schedules with response
+            res.status(201).json(updatedSchedules);
+          }
+        } catch (err) {
+          // If item status isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update schedule status");
+        }
+      } else {
+        // If role isn't admin or vendor
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 // Add an item to a restaurant
 router.post(
@@ -297,8 +390,8 @@ router.post(
 );
 
 // Edit an item
-router.put(
-  "/:restaurantId/:itemId/update",
+router.patch(
+  "/:restaurantId/:itemId/update-item-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -362,8 +455,8 @@ router.put(
 );
 
 // Update item status
-router.put(
-  "/:restaurantId/:itemId/status",
+router.patch(
+  "/:restaurantId/:itemId/update-item-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -376,13 +469,16 @@ router.put(
       throw new Error("Please provide all the fields");
     }
 
+    // Check actions validity
+    checkActions(undefined, action, res);
+
     // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
       // If role is admin or vendor
-      if (role === "ADMIN" || role === "VENDOR") {
+      if (role === "ADMIN") {
         try {
           // Find and update the item
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -421,7 +517,7 @@ router.put(
 
 // Add a review to an item
 router.post(
-  "/:restaurantId/:itemId",
+  "/:restaurantId/:itemId/add-review",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req

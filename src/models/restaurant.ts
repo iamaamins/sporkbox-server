@@ -27,6 +27,11 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             required: [true, "Please provide a company name"],
           },
         },
+        status: {
+          type: String,
+          enum: ["ACTIVE", "INACTIVE"],
+          required: [true, "Please provide a status"],
+        },
       }),
     ],
     items: [

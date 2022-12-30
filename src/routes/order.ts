@@ -17,43 +17,49 @@ import mail from "@sendgrid/mail";
 const router = express.Router();
 
 // Get customer's upcoming orders
-router.get("/me/upcoming", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
-  if (req.user) {
-    // Destructure data from req
-    const { _id, role } = req.user;
+router.get(
+  "/me/upcoming-orders",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { _id, role } = req.user;
 
-    // If role is customer
-    if (role === "CUSTOMER") {
-      try {
-        // Find the upcoming orders of the customer
-        const customerUpcomingOrders = await Order.find({ "customer._id": _id })
-          .where("status", "PROCESSING")
-          .sort({ "delivery.date": 1 })
-          .select("-__v -updatedAt -customer -delivery.address -company");
+      // If role is customer
+      if (role === "CUSTOMER") {
+        try {
+          // Find the upcoming orders of the customer
+          const customerUpcomingOrders = await Order.find({
+            "customer._id": _id,
+          })
+            .where("status", "PROCESSING")
+            .sort({ "delivery.date": 1 })
+            .select("-__v -updatedAt -customer -delivery.address -company");
 
-        // Send the data with response
-        res.status(200).json(customerUpcomingOrders);
-      } catch (err) {
-        // If upcoming orders aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch upcoming orders");
+          // Send the data with response
+          res.status(200).json(customerUpcomingOrders);
+        } catch (err) {
+          // If upcoming orders aren't fetched successfully
+          res.status(500);
+          throw new Error("Failed to fetch upcoming orders");
+        }
+      } else {
+        // If role isn't customer
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't customer
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Get customer's delivered orders
 router.get(
-  "/me/delivered/:limit",
+  "/me/delivered-orders/:limit",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure req data
@@ -96,7 +102,7 @@ router.get(
 );
 
 // Create orders
-router.post("/create", authUser, async (req: Request, res: Response) => {
+router.post("/create-orders", authUser, async (req: Request, res: Response) => {
   // Get data from req user and body
   const { ordersPayload }: IOrdersPayload = req.body;
 
@@ -335,42 +341,46 @@ router.post("/create", authUser, async (req: Request, res: Response) => {
 });
 
 // Get all upcoming orders
-router.get("/upcoming", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
-  if (req.user) {
-    // Get data from req user
-    const { role } = req.user;
+router.get(
+  "/all-upcoming-orders",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Check if there is an user
+    if (req.user) {
+      // Get data from req user
+      const { role } = req.user;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Find the upcoming orders
-        const upcomingOrders = await Order.find({ status: "PROCESSING" })
-          .select("-__v -updatedAt")
-          .sort({ "delivery.date": 1 });
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Find the upcoming orders
+          const upcomingOrders = await Order.find({ status: "PROCESSING" })
+            .select("-__v -updatedAt")
+            .sort({ "delivery.date": 1 });
 
-        // Send the data with response
-        res.status(200).json(upcomingOrders);
-      } catch (err) {
-        // If upcoming orders aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch upcoming orders");
+          // Send the data with response
+          res.status(200).json(upcomingOrders);
+        } catch (err) {
+          // If upcoming orders aren't fetched successfully
+          res.status(500);
+          throw new Error("Failed to fetch upcoming orders");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Get all delivered orders
 router.get(
-  "/delivered/:limit",
+  "/all-delivered-orders/:limit",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -411,69 +421,73 @@ router.get(
 );
 
 // Update bulk orders and send delivery email
-router.put("/status", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { orderIds }: IOrdersStatusPayload = req.body;
-
-  // Check if there is an user
-  if (req.user) {
+router.patch(
+  "/change-orders-status",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { orderIds }: IOrdersStatusPayload = req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Update orders status
-        await Order.updateMany(
-          { _id: { $in: orderIds } },
-          { $set: { status: "DELIVERED" } }
-        );
+    // Check if there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
 
+      // If role is admin
+      if (role === "ADMIN") {
         try {
-          // Find the orders
-          const orders = await Order.find({ _id: { $in: orderIds } });
+          // Update orders status
+          await Order.updateMany(
+            { _id: { $in: orderIds } },
+            { $set: { status: "DELIVERED" } }
+          );
 
           try {
-            // Send emails
-            await Promise.all(
-              orders.map(
-                async (order) =>
-                  await mail.send(orderDeliveryTemplate(order.toObject()))
-              )
-            );
+            // Find the orders
+            const orders = await Order.find({ _id: { $in: orderIds } });
 
-            // Send the update
-            res.status(200).json("Delivery email sent");
+            try {
+              // Send emails
+              await Promise.all(
+                orders.map(
+                  async (order) =>
+                    await mail.send(orderDeliveryTemplate(order.toObject()))
+                )
+              );
+
+              // Send the update
+              res.status(200).json("Delivery email sent");
+            } catch (err) {
+              // If emails aren't sent successfully
+              res.status(500);
+              throw new Error("Failed to send emails");
+            }
           } catch (err) {
-            // If emails aren't sent successfully
+            // If orders aren't fetched successfully
             res.status(500);
-            throw new Error("Failed to send emails");
+            throw new Error("Failed to fetch orders");
           }
         } catch (err) {
-          // If orders aren't fetched successfully
+          // If order status isn't updated successfully
           res.status(500);
-          throw new Error("Failed to fetch orders");
+          throw new Error("Failed to update order status");
         }
-      } catch (err) {
-        // If order status isn't updated successfully
-        res.status(500);
-        throw new Error("Failed to update order status");
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Update single order status
-router.put(
-  "/:orderId/status",
+router.patch(
+  "/:orderId/change-order-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req

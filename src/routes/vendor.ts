@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/user";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields } from "../utils";
+import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { Request, Response } from "express";
 import { IVendorPayload, IVendorStatusPayload } from "../types";
 
@@ -10,7 +10,7 @@ import { IVendorPayload, IVendorStatusPayload } from "../types";
 const router = express.Router();
 
 // Register a vendor and a restaurant
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register-vendor", async (req: Request, res: Response) => {
   // Get data from req body
   const { name, email, password, restaurantName, restaurantAddress } = req.body;
 
@@ -97,7 +97,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // Add a vendor and a restaurant
-router.post("/add", authUser, async (req: Request, res: Response) => {
+router.post("/add-vendor", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
   const {
     firstName,
@@ -259,8 +259,8 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
 });
 
 // Update a vendor
-router.put(
-  "/:vendorId/update",
+router.patch(
+  "/:vendorId/update-vendor-details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -368,8 +368,8 @@ router.put(
 );
 
 // Update vendor status
-router.put(
-  "/:vendorId/status",
+router.patch(
+  "/:vendorId/change-vendor-status",
   authUser,
   async (req: Request, res: Response) => {
     // Get the role from req
@@ -381,6 +381,9 @@ router.put(
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // Check if there is an user
     if (req.user) {

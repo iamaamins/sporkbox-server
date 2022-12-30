@@ -4,14 +4,14 @@ import User from "../models/user";
 import Company from "../models/company";
 import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields } from "../utils";
+import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { Request, Response } from "express";
 
 // Initialize router
 const router = express.Router();
 
 // Register customer
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register-customer", async (req: Request, res: Response) => {
   // Destructure data from req
   const { firstName, lastName, email, password }: ICustomerPayload = req.body;
 
@@ -130,69 +130,76 @@ router.get("", authUser, async (req: Request, res: Response) => {
 });
 
 // Edit customer details
-router.put("/:customerId", authUser, async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { customerId } = req.params;
-  const { firstName, lastName, email }: IEditCustomerPayload = req.body;
-
-  // If all the fields aren't provided
-  if (!customerId || !firstName || !lastName || !email) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // If there is a user
-  if (req.user) {
+router.patch(
+  "/:customerId/update-customer-details",
+  authUser,
+  async (req: Request, res: Response) => {
     // Destructure data from req
-    const { role } = req.user;
+    const { customerId } = req.params;
+    const { firstName, lastName, email }: IEditCustomerPayload = req.body;
 
-    // If role is admin
-    if (role === "ADMIN") {
-      try {
-        // Get all customers
-        const updatedCustomer = await User.findByIdAndUpdate(
-          customerId,
-          {
-            firstName,
-            lastName,
-            email,
-          },
-          { returnDocument: "after" }
-        ).lean();
+    // If all the fields aren't provided
+    if (!customerId || !firstName || !lastName || !email) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
 
-        // Send the updated customer data with response
-        res.status(200).json(updatedCustomer);
-      } catch (err) {
-        // If customer isn't updated successfully
-        res.status(500);
-        throw new Error("Failed to update customer");
+    // If there is a user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin
+      if (role === "ADMIN") {
+        try {
+          // Get all customers
+          const updatedCustomer = await User.findByIdAndUpdate(
+            customerId,
+            {
+              firstName,
+              lastName,
+              email,
+            },
+            { returnDocument: "after" }
+          ).lean();
+
+          // Send the updated customer data with response
+          res.status(200).json(updatedCustomer);
+        } catch (err) {
+          // If customer isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update customer");
+        }
+      } else {
+        // If role isn't admin
+        res.status(401);
+        throw new Error("Not authorized");
       }
     } else {
-      // If role isn't admin
+      // If there is no user
       res.status(401);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
-});
+);
 
 // Update customer status
-router.put(
-  "/:customerId/status",
+router.patch(
+  "/:customerId/change-customer-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from request
-    const { customerId } = req.params;
     const { action } = req.body;
+    const { customerId } = req.params;
 
     // If all the fields aren't provided
     if (!customerId || !action) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // If there is a user
     if (req.user) {
