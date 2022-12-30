@@ -78,10 +78,12 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
               // Destructure scheduled restaurant
               const { schedules, ...rest } = scheduledRestaurant.toObject();
 
-              // Create new restaurant object
+              // Create new scheduled restaurant
               return {
                 ...rest,
+                scheduleId: schedule._id,
                 date: schedule.date,
+                status: schedule.status,
                 company: schedule.company,
               };
             })
@@ -179,7 +181,6 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
           throw new Error("Already scheduled on the provided date");
         }
 
-        // Find the company and create the schedule
         try {
           // Find the company
           const company = await Company.findById(companyId);
@@ -189,13 +190,13 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
             // Create the schedule
             const schedule = {
               date,
+              status: "ACTIVE",
               company: { _id: company.id, name: company.name },
             };
 
             // Add the schedule details to schedules
             updatedRestaurant.schedules.push(schedule);
 
-            // Save the restaurant and send the data with response
             try {
               // Save the restaurant
               await updatedRestaurant.save();
@@ -237,6 +238,89 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
     throw new Error("Not authorized");
   }
 });
+
+// Update schedule status
+router.put(
+  "/:restaurantId/:scheduleId/status",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { action } = req.body;
+    const { restaurantId, scheduleId } = req.params;
+
+    // If all the fields aren't provide
+    if (!action || !restaurantId || !scheduleId) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // Check actions
+    const actions = ["Activate", "Deactivate"];
+
+    // Check if provided action is correct
+    if (!actions.includes(action)) {
+      res.status(400);
+      throw new Error("Please provide correct action");
+    }
+
+    // If there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin or vendor
+      if (role === "ADMIN") {
+        try {
+          // Find and update the item
+          const response = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId, "schedules._id": scheduleId },
+            {
+              $set: {
+                "schedules.$.status":
+                  action === "Deactivate" ? "INACTIVE" : "ACTIVE",
+              },
+            },
+            {
+              returnDocument: "after",
+            }
+          )
+            .select("-__v -updatedAt -createdAt -address -items")
+            .lean();
+
+          // If the schedule is updated successfully
+          if (response) {
+            const updatedSchedules = response.schedules.map((schedule) => {
+              // Create new schedule
+              return {
+                _id: response._id,
+                name: response.name,
+                scheduleId: schedule._id,
+                date: schedule.date,
+                status: schedule.status,
+                company: schedule.company,
+              };
+            });
+
+            // Send the updated schedules with response
+            res.status(201).json(updatedSchedules);
+          }
+        } catch (err) {
+          // If item status isn't updated successfully
+          res.status(500);
+          throw new Error("Failed to update schedule status");
+        }
+      } else {
+        // If role isn't admin or vendor
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
 
 // Add an item to a restaurant
 router.post(

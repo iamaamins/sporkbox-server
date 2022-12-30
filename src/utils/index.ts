@@ -112,6 +112,7 @@ export async function getUpcomingWeekRestaurants(
       schedules: {
         $elemMatch: {
           date: { $gte: gte },
+          status: "ACTIVE",
           "company.name": companyName,
         },
       },
@@ -123,6 +124,7 @@ export async function getUpcomingWeekRestaurants(
         ...upcomingWeekRestaurant.toObject(),
         schedules: upcomingWeekRestaurant.schedules.filter(
           (schedule) =>
+            schedule.status === "ACTIVE" &&
             convertDateToMS(schedule.date) >= gte &&
             schedule.company.name === companyName
         ),

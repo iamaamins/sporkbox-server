@@ -74,6 +74,7 @@ export interface ISchedulesSchema {
     _id: Types.ObjectId;
     name: string;
   };
+  status: string;
 }
 
 export interface IRestaurantSchema {
