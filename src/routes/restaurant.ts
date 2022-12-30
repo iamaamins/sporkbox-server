@@ -254,9 +254,9 @@ router.post(
   }
 );
 
-// Update schedule status
+// Change schedule status
 router.patch(
-  "/:restaurantId/:scheduleId/update-schedule-status",
+  "/:restaurantId/:scheduleId/change-schedule-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -454,9 +454,9 @@ router.patch(
   }
 );
 
-// Update item status
+// Change item status
 router.patch(
-  "/:restaurantId/:itemId/update-item-status",
+  "/:restaurantId/:itemId/change-item-status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req

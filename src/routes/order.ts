@@ -420,7 +420,7 @@ router.get(
   }
 );
 
-// Update bulk orders and send delivery email
+// Change bulk orders and send delivery email
 router.patch(
   "/change-orders-status",
   authUser,
@@ -485,7 +485,7 @@ router.patch(
   }
 );
 
-// Update single order status
+// Change single order status
 router.patch(
   "/:orderId/change-order-status",
   authUser,

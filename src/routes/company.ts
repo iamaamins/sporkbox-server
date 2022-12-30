@@ -206,7 +206,7 @@ router.patch(
   }
 );
 
-// Update company status
+// Change company status
 router.patch(
   "/:companyId/change-company-status",
   authUser,
