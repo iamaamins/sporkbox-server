@@ -254,7 +254,7 @@ router.put(
       throw new Error("Please provide all the fields");
     }
 
-    // Check actions
+    // Create actions
     const actions = ["Activate", "Deactivate"];
 
     // Check if provided action is correct
@@ -458,6 +458,15 @@ router.put(
     if (!action || !restaurantId || !itemId) {
       res.status(400);
       throw new Error("Please provide all the fields");
+    }
+
+    // Create actions
+    const actions = ["Activate", "Archive"];
+
+    // Check if provided action is correct
+    if (!actions.includes(action)) {
+      res.status(400);
+      throw new Error("Please provide correct action");
     }
 
     // If there is an user

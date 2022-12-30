@@ -194,6 +194,15 @@ router.put(
       throw new Error("Please provide all the fields");
     }
 
+    // Create actions
+    const actions = ["Activate", "Archive"];
+
+    // Check if provided action is correct
+    if (!actions.includes(action)) {
+      res.status(400);
+      throw new Error("Please provide correct action");
+    }
+
     // If there is a user
     if (req.user) {
       // Destructure data from req
