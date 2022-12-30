@@ -152,3 +152,14 @@ export async function getUpcomingWeekRestaurants(
     throw new Error("Failed to fetch scheduled restaurants");
   }
 }
+
+export function checkActions(
+  actions = ["Archive", "Activate"],
+  action: string,
+  res: Response
+) {
+  if (!actions.includes(action)) {
+    res.status(400);
+    throw new Error("Please provide correct action");
+  }
+}

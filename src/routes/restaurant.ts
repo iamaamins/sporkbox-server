@@ -8,6 +8,7 @@ import {
   deleteFields,
   convertDateToMS,
   getUpcomingWeekRestaurants,
+  checkActions,
 } from "../utils";
 import {
   IItemPayload,
@@ -115,7 +116,7 @@ router.get("/scheduled", authUser, async (req: Request, res: Response) => {
 });
 
 // Schedule a restaurant
-router.put("/schedule", authUser, async (req: Request, res: Response) => {
+router.post("/schedule", authUser, async (req: Request, res: Response) => {
   // Destructure data from req
   const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
     req.body;
@@ -240,8 +241,8 @@ router.put("/schedule", authUser, async (req: Request, res: Response) => {
 });
 
 // Update schedule status
-router.put(
-  "/:restaurantId/:scheduleId/status",
+router.patch(
+  "/:restaurantId/:scheduleId/update/schedule/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -252,15 +253,6 @@ router.put(
     if (!action || !restaurantId || !scheduleId) {
       res.status(400);
       throw new Error("Please provide all the fields");
-    }
-
-    // Create actions
-    const actions = ["Activate", "Deactivate"];
-
-    // Check if provided action is correct
-    if (!actions.includes(action)) {
-      res.status(400);
-      throw new Error("Please provide correct action");
     }
 
     // If there is an user
@@ -324,7 +316,7 @@ router.put(
 
 // Add an item to a restaurant
 router.post(
-  "/:restaurantId/add-item",
+  "/:restaurantId/add/item",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -381,8 +373,8 @@ router.post(
 );
 
 // Edit an item
-router.put(
-  "/:restaurantId/:itemId/update",
+router.patch(
+  "/:restaurantId/:itemId/update/item/details",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -446,8 +438,8 @@ router.put(
 );
 
 // Update item status
-router.put(
-  "/:restaurantId/:itemId/status",
+router.patch(
+  "/:restaurantId/:itemId/update/item/status",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
@@ -460,22 +452,13 @@ router.put(
       throw new Error("Please provide all the fields");
     }
 
-    // Create actions
-    const actions = ["Activate", "Archive"];
-
-    // Check if provided action is correct
-    if (!actions.includes(action)) {
-      res.status(400);
-      throw new Error("Please provide correct action");
-    }
-
     // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
       // If role is admin or vendor
-      if (role === "ADMIN" || role === "VENDOR") {
+      if (role === "ADMIN") {
         try {
           // Find and update the item
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -514,7 +497,7 @@ router.put(
 
 // Add a review to an item
 router.post(
-  "/:restaurantId/:itemId",
+  "/:restaurantId/:itemId/add/review",
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
