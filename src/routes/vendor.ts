@@ -367,7 +367,7 @@ router.patch(
   }
 );
 
-// Update vendor status
+// Change vendor status
 router.patch(
   "/:vendorId/change-vendor-status",
   authUser,

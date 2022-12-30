@@ -183,7 +183,7 @@ router.patch(
   }
 );
 
-// Update customer status
+// Change customer status
 router.patch(
   "/:customerId/change-customer-status",
   authUser,
