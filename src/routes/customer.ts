@@ -4,7 +4,7 @@ import User from "../models/user";
 import Company from "../models/company";
 import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields } from "../utils";
+import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { Request, Response } from "express";
 
 // Initialize router
@@ -193,6 +193,9 @@ router.put(
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // If there is a user
     if (req.user) {

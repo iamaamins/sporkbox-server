@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/user";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields } from "../utils";
+import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { Request, Response } from "express";
 import { IVendorPayload, IVendorStatusPayload } from "../types";
 
@@ -381,6 +381,9 @@ router.put(
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // Check if there is an user
     if (req.user) {

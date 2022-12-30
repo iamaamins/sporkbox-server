@@ -1,5 +1,5 @@
 import Company from "../models/company";
-import { deleteFields } from "../utils";
+import { checkActions, deleteFields } from "../utils";
 import authUser from "../middleware/authUser";
 import { ICompanyPayload } from "../types";
 import express, { Request, Response } from "express";
@@ -220,6 +220,9 @@ router.put(
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // Check if there is an user
     if (req.user) {

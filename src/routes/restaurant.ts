@@ -255,6 +255,9 @@ router.patch(
       throw new Error("Please provide all the fields");
     }
 
+    // Check actions validity
+    checkActions(["Activate", "Deactivate"], action, res);
+
     // If there is an user
     if (req.user) {
       // Destructure data from req
@@ -451,6 +454,9 @@ router.patch(
       res.status(400);
       throw new Error("Please provide all the fields");
     }
+
+    // Check actions validity
+    checkActions(undefined, action, res);
 
     // If there is an user
     if (req.user) {
