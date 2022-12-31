@@ -1,7 +1,7 @@
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
-import express, { Request, Response } from "express";
+import express, { Request, response, Response } from "express";
 import {
   gte,
   sortByDate,
@@ -614,6 +614,90 @@ router.post(
         }
       } else {
         // If role isn't customer
+        res.status(401);
+        throw new Error("Not authorized");
+      }
+    } else {
+      // If there is no user
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+  }
+);
+
+// Remove a schedule
+router.delete(
+  "/:restaurantId/:scheduleId/remove-schedule",
+  authUser,
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { restaurantId, scheduleId } = req.params;
+
+    // If all the fields aren't provide
+    if (!restaurantId || !scheduleId) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    // If there is an user
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      // If role is admin or vendor
+      if (role === "ADMIN") {
+        try {
+          // Find the restaurant and remove the schedule
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId },
+            {
+              $pull: {
+                schedules: { _id: scheduleId },
+              },
+            }
+          )
+            .select("-__v -updatedAt -createdAt -address -items")
+            .lean();
+
+          if (updatedRestaurant) {
+            // Find the removed schedule
+            const removedSchedule = updatedRestaurant.schedules.find(
+              (schedule) => schedule._id?.toString() === scheduleId
+            );
+
+            if (removedSchedule) {
+              try {
+                // Change orders status to archive
+                await Order.updateMany(
+                  {
+                    status: "PROCESSING",
+                    "restaurant._id": updatedRestaurant._id,
+                    "delivery.date": removedSchedule.date,
+                    "company._id": removedSchedule.company._id,
+                  },
+                  {
+                    $set: { status: "ARCHIVED" },
+                  }
+                );
+
+                // Send response
+                res
+                  .status(201)
+                  .json("Schedule and orders removed successfully");
+              } catch (err) {
+                // If orders status aren't successfully
+                res.status(500);
+                throw new Error("Failed to update orders status");
+              }
+            }
+          }
+        } catch (err) {
+          // If schedule isn't removed successfully
+          res.status(500);
+          throw new Error("Failed to remove the schedule");
+        }
+      } else {
+        // If role isn't admin or vendor
         res.status(401);
         throw new Error("Not authorized");
       }
