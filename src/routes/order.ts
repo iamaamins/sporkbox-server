@@ -201,6 +201,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                     name: restaurant.name,
                   },
                   company: {
+                    _id: company._id,
                     name: company.name,
                   },
                   delivery: {

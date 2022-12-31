@@ -35,6 +35,7 @@ export interface IOrderSchema {
     name: string;
   };
   company: {
+    _id: Types.ObjectId;
     name: string;
   };
   delivery: {

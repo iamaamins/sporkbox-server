@@ -32,6 +32,10 @@ const orderSchema = new Schema<IOrderSchema>(
       },
     },
     company: {
+      _id: {
+        type: Schema.Types.ObjectId,
+        required: [true, "Please provide company id"],
+      },
       name: {
         type: String,
         required: [true, "Please provide company name"],
