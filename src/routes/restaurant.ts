@@ -344,7 +344,7 @@ router.post(
     const { name, description, tags, price }: IItemPayload = req.body;
 
     // If restaurant id, name, description, tags, price aren't provided
-    if (!name || !description || !tags || !price) {
+    if (!restaurantId || !name || !description || !tags || !price) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
