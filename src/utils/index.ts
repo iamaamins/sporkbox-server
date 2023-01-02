@@ -1,14 +1,17 @@
 import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
+import multer from "multer";
 import { Types } from "mongoose";
 import { Response } from "express";
-import mail from "@sendgrid/mail";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
+<<<<<<< HEAD
 // Set the sendgrid api key
 mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
+=======
+>>>>>>> development
 // Generate token and set cookie to header
 export const setCookie = (res: Response, id: Types.ObjectId): void => {
   // Generate token
@@ -151,6 +154,7 @@ export async function getUpcomingWeekRestaurants(
   }
 }
 
+// Check actions function
 export function checkActions(
   actions = ["Archive", "Activate"],
   action: string,
@@ -161,3 +165,7 @@ export function checkActions(
     throw new Error("Please provide correct action");
   }
 }
+
+// Initialize multer
+const storage = multer.memoryStorage();
+export const upload = multer({ storage: storage });
