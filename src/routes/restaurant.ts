@@ -1,15 +1,17 @@
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
-import express, { Request, response, Response } from "express";
+import express, { Request, Response } from "express";
 import {
   gte,
+  upload,
   sortByDate,
   deleteFields,
   convertDateToMS,
   getUpcomingWeekRestaurants,
   checkActions,
 } from "../utils";
+import { uploadImage } from "../config/s3";
 import {
   IItemPayload,
   IReviewPayload,
@@ -335,6 +337,7 @@ router.patch(
 router.post(
   "/:restaurantId/add-item",
   authUser,
+  upload.single("image"),
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId } = req.params;
@@ -353,13 +356,32 @@ router.post(
 
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
+        // Create image URL
+        let image;
+
+        // If there is a file
+        if (req.file) {
+          // Destructure file data
+          const { buffer, mimetype } = req.file;
+
+          // Upload image and get the URL
+          image = await uploadImage(res, buffer, mimetype);
+        }
+
         try {
           // Find the restaurant and add the item
           const updatedRestaurant = await Restaurant.findByIdAndUpdate(
             restaurantId,
             {
               $push: {
-                items: { name, tags, price, description, status: "ACTIVE" },
+                items: {
+                  name,
+                  tags,
+                  price,
+                  image,
+                  description,
+                  status: "ACTIVE",
+                },
               },
             },
             {
@@ -393,6 +415,7 @@ router.post(
 router.patch(
   "/:restaurantId/:itemId/update-item-details",
   authUser,
+  upload.single("image"),
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId, itemId } = req.params;
@@ -411,6 +434,18 @@ router.patch(
 
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
+        // Create image URL
+        let image;
+
+        // If there is a file
+        if (req.file) {
+          // Destructure file data
+          const { buffer, mimetype } = req.file;
+
+          // Upload image and get the URL
+          image = await uploadImage(res, buffer, mimetype);
+        }
+
         try {
           // Find and update the item
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -420,6 +455,7 @@ router.patch(
                 "items.$.name": name,
                 "items.$.tags": tags,
                 "items.$.price": price,
+                "items.$.image": image,
                 "items.$.description": description,
               },
             },
@@ -626,7 +662,7 @@ router.post(
 );
 
 // Remove a schedule
-router.delete(
+router.patch(
   "/:restaurantId/:scheduleId/remove-schedule",
   authUser,
   async (req: Request, res: Response) => {

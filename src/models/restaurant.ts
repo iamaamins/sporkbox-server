@@ -52,6 +52,9 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: String,
           required: [true, "Please provide item description"],
         },
+        image: {
+          type: String,
+        },
         status: {
           type: String,
           enum: ["ARCHIVED", "ACTIVE"],
