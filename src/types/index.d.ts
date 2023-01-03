@@ -65,6 +65,7 @@ interface IItemSchema {
   name: string;
   tags: string;
   price: number;
+  image: string;
   description: string;
   reviews: Types.DocumentArray<IReviewSchema>;
 }
