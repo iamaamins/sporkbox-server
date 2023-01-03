@@ -1,6 +1,5 @@
 import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
-import multer from "multer";
 import { Types } from "mongoose";
 import { Response } from "express";
 import Restaurant from "../models/restaurant";
@@ -159,7 +158,3 @@ export function checkActions(
     throw new Error("Please provide correct action");
   }
 }
-
-// Initialize multer
-const storage = multer.memoryStorage();
-export const upload = multer({ storage: storage });
