@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
@@ -156,5 +157,22 @@ export function checkActions(
   if (!actions.includes(action)) {
     res.status(400);
     throw new Error("Please provide correct action");
+  }
+}
+
+// Resize image
+export async function resizeImage(
+  res: Response,
+  buffer: Buffer,
+  width: number,
+  height: number
+) {
+  try {
+    return await sharp(buffer)
+      .resize({ width, height, fit: "cover" })
+      .toBuffer();
+  } catch (err) {
+    res.status(500);
+    throw new Error("Failed to resize image");
   }
 }

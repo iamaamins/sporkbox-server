@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
@@ -9,6 +10,7 @@ import {
   convertDateToMS,
   getUpcomingWeekRestaurants,
   checkActions,
+  resizeImage,
 } from "../utils";
 import { upload } from "../config/multer";
 import { deleteImage, uploadImage } from "../config/s3";
@@ -18,7 +20,6 @@ import {
   IScheduleRestaurantPayload,
 } from "../types";
 import Company from "../models/company";
-import multer from "multer";
 
 // Initialize router
 const router = express.Router();
@@ -365,8 +366,11 @@ router.post(
           // Destructure file data
           const { buffer, mimetype } = req.file;
 
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+
           // Upload image and get the URL
-          imageURL = await uploadImage(res, buffer, mimetype);
+          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         try {
@@ -452,8 +456,11 @@ router.patch(
           // Destructure file data
           const { buffer, mimetype } = req.file;
 
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+
           // Upload image and get the URL
-          imageURL = await uploadImage(res, buffer, mimetype);
+          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         try {
