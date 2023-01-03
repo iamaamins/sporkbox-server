@@ -1,6 +1,6 @@
+import sharp from "sharp";
 import moment from "moment-timezone";
 import jwt from "jsonwebtoken";
-import multer from "multer";
 import { Types } from "mongoose";
 import { Response } from "express";
 import Restaurant from "../models/restaurant";
@@ -160,6 +160,19 @@ export function checkActions(
   }
 }
 
-// Initialize multer
-const storage = multer.memoryStorage();
-export const upload = multer({ storage: storage });
+// Resize image
+export async function resizeImage(
+  res: Response,
+  buffer: Buffer,
+  width: number,
+  height: number
+) {
+  try {
+    return await sharp(buffer)
+      .resize({ width, height, fit: "cover" })
+      .toBuffer();
+  } catch (err) {
+    res.status(500);
+    throw new Error("Failed to resize image");
+  }
+}

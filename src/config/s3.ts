@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import dotenv from "dotenv";
 import { Response } from "express";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 
 //Configure dot env
 dotenv.config();
@@ -45,5 +49,22 @@ export async function uploadImage(
     // If image upload fails
     res.status(500);
     throw new Error("Failed to upload image");
+  }
+}
+
+export async function deleteImage(res: Response, name: string) {
+  // Params
+  const params = {
+    Key: name,
+    Bucket: process.env.AWS_BUCKET_NAME,
+  };
+
+  try {
+    // Delete the image from s3
+    await s3Client.send(new DeleteObjectCommand(params));
+  } catch (err) {
+    // If image delete fails
+    res.status(500);
+    throw new Error("Failed to delete image");
   }
 }

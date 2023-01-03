@@ -1,17 +1,19 @@
+import sharp from "sharp";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
   gte,
-  upload,
   sortByDate,
   deleteFields,
   convertDateToMS,
   getUpcomingWeekRestaurants,
   checkActions,
+  resizeImage,
 } from "../utils";
-import { uploadImage } from "../config/s3";
+import { upload } from "../config/multer";
+import { deleteImage, uploadImage } from "../config/s3";
 import {
   IItemPayload,
   IReviewPayload,
@@ -337,7 +339,7 @@ router.patch(
 router.post(
   "/:restaurantId/add-item",
   authUser,
-  upload.single("image"),
+  upload,
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId } = req.params;
@@ -357,15 +359,18 @@ router.post(
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
         // Create image URL
-        let image;
+        let imageURL;
 
         // If there is a file
         if (req.file) {
           // Destructure file data
           const { buffer, mimetype } = req.file;
 
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+
           // Upload image and get the URL
-          image = await uploadImage(res, buffer, mimetype);
+          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         try {
@@ -378,7 +383,7 @@ router.post(
                   name,
                   tags,
                   price,
-                  image,
+                  image: imageURL,
                   description,
                   status: "ACTIVE",
                 },
@@ -415,14 +420,14 @@ router.post(
 router.patch(
   "/:restaurantId/:itemId/update-item-details",
   authUser,
-  upload.single("image"),
+  upload,
   async (req: Request, res: Response) => {
     // Destructure data from req
     const { restaurantId, itemId } = req.params;
-    const { name, description, tags, price }: IItemPayload = req.body;
+    const { name, tags, price, image, description }: IItemPayload = req.body;
 
     // If restaurant id, name, description, tags, price aren't provided
-    if (!itemId || !name || !description || !tags || !price) {
+    if (!restaurantId || !itemId || !name || !description || !tags || !price) {
       res.status(400);
       throw new Error("Please provide all the fields");
     }
@@ -434,16 +439,28 @@ router.patch(
 
       // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
+        // If a new file is provided and an image already exists
+        if (req.file && image) {
+          // Create name
+          const name = image.split("/")[image.split("/").length - 1];
+
+          // Delete image from s3
+          await deleteImage(res, name);
+        }
+
         // Create image URL
-        let image;
+        let imageURL;
 
         // If there is a file
         if (req.file) {
           // Destructure file data
           const { buffer, mimetype } = req.file;
 
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+
           // Upload image and get the URL
-          image = await uploadImage(res, buffer, mimetype);
+          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         try {
@@ -455,7 +472,7 @@ router.patch(
                 "items.$.name": name,
                 "items.$.tags": tags,
                 "items.$.price": price,
-                "items.$.image": image,
+                "items.$.image": imageURL,
                 "items.$.description": description,
               },
             },

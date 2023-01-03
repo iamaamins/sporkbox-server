@@ -181,9 +181,10 @@ export interface IScheduleRestaurantPayload {
 
 export interface IItemPayload {
   name: string;
-  description: string;
   tags: string;
   price: number;
+  image: string;
+  description: string;
 }
 
 export interface IReviewPayload {
