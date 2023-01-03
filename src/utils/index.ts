@@ -168,10 +168,12 @@ export async function resizeImage(
   height: number
 ) {
   try {
+    // Return the resized buffer
     return await sharp(buffer)
       .resize({ width, height, fit: "cover" })
       .toBuffer();
   } catch (err) {
+    // If image resize fails
     res.status(500);
     throw new Error("Failed to resize image");
   }

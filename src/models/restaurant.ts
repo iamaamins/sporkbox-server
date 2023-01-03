@@ -48,12 +48,12 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: Number,
           required: [true, "Please provide item price"],
         },
+        image: {
+          type: String,
+        },
         description: {
           type: String,
           required: [true, "Please provide item description"],
-        },
-        image: {
-          type: String,
         },
         status: {
           type: String,
