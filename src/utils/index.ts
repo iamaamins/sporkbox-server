@@ -6,12 +6,6 @@ import { Response } from "express";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
-<<<<<<< HEAD
-// Set the sendgrid api key
-mail.setApiKey(process.env.SENDGRID_API_KEY as string);
-
-=======
->>>>>>> development
 // Generate token and set cookie to header
 export const setCookie = (res: Response, id: Types.ObjectId): void => {
   // Generate token
