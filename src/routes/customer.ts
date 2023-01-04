@@ -1,10 +1,9 @@
-import { MongooseError } from "mongoose";
-import { IEditCustomerPayload } from "./../types/index.d";
 import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
 import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
+import { IEditCustomerPayload } from "./../types/index.d";
 import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
 
@@ -21,7 +20,7 @@ router.post(
     // If a value isn't provided
     if (!firstName || !lastName || !email || !password) {
       res.status(400);
-      throw new Error("Please fill all the fields");
+      throw new Error("Please provide all the fields");
     }
 
     // Get company code from customer's email
@@ -43,7 +42,7 @@ router.post(
 
           try {
             // Create customer and populate the company
-            const customer = await User.create({
+            const response = await User.create({
               firstName,
               lastName,
               email,
@@ -55,7 +54,7 @@ router.post(
 
             try {
               // Populate company
-              const customerWithCompany = await customer.populate(
+              const customerWithCompany = await response.populate(
                 "company",
                 "-__v -updatedAt"
               );
@@ -111,8 +110,7 @@ router.get("", authUser, async (req: Request, res: Response) => {
         // Get all customers
         const customers = await User.find({ role: "CUSTOMER" })
           .select("-__v -updatedAt -password -role")
-          .populate("company", "address name")
-          .orFail();
+          .populate("company", "address name");
 
         // Send the customers data with response
         res.status(200).json(customers);
