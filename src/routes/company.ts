@@ -63,7 +63,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         deleteFields(company);
 
         // Send the company with response
-        res.status(201).json(company);
+        res.status(200).json(company);
       } catch (err) {
         // If company isn't created successfully
         throw err;
@@ -93,8 +93,7 @@ router.get("/", authUser, async (req: Request, res: Response) => {
         // Create a new company
         const companies = await Company.find()
           .select("-__v -updatedAt")
-          .sort({ createdAt: -1 })
-          .orFail();
+          .sort({ createdAt: -1 });
 
         // Send the companies with response
         res.status(201).json(companies);
