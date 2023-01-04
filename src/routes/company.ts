@@ -38,15 +38,6 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
-  // Check if there is a company already
-  const company = await Company.findOne({ code }).lean();
-
-  // If a company exists
-  if (company) {
-    res.status(401);
-    throw new Error("A company with the same code already exists");
-  }
-
   // Check if there is an user
   if (req.user) {
     // Destructure data from req
@@ -56,16 +47,17 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       try {
         // Create a new company
-        const company = (
-          await Company.create({
-            name,
-            code,
-            website,
-            dailyBudget,
-            status: "ACTIVE",
-            address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
-          })
-        ).toObject();
+        const response = await Company.create({
+          name,
+          code,
+          website,
+          dailyBudget,
+          status: "ACTIVE",
+          address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+        });
+
+        // Convert company document to object
+        const company = response.toObject();
 
         // Delete fields
         deleteFields(company);
@@ -74,8 +66,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         res.status(201).json(company);
       } catch (err) {
         // If company isn't created successfully
-        res.status(500);
-        throw new Error("Failed to create company");
+        throw err;
       }
     } else {
       // If role isn't admin
@@ -102,14 +93,14 @@ router.get("/", authUser, async (req: Request, res: Response) => {
         // Create a new company
         const companies = await Company.find()
           .select("-__v -updatedAt")
-          .sort({ createdAt: -1 });
+          .sort({ createdAt: -1 })
+          .orFail();
 
         // Send the companies with response
         res.status(201).json(companies);
       } catch (err) {
         // If companies aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch companies");
+        throw err;
       }
     } else {
       // If role isn't admin
@@ -123,7 +114,7 @@ router.get("/", authUser, async (req: Request, res: Response) => {
   }
 });
 
-// Edit a company
+// Update company details
 router.patch(
   "/:companyId/update-company-details",
   authUser,
@@ -168,8 +159,8 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Find and update the company
-          const updatedCompany = await Company.findByIdAndUpdate(
-            companyId,
+          const updatedCompany = await Company.findOneAndUpdate(
+            { _id: companyId },
             {
               name,
               website,
@@ -178,20 +169,18 @@ router.patch(
               address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
             },
             { returnDocument: "after" }
-          ).lean();
+          )
+            .lean()
+            .orFail();
 
-          // If company is updated successfully
-          if (updatedCompany) {
-            // Delete fields
-            deleteFields(updatedCompany);
+          // Delete fields
+          deleteFields(updatedCompany);
 
-            // Send the updated company with response
-            res.status(201).json(updatedCompany);
-          }
+          // Send the updated company with response
+          res.status(201).json(updatedCompany);
         } catch (err) {
           // If company isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update company");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -233,22 +222,22 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Find and update company status
-          const updatedCompany = await Company.findByIdAndUpdate(
-            companyId,
+          const updatedCompany = await Company.findOneAndUpdate(
+            { _id: companyId },
             {
               status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
             },
             { returnDocument: "after" }
           )
             .select("-__v -updatedAt")
-            .lean();
+            .lean()
+            .orFail();
 
           // Send data with response
           res.status(200).json(updatedCompany);
         } catch (err) {
-          // If company status isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update company status");
+          // If company status isn't changed successfully
+          throw err;
         }
       } else {
         // If role isn't admin

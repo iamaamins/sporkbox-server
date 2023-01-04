@@ -1,3 +1,4 @@
+import { MongooseError } from "mongoose";
 import { IEditCustomerPayload } from "./../types/index.d";
 import bcrypt from "bcrypt";
 import User from "../models/user";
@@ -5,56 +6,44 @@ import Company from "../models/company";
 import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields, checkActions } from "../utils";
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 
 // Initialize router
 const router = express.Router();
 
 // Register customer
-router.post("/register-customer", async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { firstName, lastName, email, password }: ICustomerPayload = req.body;
+router.post(
+  "/register-customer",
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Destructure data from req
+    const { firstName, lastName, email, password }: ICustomerPayload = req.body;
 
-  // If a value isn't provided
-  if (!firstName || !lastName || !email || !password) {
-    res.status(400);
-    throw new Error("Please fill all the fields");
-  }
+    // If a value isn't provided
+    if (!firstName || !lastName || !email || !password) {
+      res.status(400);
+      throw new Error("Please fill all the fields");
+    }
 
-  // Get company code from customer's email
-  const companyCode = email.split("@")[1].split(".")[0];
-
-  // Check if company exist
-  const company = await Company.findOne({ code: companyCode }).lean();
-
-  // If company doesn't exist
-  if (!company) {
-    res.status(400);
-    throw new Error("Your company isn't registered");
-  }
-
-  // Check if customer exists
-  const customerExists = await User.findOne({ email }).lean();
-
-  // If customer exists
-  if (customerExists) {
-    res.status(400);
-    throw new Error("User already exists");
-  }
-
-  try {
-    // Create salt
-    const salt = await bcrypt.genSalt(10);
+    // Get company code from customer's email
+    const companyCode = email.split("@")[1].split(".")[0];
 
     try {
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, salt);
+      // Check if company exist
+      const company = await Company.findOne({ code: companyCode })
+        .lean()
+        .orFail();
 
       try {
-        // Create customer and populate the company
-        const customer = (
-          await (
-            await User.create({
+        // Create salt
+        const salt = await bcrypt.genSalt(10);
+
+        try {
+          // Hash password
+          const hashedPassword = await bcrypt.hash(password, salt);
+
+          try {
+            // Create customer and populate the company
+            const customer = await User.create({
               firstName,
               lastName,
               email,
@@ -62,38 +51,52 @@ router.post("/register-customer", async (req: Request, res: Response) => {
               role: "CUSTOMER",
               company: company._id,
               password: hashedPassword,
-            })
-          ).populate("company", "-__v -updatedAt")
-        ).toObject();
+            });
 
-        // If customer is created successfully
-        if (customer) {
-          // Generate jwt token and set
-          // cookie to the response header
-          setCookie(res, customer._id);
+            try {
+              // Populate company
+              const customerWithCompany = await customer.populate(
+                "company",
+                "-__v -updatedAt"
+              );
 
-          // Delete fields
-          deleteFields(customer, ["createdAt", "password"]);
+              // If customer is created successfully
+              if (customerWithCompany) {
+                // Convert customer document to object
+                const customer = customerWithCompany.toObject();
 
-          // Send the data with response
-          res.status(201).json(customer);
+                // Generate jwt token and set
+                // cookie to the response header
+                setCookie(res, customer._id);
+
+                // Delete fields
+                deleteFields(customer, ["createdAt", "password"]);
+
+                // Send the data with response
+                res.status(201).json(customer);
+              }
+            } catch (err) {
+              // If company isn't populated successfully
+              throw err;
+            }
+          } catch (err) {
+            // If user isn't created successfully
+            throw err;
+          }
+        } catch (err) {
+          // If password has isn't create successfully
+          throw err;
         }
       } catch (err) {
-        // If user isn't created successfully
-        res.status(500);
-        throw new Error("Failed to create user");
+        // If salt isn't create successfully
+        throw err;
       }
     } catch (err) {
-      // If password has isn't create successfully
-      res.status(500);
-      throw new Error("Failed to create password hash");
+      // // If company doesn't exist
+      throw err;
     }
-  } catch (err) {
-    // If salt isn't create successfully
-    res.status(500);
-    throw new Error("Failed to create salt");
   }
-});
+);
 
 // Get all customers
 router.get("", authUser, async (req: Request, res: Response) => {
@@ -108,14 +111,14 @@ router.get("", authUser, async (req: Request, res: Response) => {
         // Get all customers
         const customers = await User.find({ role: "CUSTOMER" })
           .select("-__v -updatedAt -password -role")
-          .populate("company", "address name");
+          .populate("company", "address name")
+          .orFail();
 
         // Send the customers data with response
         res.status(200).json(customers);
       } catch (err) {
-        // If users aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch users");
+        // If customers aren't fetched successfully
+        throw err;
       }
     } else {
       // If role isn't admin
@@ -153,22 +156,23 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Get all customers
-          const updatedCustomer = await User.findByIdAndUpdate(
-            customerId,
+          const updatedCustomer = await User.findOneAndUpdate(
+            { _id: customerId },
             {
               firstName,
               lastName,
               email,
             },
             { returnDocument: "after" }
-          ).lean();
+          )
+            .lean()
+            .orFail();
 
           // Send the updated customer data with response
           res.status(200).json(updatedCustomer);
         } catch (err) {
           // If customer isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update customer");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -210,8 +214,8 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Get all customers
-          const updatedCustomer = await User.findByIdAndUpdate(
-            customerId,
+          const updatedCustomer = await User.findOneAndUpdate(
+            { _id: customerId },
             {
               status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
             },
@@ -219,14 +223,14 @@ router.patch(
           )
             .select("-__v -password -updatedAt -role")
             .populate("company", "name address")
-            .lean();
+            .lean()
+            .orFail();
 
           // Send the updated customer data with response
           res.status(201).json(updatedCustomer);
         } catch (err) {
           // If customer isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update customer");
+          throw err;
         }
       } else {
         // If role isn't admin

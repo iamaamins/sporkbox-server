@@ -41,8 +41,7 @@ router.get(
           res.status(200).json(customerUpcomingOrders);
         } catch (err) {
           // If upcoming orders aren't fetched successfully
-          res.status(500);
-          throw new Error("Failed to fetch upcoming orders");
+          throw err;
         }
       } else {
         // If role isn't customer
@@ -75,8 +74,8 @@ router.get(
           // Find the delivered orders of the customer
           const customerDeliveredOrders = await Order.find({
             "customer._id": _id,
+            status: "DELIVERED",
           })
-            .where("status", "DELIVERED")
             .limit(+limit)
             .sort({ "delivery.date": -1 })
             .select("-__v -updatedAt -customer -delivery.address -company");
@@ -85,8 +84,7 @@ router.get(
           res.status(200).json(customerDeliveredOrders);
         } catch (err) {
           // If delivered orders aren't fetched successfully
-          res.status(500);
-          throw new Error("Failed to fetch delivered orders");
+          throw err;
         }
       } else {
         // If role isn't customer
@@ -363,8 +361,7 @@ router.get(
           res.status(200).json(upcomingOrders);
         } catch (err) {
           // If upcoming orders aren't fetched successfully
-          res.status(500);
-          throw new Error("Failed to fetch upcoming orders");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -387,6 +384,12 @@ router.get(
     // Destructure data from req
     const { limit } = req.params;
 
+    // If all the fields aren't provided
+    if (!limit) {
+      res.status(400);
+      throw new Error("Please provide all the fileds");
+    }
+
     // Check if there is an user
     if (req.user) {
       // Destructure data from req
@@ -405,8 +408,7 @@ router.get(
           res.status(200).json(deliveredOrders);
         } catch (err) {
           // If delivered orders aren't fetched successfully
-          res.status(500);
-          throw new Error("Failed to fetch delivered orders");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -429,6 +431,12 @@ router.patch(
     // Destructure data from req
     const { orderIds }: IOrdersStatusPayload = req.body;
 
+    // If order ids aren't provides
+    if (!orderIds) {
+      res.status(400);
+      throw new Error("Please provide order ids");
+    }
+
     // Check if there is an user
     if (req.user) {
       // Destructure data from req
@@ -439,7 +447,7 @@ router.patch(
         try {
           // Update orders status
           await Order.updateMany(
-            { _id: { $in: orderIds } },
+            { _id: { $in: orderIds }, status: "PROCESSING" },
             { $set: { status: "DELIVERED" } }
           );
 
@@ -460,18 +468,15 @@ router.patch(
               res.status(200).json("Delivery email sent");
             } catch (err) {
               // If emails aren't sent successfully
-              res.status(500);
-              throw new Error("Failed to send emails");
+              throw err;
             }
           } catch (err) {
             // If orders aren't fetched successfully
-            res.status(500);
-            throw new Error("Failed to fetch orders");
+            throw err;
           }
         } catch (err) {
           // If order status isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update order status");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -503,28 +508,30 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Update order status
-          const updatedOrder = await Order.findByIdAndUpdate(orderId, {
-            status: "ARCHIVED",
-          }).select("-__v -updatedAt");
+          const updatedOrder = await Order.findOneAndUpdate(
+            { _id: orderId, status: "PROCESSING" },
+            {
+              status: "ARCHIVED",
+            },
+            { returnDocument: "after" }
+          )
+            .select("-__v -updatedAt")
+            .orFail();
 
           // If order is updated successfully
-          if (updatedOrder) {
-            try {
-              // Send email
-              await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
+          try {
+            // Send email
+            await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
 
-              // Send updated order with the response
-              res.status(201).json(updatedOrder);
-            } catch (err) {
-              // If email isn't sent successfully
-              res.status(500);
-              throw new Error("Failed to send emails");
-            }
+            // Send updated order with the response
+            res.status(201).json(updatedOrder);
+          } catch (err) {
+            // If email isn't sent successfully
+            throw err;
           }
         } catch (err) {
           // If order status isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update order status");
+          throw err;
         }
       } else {
         // If role isn't admin

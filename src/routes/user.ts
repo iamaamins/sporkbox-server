@@ -26,7 +26,8 @@ router.post("/login", async (req: Request, res: Response) => {
       //   "-__v -updatedAt -createdAt"
       // )
       .populate("company", "-__v -updatedAt -createdAt -code -website")
-      .lean();
+      .lean()
+      .orFail();
 
     // If user exists and password matches
     if (user && (await bcrypt.compare(password, user.password))) {

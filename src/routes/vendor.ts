@@ -20,79 +20,92 @@ router.post("/register-vendor", async (req: Request, res: Response) => {
     throw new Error("Please fill all the fields");
   }
 
-  // Check if vendor exists
-  const vendorExists = await User.findOne({ email }).lean();
-
-  // Throw error if vendor already exists
-  if (vendorExists) {
-    res.status(400);
-    throw new Error("Vendor already exists");
-  }
-
   try {
-    // Create the restaurant
-    const restaurant = await Restaurant.create({
-      name: restaurantName,
-      address: restaurantAddress,
-    });
+    // Check if vendor exists
+    const vendorExists = await User.findOne({ email }).lean();
 
-    // If restaurant is created successfully
-    if (restaurant) {
-      try {
-        // Create salt
-        const salt = await bcrypt.genSalt(10);
+    // Throw error if vendor already exists
+    if (vendorExists) {
+      res.status(400);
+      throw new Error("Vendor already exists");
+    }
 
+    try {
+      // Create the restaurant
+      const restaurant = await Restaurant.create({
+        name: restaurantName,
+        address: restaurantAddress,
+      });
+
+      // If restaurant is created successfully
+      if (restaurant) {
         try {
-          // Hash password
-          const hashedPassword = await bcrypt.hash(password, salt);
+          // Create salt
+          const salt = await bcrypt.genSalt(10);
 
           try {
-            // Create vendor and populate the restaurant
-            const vendor = (
-              await (
-                await User.create({
-                  name,
-                  email,
-                  role: "VENDOR",
-                  status: "ARCHIVED",
-                  password: hashedPassword,
-                  restaurant: restaurant.id,
-                })
-              ).populate("restaurant", "-__v -createdAt -updatedAt")
-            ).toObject();
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, salt);
 
-            // If vendor is created successfully
-            if (vendor) {
-              // Generate jwt token and set
-              // cookie to the response header
-              setCookie(res, vendor._id);
+            try {
+              // Create vendor and populate the restaurant
+              const response = await User.create({
+                name,
+                email,
+                role: "VENDOR",
+                status: "ARCHIVED",
+                password: hashedPassword,
+                restaurant: restaurant.id,
+              });
 
-              // Delete fields
-              deleteFields(vendor, ["createdAt", "password"]);
+              try {
+                // Populate restaurant
+                const vendorWithRestaurant = await response.populate(
+                  "restaurant",
+                  "-__v -createdAt -updatedAt"
+                );
 
-              // Send the vendor with response
-              res.status(200).json(vendor);
+                // If vendor is created successfully
+                if (vendorWithRestaurant) {
+                  // Create vendor object
+                  const vendor = vendorWithRestaurant.toObject();
+
+                  // Generate jwt token and set
+                  // cookie to the response header
+                  setCookie(res, vendor._id);
+
+                  // Delete fields
+                  deleteFields(vendor, ["createdAt", "password"]);
+
+                  // Send the vendor with response
+                  res.status(200).json(vendor);
+                }
+              } catch (err) {
+                // If failed to populate restaurant
+                throw err;
+              }
+            } catch (err) {
+              // If vendor isn't created successfully
+              throw err;
             }
           } catch (err) {
-            // If vendor isn't created successfully
+            // If password hashing isn't  successful
             res.status(500);
-            throw new Error("Failed to create vendor");
+            throw new Error("Failed to hash password");
           }
         } catch (err) {
-          // If password hashing isn't  successful
+          // If salt isn't created successfully
           res.status(500);
-          throw new Error("Failed to hash password");
+          throw new Error("Failed to create slat");
         }
-      } catch (err) {
-        // If salt isn't created successfully
-        res.status(500);
-        throw new Error("Failed to create slat");
       }
+    } catch (err) {
+      // If restaurant isn't created successfully
+      throw err;
     }
   } catch (err) {
-    // If restaurant isn't created successfully
-    res.status(500);
-    throw new Error("Failed to create restaurant");
+    // If vendor isn't found
+    throw err;
   }
 });
 
@@ -136,76 +149,89 @@ router.post("/add-vendor", authUser, async (req: Request, res: Response) => {
 
     // If role is admin
     if (role === "ADMIN") {
-      // Check if vendor exists
-      const vendorExists = await User.findOne({ email }).lean();
-
-      // Throw error if vendor already exists
-      if (vendorExists) {
-        res.status(400);
-        throw new Error("Vendor already exists");
-      }
-
       try {
-        // Create the restaurant
-        const restaurant = await Restaurant.create({
-          name: restaurantName,
-          address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
-        });
+        // Check if vendor exists
+        const vendorExists = await User.findOne({ email }).lean();
 
-        // If restaurant is created successfully
-        if (restaurant) {
-          try {
-            // Create salt
-            const salt = await bcrypt.genSalt(10);
+        // Throw error if vendor already exists
+        if (vendorExists) {
+          res.status(400);
+          throw new Error("Vendor already exists");
+        }
 
+        try {
+          // Create the restaurant
+          const restaurant = await Restaurant.create({
+            name: restaurantName,
+            address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+          });
+
+          // If restaurant is created successfully
+          if (restaurant) {
             try {
-              // Hash password
-              const hashedPassword = await bcrypt.hash(password, salt);
+              // Create salt
+              const salt = await bcrypt.genSalt(10);
 
               try {
-                // Create vendor and populate the restaurant
-                const vendor = (
-                  await (
-                    await User.create({
-                      firstName,
-                      lastName,
-                      email,
-                      role: "VENDOR",
-                      status: "ARCHIVED",
-                      password: hashedPassword,
-                      restaurant: restaurant.id,
-                    })
-                  ).populate("restaurant", "-__v -updatedAt")
-                ).toObject();
+                // Hash password
+                const hashedPassword = await bcrypt.hash(password, salt);
 
-                // If vendor is created successfully
-                if (vendor) {
-                  // Delete fields
-                  deleteFields(vendor, ["createdAt", "password"]);
+                try {
+                  // Create vendor and populate the restaurant
+                  const response = await User.create({
+                    firstName,
+                    lastName,
+                    email,
+                    role: "VENDOR",
+                    status: "ARCHIVED",
+                    password: hashedPassword,
+                    restaurant: restaurant.id,
+                  });
 
-                  // Return the vendor
-                  res.status(200).json(vendor);
+                  try {
+                    // Populate restaurant
+                    const vendorWithRestaurant = await response.populate(
+                      "restaurant",
+                      "-__v -updatedAt"
+                    );
+
+                    // If vendor is created successfully
+                    if (vendorWithRestaurant) {
+                      // Convert document to object
+                      const vendor = vendorWithRestaurant.toObject();
+
+                      // Delete fields
+                      deleteFields(vendor, ["createdAt", "password"]);
+
+                      // Return the vendor
+                      res.status(200).json(vendor);
+                    }
+                  } catch (err) {
+                    // If restaurant isn't populated
+                    throw err;
+                  }
+                } catch (err) {
+                  // If vendor isn't created successfully
+                  throw err;
                 }
               } catch (err) {
-                // If vendor isn't created successfully
+                // If password hashing isn't successful
                 res.status(500);
-                throw new Error("Failed to create vendor");
+                throw new Error("Failed to hash password");
               }
             } catch (err) {
-              // If password hashing isn't successful
+              // If slat isn't create successfully
               res.status(500);
-              throw new Error("Failed to hash password");
+              throw new Error("Failed to create slat");
             }
-          } catch (err) {
-            // If slat isn't create successfully
-            res.status(500);
-            throw new Error("Failed to create slat");
           }
+        } catch (err) {
+          // If restaurant isn't created successfully
+          throw err;
         }
       } catch (err) {
-        // If restaurant isn't created successfully
-        res.status(500);
-        throw new Error("Failed to create restaurant");
+        // If vendor isn't found successfully
+        throw err;
       }
     } else {
       // If role isn't admin
@@ -243,8 +269,7 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
         res.status(200).json(vendors);
       } catch (err) {
         // If vendors aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch vendors");
+        throw err;
       }
     } else {
       // If role isn't admin
@@ -303,56 +328,52 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Find and update the vendor
-          const updatedVendor = await User.findByIdAndUpdate(
-            vendorId,
+          const updatedVendor = await User.findOneAndUpdate(
+            { _id: vendorId },
             {
               firstName,
               lastName,
               email,
             },
             { returnDocument: "after" }
-          ).lean();
+          )
+            .lean()
+            .orFail();
 
-          // If the vendor is updated successfully
-          if (updatedVendor) {
-            try {
-              // Find and update the restaurant
-              const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-                updatedVendor.restaurant._id,
-                {
-                  name: restaurantName,
-                  address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
-                },
-                {
-                  returnDocument: "after",
-                }
-              ).lean();
-
-              // If restaurant is update successfully
-              if (updatedRestaurant) {
-                // Delete fields
-                deleteFields(updatedRestaurant, ["createdAt"]);
-                deleteFields(updatedVendor, ["createdAt", "password"]);
-
-                // Create updated vendor with restaurant
-                const updatedVendorAndRestaurant = {
-                  ...updatedVendor,
-                  restaurant: updatedRestaurant,
-                };
-
-                // Send the data with response
-                res.status(201).json(updatedVendorAndRestaurant);
+          try {
+            // Find and update the restaurant
+            const updatedRestaurant = await Restaurant.findOneAndUpdate(
+              { _id: updatedVendor.restaurant._id },
+              {
+                name: restaurantName,
+                address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+              },
+              {
+                returnDocument: "after",
               }
-            } catch (err) {
-              // If restaurant isn't updated successfully
-              res.status(500);
-              throw new Error("Failed to update restaurant");
-            }
+            )
+              .lean()
+              .orFail();
+
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+            deleteFields(updatedVendor, ["createdAt", "password"]);
+
+            // Create updated vendor with restaurant
+            const updatedVendorAndRestaurant = {
+              ...updatedVendor,
+              restaurant: updatedRestaurant,
+            };
+
+            // Send the data with response
+            res.status(201).json(updatedVendorAndRestaurant);
+          } catch (err) {
+            // If restaurant isn't updated successfully
+            throw err;
           }
         } catch (err) {
           // If vendor isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update vendor");
+          throw err;
         }
       } else {
         // If role isn't admin
@@ -394,8 +415,8 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Find the vendor and update the status
-          const updatedVendor = await User.findByIdAndUpdate(
-            vendorId,
+          const updatedVendor = await User.findOneAndUpdate(
+            { _id: vendorId },
             {
               status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
             },
@@ -405,14 +426,14 @@ router.patch(
           )
             .select("-__v -password -updatedAt")
             .populate("restaurant", "-__v -updatedAt")
-            .lean();
+            .lean()
+            .orFail();
 
           // Return the updated restaurant
           res.status(200).json(updatedVendor);
         } catch (err) {
           // If vendor isn't updated successfully
-          res.status(500);
-          throw new Error("Failed to update vendor");
+          throw err;
         }
       } else {
         // If role isn't admin
