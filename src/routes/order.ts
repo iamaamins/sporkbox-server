@@ -128,7 +128,6 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
     if (role === "CUSTOMER" && company) {
       // Get upcoming week restaurants
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
-        res,
         company.name
       );
 

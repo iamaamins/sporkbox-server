@@ -37,7 +37,6 @@ router.get(
       if (role === "CUSTOMER" && company) {
         // Get upcoming week restaurants
         const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
-          res,
           company.name
         );
 
@@ -276,7 +275,7 @@ router.patch(
       if (role === "ADMIN") {
         try {
           // Find and update the schedule status
-          const response = await Restaurant.findOneAndUpdate(
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
             { _id: restaurantId, "schedules._id": scheduleId },
             {
               $set: {
@@ -293,17 +292,19 @@ router.patch(
             .orFail();
 
           // If the schedule is updated successfully
-          const updatedSchedules = response.schedules.map((schedule) => {
-            // Create new schedule
-            return {
-              _id: response._id,
-              name: response.name,
-              scheduleId: schedule._id,
-              date: schedule.date,
-              status: schedule.status,
-              company: schedule.company,
-            };
-          });
+          const updatedSchedules = updatedRestaurant.schedules.map(
+            (schedule) => {
+              // Create new schedule
+              return {
+                _id: updatedRestaurant._id,
+                name: updatedRestaurant.name,
+                scheduleId: schedule._id,
+                date: schedule.date,
+                status: schedule.status,
+                company: schedule.company,
+              };
+            }
+          );
 
           // Send the updated schedules with response
           res.status(201).json(updatedSchedules);
@@ -376,8 +377,7 @@ router.patch(
                 },
                 {
                   $set: { status: "ARCHIVED" },
-                },
-                { returnDocument: "after" }
+                }
               );
 
               // Send response

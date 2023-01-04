@@ -97,10 +97,7 @@ export const lt =
     ? nextWeekSaturdayUTCTimestamp
     : followingWeekSaturdayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants(
-  res: Response,
-  companyName: string
-) {
+export async function getUpcomingWeekRestaurants(companyName: string) {
   try {
     // Get the scheduled restaurants
     const response = await Restaurant.find({
