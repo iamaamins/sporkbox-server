@@ -37,36 +37,37 @@ router.post(
 
           try {
             // Populate restaurant
-            const favorite = await response.populate<{
+            const favoriteWithRestaurant = await response.populate<{
               restaurant: IFavoriteRestaurant;
             }>("restaurant", "_id name items");
 
             // Find the item
-            const item = favorite.restaurant.items.find(
-              (item) => item._id.toString() === favorite.itemId.toString()
+            const item = favoriteWithRestaurant.restaurant.items.find(
+              (item) =>
+                item._id.toString() === favoriteWithRestaurant.itemId.toString()
             );
 
-            // If item is found successfully
+            // If item is found
             if (item) {
               // Create favorite
-              const favoriteItem = {
-                _id: favorite._id,
+              const favorite = {
+                _id: favoriteWithRestaurant._id,
                 itemId: item._id,
                 itemName: item.name,
-                customerId: favorite.customerId,
-                restaurantId: favorite.restaurant._id,
-                restaurantName: favorite.restaurant.name,
+                customerId: favoriteWithRestaurant.customerId,
+                restaurantId: favoriteWithRestaurant.restaurant._id,
+                restaurantName: favoriteWithRestaurant.restaurant.name,
               };
 
               // Send data with response
-              res.status(201).json(favoriteItem);
+              res.status(201).json(favorite);
             }
           } catch (err) {
             // If restaurant isn't populated
             throw err;
           }
         } catch (err) {
-          // If item isn't added to favorite successfully
+          // If item isn't added to favorite
           throw err;
         }
       } else {
@@ -163,8 +164,7 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
         // Send the data with response
         res.status(200).json(favorites);
       } catch (err) {
-        console.log(err);
-        // If favorites aren't fetched successfully
+        // If favorites aren't fetched
         throw err;
       }
     } else {

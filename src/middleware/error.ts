@@ -34,10 +34,7 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
   // If error is a validation error
   if (err.name === "ValidationError") {
     // key
-    const key = err.message
-      .split(" ")
-      [err.message.split(" ").length - 1].replaceAll("`", "")
-      .replaceAll(".", "");
+    const key = err.message.split(":")[1].trim();
 
     // Return err with response
     return res.status(500).json({
