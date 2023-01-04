@@ -11,11 +11,33 @@ const router = express.Router();
 
 // Register a vendor and a restaurant
 router.post("/register-vendor", async (req: Request, res: Response) => {
-  // Get data from req body
-  const { name, email, password, restaurantName, restaurantAddress } = req.body;
+  // Destructure data from req
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    city,
+    state,
+    zip,
+    restaurantName,
+    addressLine1,
+    addressLine2,
+  }: IVendorPayload = req.body;
 
   // If a value isn't provided
-  if (!name || !email || !password || !restaurantName || !restaurantAddress) {
+  if (
+    !firstName ||
+    !lastName ||
+    !email ||
+    !password ||
+    !city ||
+    !state ||
+    !zip ||
+    !restaurantName ||
+    !addressLine1 ||
+    !addressLine2
+  ) {
     res.status(400);
     throw new Error("Please fill all the fields");
   }
@@ -34,7 +56,7 @@ router.post("/register-vendor", async (req: Request, res: Response) => {
       // Create the restaurant
       const restaurant = await Restaurant.create({
         name: restaurantName,
-        address: restaurantAddress,
+        address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
       });
 
       // If restaurant is created successfully
@@ -50,7 +72,8 @@ router.post("/register-vendor", async (req: Request, res: Response) => {
             try {
               // Create vendor
               const response = await User.create({
-                name,
+                firstName,
+                lastName,
                 email,
                 role: "VENDOR",
                 status: "ARCHIVED",
