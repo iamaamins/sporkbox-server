@@ -3,9 +3,9 @@ import User from "../models/user";
 import Company from "../models/company";
 import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
-import { IEditCustomerPayload } from "./../types/index.d";
 import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
+import { IEditCustomerPayload, IStatusChangePayload } from "./../types/index.d";
 
 // Initialize router
 const router = express.Router();
@@ -191,8 +191,8 @@ router.patch(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from request
-    const { action } = req.body;
     const { customerId } = req.params;
+    const { action }: IStatusChangePayload = req.body;
 
     // If all the fields aren't provided
     if (!customerId || !action) {

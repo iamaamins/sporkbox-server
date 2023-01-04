@@ -1,7 +1,7 @@
-import { IFavoritePayload, IFavoriteRestaurant } from "../types";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
+import { IFavoritePayload, IFavoriteRestaurant } from "../types";
 
 // Initialize router
 const router = express.Router();

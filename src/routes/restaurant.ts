@@ -1,4 +1,5 @@
 import Order from "../models/order";
+import Company from "../models/company";
 import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -16,9 +17,9 @@ import { deleteImage, uploadImage } from "../config/s3";
 import {
   IItemPayload,
   IReviewPayload,
+  IStatusChangePayload,
   IScheduleRestaurantPayload,
 } from "../types";
-import Company from "../models/company";
 
 // Initialize router
 const router = express.Router();
@@ -254,8 +255,8 @@ router.patch(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { action } = req.body;
     const { restaurantId, scheduleId } = req.params;
+    const { action }: IStatusChangePayload = req.body;
 
     // If all the fields aren't provide
     if (!action || !restaurantId || !scheduleId) {
@@ -580,8 +581,8 @@ router.patch(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { action } = req.body;
     const { restaurantId, itemId } = req.params;
+    const { action }: IStatusChangePayload = req.body;
 
     // If all the fields aren't provided
     if (!action || !restaurantId || !itemId) {
