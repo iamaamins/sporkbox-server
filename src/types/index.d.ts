@@ -258,6 +258,6 @@ export interface IEditCustomerPayload {
   email: string;
 }
 
-export interface ICompanyStatusPayload {
+export interface IStatusChangePayload {
   action: string;
 }
