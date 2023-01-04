@@ -48,7 +48,7 @@ router.post("/register-vendor", async (req: Request, res: Response) => {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             try {
-              // Create vendor and populate the restaurant
+              // Create vendor
               const response = await User.create({
                 name,
                 email,
