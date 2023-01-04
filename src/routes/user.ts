@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
+import { ILoginPayload } from "../types";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
-import { ILoginPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
