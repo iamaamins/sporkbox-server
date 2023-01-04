@@ -97,10 +97,7 @@ export const lt =
     ? nextWeekSaturdayUTCTimestamp
     : followingWeekSaturdayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants(
-  res: Response,
-  companyName: string
-) {
+export async function getUpcomingWeekRestaurants(companyName: string) {
   try {
     // Get the scheduled restaurants
     const response = await Restaurant.find({
@@ -143,8 +140,7 @@ export async function getUpcomingWeekRestaurants(
     return upcomingWeekRestaurants;
   } catch (err) {
     // If scheduled restaurants aren't fetched successfully
-    res.status(500);
-    throw new Error("Failed to fetch scheduled restaurants");
+    throw err;
   }
 }
 

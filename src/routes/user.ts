@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
+import { ILoginPayload } from "../types";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
-import { ILoginPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -26,7 +26,8 @@ router.post("/login", async (req: Request, res: Response) => {
       //   "-__v -updatedAt -createdAt"
       // )
       .populate("company", "-__v -updatedAt -createdAt -code -website")
-      .lean();
+      .lean()
+      .orFail();
 
     // If user exists and password matches
     if (user && (await bcrypt.compare(password, user.password))) {

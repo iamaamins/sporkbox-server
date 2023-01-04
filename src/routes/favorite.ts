@@ -28,42 +28,47 @@ router.post(
       // If role is customer
       if (role === "CUSTOMER") {
         try {
-          // Add favorite to db and populate the restaurant
-          const response = await (
-            await Favorite.create({
-              customerId: _id,
-              itemId: itemId,
-              restaurant: restaurantId,
-            })
-          ).populate<{ restaurant: IFavoriteRestaurant }>(
-            "restaurant",
-            "_id name items"
-          );
+          // Add item to favorite
+          const response = await Favorite.create({
+            customerId: _id,
+            itemId: itemId,
+            restaurant: restaurantId,
+          });
 
-          // Find the item
-          const item = response.restaurant.items.find(
-            (item) => item._id.toString() === response.itemId.toString()
-          );
+          try {
+            // Populate restaurant
+            const favoriteWithRestaurant = await response.populate<{
+              restaurant: IFavoriteRestaurant;
+            }>("restaurant", "_id name items");
 
-          // If item is found successfully
-          if (item) {
-            // Create favorite
-            const favorite = {
-              _id: response._id,
-              itemId: item._id,
-              itemName: item.name,
-              customerId: response.customerId,
-              restaurantId: response.restaurant._id,
-              restaurantName: response.restaurant.name,
-            };
+            // Find the item
+            const item = favoriteWithRestaurant.restaurant.items.find(
+              (item) =>
+                item._id.toString() === favoriteWithRestaurant.itemId.toString()
+            );
 
-            // Send data with response
-            res.status(201).json(favorite);
+            // If item is found
+            if (item) {
+              // Create favorite
+              const favorite = {
+                _id: favoriteWithRestaurant._id,
+                itemId: item._id,
+                itemName: item.name,
+                customerId: favoriteWithRestaurant.customerId,
+                restaurantId: favoriteWithRestaurant.restaurant._id,
+                restaurantName: favoriteWithRestaurant.restaurant.name,
+              };
+
+              // Send data with response
+              res.status(201).json(favorite);
+            }
+          } catch (err) {
+            // If restaurant isn't populated
+            throw err;
           }
         } catch (err) {
-          // If item isn't added to favorite successfully
-          res.status(500);
-          throw new Error("Failed to favorite item");
+          // If item isn't added to favorite
+          throw err;
         }
       } else {
         // If role isn't customer
@@ -103,8 +108,7 @@ router.delete(
           res.status(200).json({ message: "Favorite removed" });
         } catch (err) {
           // If favorite isn't removed successfully
-          res.status(500);
-          throw new Error("Failed to remove favorite");
+          throw err;
         }
       } else {
         // If role isn't customer
@@ -160,9 +164,8 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
         // Send the data with response
         res.status(200).json(favorites);
       } catch (err) {
-        // If favorites aren't fetched successfully
-        res.status(500);
-        throw new Error("Failed to fetch favorites");
+        // If favorites aren't fetched
+        throw err;
       }
     } else {
       // If role isn't customer
