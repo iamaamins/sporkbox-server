@@ -257,3 +257,7 @@ export interface IEditCustomerPayload {
   lastName: string;
   email: string;
 }
+
+export interface ICompanyStatusPayload {
+  action: string;
+}

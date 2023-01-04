@@ -1,8 +1,8 @@
 import Company from "../models/company";
 import { checkActions, deleteFields } from "../utils";
 import authUser from "../middleware/authUser";
-import { ICompanyPayload } from "../types";
 import express, { Request, Response } from "express";
+import { ICompanyPayload, ICompanyStatusPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -200,8 +200,8 @@ router.patch(
   authUser,
   async (req: Request, res: Response) => {
     // Destructure data from req
-    const { action } = req.body;
     const { companyId } = req.params;
+    const { action }: ICompanyStatusPayload = req.body;
 
     // If all the fields aren't provided
     if (!companyId || !action) {
