@@ -31,7 +31,7 @@ export default async function handler(
   ) as JwtPayload;
 
   try {
-    // Get the User data from DB
+    // Find the user
     const user = await User.findById(decoded.id)
       .select("-__v -password -updatedAt -createdAt")
       // .populate<{restaurant: IRestaurant}>(
@@ -54,7 +54,6 @@ export default async function handler(
     }
   } catch (err) {
     // If user isn't found
-    res.status(500);
-    throw new Error("Failed to fetch user");
+    throw err;
   }
 }
