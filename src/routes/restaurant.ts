@@ -45,13 +45,9 @@ router.get(
         res.status(200).json(upcomingWeekRestaurants);
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -108,13 +104,9 @@ router.get(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -238,13 +230,9 @@ router.post(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -315,13 +303,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -394,13 +378,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -475,13 +455,9 @@ router.post(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -564,13 +540,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -625,13 +597,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -701,13 +669,9 @@ router.post(
         }
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );

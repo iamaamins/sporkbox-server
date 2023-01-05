@@ -45,13 +45,9 @@ router.get(
         }
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -88,13 +84,9 @@ router.get(
         }
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -318,13 +310,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't customer
-      res.status(401);
+      res.status(403);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
 });
 
@@ -354,13 +342,9 @@ router.get(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -401,13 +385,9 @@ router.get(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -469,13 +449,9 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -524,13 +500,9 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
