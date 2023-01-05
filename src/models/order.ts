@@ -10,14 +10,17 @@ const orderSchema = new Schema<IOrderSchema>(
       },
       firstName: {
         type: String,
+        trim: true,
         required: [true, "Please provide customer first name"],
       },
       lastName: {
         type: String,
+        trim: true,
         required: [true, "Please provide customer last name"],
       },
       email: {
         type: String,
+        trim: true,
         required: [true, "Please provide customer email"],
       },
     },
@@ -28,6 +31,7 @@ const orderSchema = new Schema<IOrderSchema>(
       },
       name: {
         type: String,
+        trim: true,
         required: [true, "Please provide restaurant name"],
       },
     },
@@ -38,6 +42,7 @@ const orderSchema = new Schema<IOrderSchema>(
       },
       name: {
         type: String,
+        trim: true,
         required: [true, "Please provide company name"],
       },
     },
@@ -48,6 +53,7 @@ const orderSchema = new Schema<IOrderSchema>(
       },
       address: {
         type: String,
+        trim: true,
         required: [true, "Please provide delivery address"],
       },
     },
@@ -67,18 +73,22 @@ const orderSchema = new Schema<IOrderSchema>(
       },
       name: {
         type: String,
+        trim: true,
         required: [true, "Please provide the item name"],
       },
       tags: {
         type: String,
+        trim: true,
         required: [true, "Please provide the item name"],
       },
       image: {
         type: String,
+        trim: true,
         required: [true, "Please provide the item image"],
       },
       description: {
         type: String,
+        trim: true,
         required: [true, "Please provide the item name"],
       },
       quantity: {

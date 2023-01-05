@@ -5,15 +5,18 @@ const userSchema = new Schema<IUserSchema>(
   {
     firstName: {
       type: String,
+      trim: true,
       required: [true, "Please provide a name"],
     },
     lastName: {
       type: String,
+      trim: true,
       required: [true, "Please provide a name"],
     },
     email: {
       type: String,
       unique: true,
+      trim: true,
       lowercase: true,
       required: [true, "Please provide an email"],
     },
@@ -24,6 +27,7 @@ const userSchema = new Schema<IUserSchema>(
     },
     password: {
       type: String,
+      trim: true,
       required: [true, "Please provide a password"],
     },
     status: {
