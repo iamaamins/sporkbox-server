@@ -21,3 +21,14 @@ export function orderArchiveTemplate(order: IOrder) {
         `,
   };
 }
+
+export function orderCancelTemplate(order: IOrder) {
+  return {
+    to: order.customer.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Order Status Update`,
+    html: `
+        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is cancelled. </p>
+        `,
+  };
+}

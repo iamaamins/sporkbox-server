@@ -12,7 +12,7 @@ export default async function handler(
   // is no cookie in the headers
   if (!req.cookies) {
     res.status(401);
-    throw new Error("Not Authorized");
+    throw new Error("Not authorized");
   }
 
   // If there are cookies
@@ -21,7 +21,7 @@ export default async function handler(
   // Return not authorized in there is no token
   if (!token) {
     res.status(401);
-    throw new Error("Not Authorized");
+    throw new Error("Not authorized");
   }
 
   // Decode the token

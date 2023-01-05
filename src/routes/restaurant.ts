@@ -20,6 +20,8 @@ import {
   IStatusChangePayload,
   IScheduleRestaurantPayload,
 } from "../types";
+import mail from "@sendgrid/mail";
+import { orderCancelTemplate } from "../utils/emailTemplates";
 
 // Initialize router
 const router = express.Router();
@@ -45,13 +47,9 @@ router.get(
         res.status(200).json(upcomingWeekRestaurants);
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -108,13 +106,9 @@ router.get(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -238,13 +232,9 @@ router.post(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -315,13 +305,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -368,39 +354,64 @@ router.patch(
 
           if (removedSchedule) {
             try {
-              // Change orders status to archive
-              await Order.updateMany(
-                {
-                  status: "PROCESSING",
-                  "restaurant._id": updatedRestaurant._id,
-                  "delivery.date": removedSchedule.date,
-                  "company._id": removedSchedule.company._id,
-                },
-                {
-                  $set: { status: "ARCHIVED" },
-                }
-              );
+              // Find the orders
+              const orders = await Order.find({
+                status: "PROCESSING",
+                "delivery.date": removedSchedule.date,
+                "restaurant._id": updatedRestaurant._id,
+                "company._id": removedSchedule.company._id,
+              });
 
-              // Send response
-              res.status(201).json("Schedule and orders removed successfully");
+              try {
+                // Send cancellation email
+                await Promise.all(
+                  orders.map(
+                    async (order) =>
+                      await mail.send(orderCancelTemplate(order.toObject()))
+                  )
+                );
+
+                try {
+                  // Change orders status to archive
+                  await Order.updateMany(
+                    {
+                      status: "PROCESSING",
+                      "restaurant._id": updatedRestaurant._id,
+                      "delivery.date": removedSchedule.date,
+                      "company._id": removedSchedule.company._id,
+                    },
+                    {
+                      $set: { status: "ARCHIVED" },
+                    }
+                  );
+
+                  // Send response
+                  res
+                    .status(201)
+                    .json("Schedule and orders removed successfully");
+                } catch (err) {
+                  // If orders status aren't changed
+                  throw err;
+                }
+              } catch (err) {
+                // If emails aren't sent
+                res.status(500);
+                throw new Error("Failed to send email");
+              }
             } catch (err) {
-              // If orders status aren't changed successfully
+              // If orders aren't fetched
               throw err;
             }
           }
         } catch (err) {
-          // If past schedules aren't removed successfully
+          // If past schedules aren't removed
           throw err;
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -475,13 +486,9 @@ router.post(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -564,13 +571,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -625,13 +628,9 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -701,13 +700,9 @@ router.post(
         }
       } else {
         // If role isn't customer
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );

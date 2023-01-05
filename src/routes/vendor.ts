@@ -258,13 +258,9 @@ router.post("/add-vendor", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      res.status(401);
+      res.status(403);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
 });
 
@@ -296,13 +292,9 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      res.status(401);
+      res.status(403);
       throw new Error("Not authorized");
     }
-  } else {
-    // If there is no user
-    res.status(401);
-    throw new Error("Not authorized");
   }
 });
 
@@ -400,13 +392,9 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
@@ -460,13 +448,9 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        res.status(401);
+        res.status(403);
         throw new Error("Not authorized");
       }
-    } else {
-      // If there is no user
-      res.status(401);
-      throw new Error("Not authorized");
     }
   }
 );
