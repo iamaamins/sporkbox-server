@@ -18,9 +18,16 @@ export interface ICompanySchema {
 }
 
 export interface IFavoriteSchema {
-  itemId: Types.ObjectId;
-  customerId: Types.ObjectId;
-  restaurant: Types.ObjectId;
+  customer: Types.ObjectId;
+  item: {
+    _id: Types.ObjectId;
+    name: string;
+    image: string;
+  };
+  restaurant: {
+    _id: Types.ObjectId;
+    name: string;
+  };
 }
 
 export interface IOrderSchema {
@@ -49,6 +56,7 @@ export interface IOrderSchema {
     _id: Types.ObjectId;
     name: string;
     tags: string;
+    image: string;
     description: string;
     quantity: number;
     total: number;
@@ -171,8 +179,8 @@ export interface ICustomerPayload {
 }
 
 export interface IFavoritePayload {
-  restaurantId: string;
   itemId: string;
+  restaurantId: string;
 }
 
 export interface IScheduleRestaurantPayload {

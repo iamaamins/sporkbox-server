@@ -1,7 +1,9 @@
+import Restaurant from "../models/restaurant";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
+import { IFavoritePayload } from "../types";
+import { deleteFields } from "../utils";
 import express, { Request, Response } from "express";
-import { IFavoritePayload, IFavoriteRestaurant } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -28,46 +30,44 @@ router.post(
       // If role is customer
       if (role === "CUSTOMER") {
         try {
-          // Add item to favorite
-          const response = await Favorite.create({
-            customerId: _id,
-            itemId: itemId,
-            restaurant: restaurantId,
-          });
+          // Find the restaurant
+          const restaurant = await Restaurant.findById(restaurantId)
+            .lean()
+            .orFail();
 
-          try {
-            // Populate restaurant
-            const favoriteWithRestaurant = await response.populate<{
-              restaurant: IFavoriteRestaurant;
-            }>("restaurant", "_id name items");
+          // Find the item
+          const item = restaurant.items.find(
+            (item) => item._id?.toString() === itemId
+          );
 
-            // Find the item
-            const item = favoriteWithRestaurant.restaurant.items.find(
-              (item) =>
-                item._id.toString() === favoriteWithRestaurant.itemId.toString()
-            );
+          if (item) {
+            try {
+              // Add item to favorite
+              const favorite = await Favorite.create({
+                customer: _id,
+                item: {
+                  _id: itemId,
+                  name: item.name,
+                  image: item.image || restaurant.logo,
+                },
+                restaurant: {
+                  _id: restaurantId,
+                  name: restaurant.name,
+                },
+              });
 
-            // If item is found
-            if (item) {
-              // Create favorite
-              const favorite = {
-                _id: favoriteWithRestaurant._id,
-                itemId: item._id,
-                itemName: item.name,
-                customerId: favoriteWithRestaurant.customerId,
-                restaurantId: favoriteWithRestaurant.restaurant._id,
-                restaurantName: favoriteWithRestaurant.restaurant.name,
-              };
+              // Delete fields
+              deleteFields(favorite.toObject());
 
-              // Send data with response
+              // Send favorite with response
               res.status(201).json(favorite);
+            } catch (err) {
+              // If favorite isn't created
+              throw err;
             }
-          } catch (err) {
-            // If restaurant isn't populated
-            throw err;
           }
         } catch (err) {
-          // If item isn't added to favorite
+          // If restaurant isn't found
           throw err;
         }
       } else {
@@ -126,32 +126,9 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
     if (role === "CUSTOMER") {
       try {
         // Find the favorites
-        const response = await Favorite.find({
-          customerId: _id,
-        }).populate<{ restaurant: IFavoriteRestaurant }>(
-          "restaurant",
-          "_id name items"
-        );
-
-        // Create favorites
-        const favorites = response.map((favorite) => {
-          // Get the item
-          const item = favorite.restaurant.items.find(
-            (item) => item._id.toString() === favorite.itemId.toString()
-          );
-
-          // If there is an item
-          if (item) {
-            return {
-              _id: favorite._id,
-              itemId: item._id,
-              itemName: item.name,
-              customerId: favorite.customerId,
-              restaurantId: favorite.restaurant._id,
-              restaurantName: favorite.restaurant.name,
-            };
-          }
-        });
+        const favorites = await Favorite.find({
+          customer: _id,
+        }).select("-__v");
 
         // Send the data with response
         res.status(200).json(favorites);

@@ -73,6 +73,10 @@ const orderSchema = new Schema<IOrderSchema>(
         type: String,
         required: [true, "Please provide the item name"],
       },
+      image: {
+        type: String,
+        required: [true, "Please provide the item image"],
+      },
       description: {
         type: String,
         required: [true, "Please provide the item name"],

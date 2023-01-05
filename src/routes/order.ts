@@ -203,6 +203,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                   tags: item.tags,
                   description: item.description,
                   quantity: orderPayload.quantity,
+                  image: item.image || restaurant.logo,
                   total: unitPrice * orderPayload.quantity,
                 },
               };

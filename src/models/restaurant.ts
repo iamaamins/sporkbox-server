@@ -7,7 +7,10 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       type: String,
       required: [true, "Please provide a name"],
     },
-    logo: String,
+    logo: {
+      type: String,
+      required: [true, "Please provide a logo"],
+    },
     address: {
       type: String,
       required: [true, "Please provide an email"],

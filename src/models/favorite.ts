@@ -2,18 +2,33 @@ import { Schema, model } from "mongoose";
 import { IFavoriteSchema } from "../types";
 
 const favoriteSchema = new Schema<IFavoriteSchema>({
-  customerId: {
+  customer: {
     type: Schema.Types.ObjectId,
     required: [true, "Please provide customer id"],
   },
   restaurant: {
-    type: Schema.Types.ObjectId,
-    ref: "Restaurant",
-    required: [true, "Please provide restaurant id"],
+    _id: {
+      type: Schema.Types.ObjectId,
+      required: [true, "Please provide restaurant id"],
+    },
+    name: {
+      type: String,
+      required: [true, "Please provide restaurant name"],
+    },
   },
-  itemId: {
-    type: Schema.Types.ObjectId,
-    required: [true, "Please provide item id"],
+  item: {
+    _id: {
+      type: Schema.Types.ObjectId,
+      required: [true, "Please provide item id"],
+    },
+    name: {
+      type: String,
+      required: [true, "Please provide item name"],
+    },
+    image: {
+      type: String,
+      required: [true, "Please provide item image"],
+    },
   },
 });
 
