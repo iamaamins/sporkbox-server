@@ -425,7 +425,7 @@ router.patch(
             const orders = await Order.find({ _id: { $in: orderIds } });
 
             try {
-              // Send emails
+              // Send delivery email
               await Promise.all(
                 orders.map(
                   async (order) =>
@@ -436,15 +436,18 @@ router.patch(
               // Send the update
               res.status(200).json("Delivery email sent");
             } catch (err) {
-              // If emails aren't sent successfully
-              throw err;
+              // If emails aren't sent
+              res.status(500);
+              throw new Error("Failed to send email");
             }
           } catch (err) {
-            // If orders aren't fetched successfully
+            // If orders aren't fetched
+            res.status(500);
             throw err;
           }
         } catch (err) {
-          // If order status isn't updated successfully
+          // If order status isn't updated
+          res.status(500);
           throw err;
         }
       } else {
@@ -485,7 +488,7 @@ router.patch(
 
           // If order is updated successfully
           try {
-            // Send email
+            // Send cancellation email
             await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
 
             // Send updated order with the response
