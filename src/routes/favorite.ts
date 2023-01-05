@@ -1,9 +1,8 @@
 import Restaurant from "../models/restaurant";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
-import { IFavoritePayload } from "../types";
-import { deleteFields } from "../utils";
 import express, { Request, Response } from "express";
+import { IFavoritePayload, IFavoriteRestaurant } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -43,28 +42,37 @@ router.post(
           if (item) {
             try {
               // Add item to favorite
-              const favorite = await Favorite.create({
+              const response = await Favorite.create({
                 customer: _id,
+                item: itemId,
+                restaurant: restaurantId,
+              });
+
+              // Create favorite
+              const favorite = {
+                _id: response._id,
                 item: {
-                  _id: itemId,
+                  _id: item._id,
                   name: item.name,
                   image: item.image || restaurant.logo,
                 },
+                customer: response.customer,
                 restaurant: {
-                  _id: restaurantId,
+                  _id: restaurant._id,
                   name: restaurant.name,
                 },
-              });
+              };
 
-              // Delete fields
-              deleteFields(favorite.toObject());
-
-              // Send favorite with response
+              // Send data with response
               res.status(201).json(favorite);
             } catch (err) {
-              // If favorite isn't created
+              // If item isn't added to favorite
               throw err;
             }
+          } else {
+            // If no item is found
+            res.status(400);
+            throw new Error("No item found");
           }
         } catch (err) {
           // If restaurant isn't found
@@ -126,9 +134,39 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
     if (role === "CUSTOMER") {
       try {
         // Find the favorites
-        const favorites = await Favorite.find({
+        const response = await Favorite.find({
           customer: _id,
-        }).select("-__v");
+        })
+          .populate<{ restaurant: IFavoriteRestaurant }>(
+            "restaurant",
+            "_id name logo items"
+          )
+          .select("-__v");
+
+        // Create favorites
+        const favorites = response.map((favorite) => {
+          // Get the item
+          const item = favorite.restaurant.items.find(
+            (item) => item._id.toString() === favorite.item._id.toString()
+          );
+
+          // If there is an item
+          if (item) {
+            return {
+              _id: favorite._id,
+              item: {
+                _id: item._id,
+                name: item.name,
+                image: item.image || favorite.restaurant.logo,
+              },
+              customer: favorite.customer,
+              restaurant: {
+                _id: favorite.restaurant._id,
+                name: favorite.restaurant.name,
+              },
+            };
+          }
+        });
 
         // Send the data with response
         res.status(200).json(favorites);

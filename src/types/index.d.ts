@@ -19,15 +19,8 @@ export interface ICompanySchema {
 
 export interface IFavoriteSchema {
   customer: Types.ObjectId;
-  item: {
-    _id: Types.ObjectId;
-    name: string;
-    image: string;
-  };
-  restaurant: {
-    _id: Types.ObjectId;
-    name: string;
-  };
+  item: Types.ObjectId;
+  restaurant: Types.ObjectId;
 }
 
 export interface IOrderSchema {
@@ -122,6 +115,7 @@ interface IRestaurantItem {
   name: string;
   tags: string;
   price: number;
+  image: string;
   description: string;
   reviews: IReviewSchema[];
 }
@@ -129,6 +123,7 @@ interface IRestaurantItem {
 export interface IFavoriteRestaurant {
   _id: Types.ObjectId;
   name: string;
+  logo: string;
   items: IRestaurantItem[];
 }
 
