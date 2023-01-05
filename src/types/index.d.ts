@@ -81,6 +81,7 @@ export interface ISchedulesSchema {
 
 export interface IRestaurantSchema {
   name: string;
+  logo: string;
   address: string;
   items: Types.DocumentArray<IItemSchema>;
   schedules: Types.DocumentArray<ISchedulesSchema>;
@@ -184,7 +185,7 @@ export interface IItemPayload {
   name: string;
   tags: string;
   price: number;
-  image: string;
+  image?: string;
   description: string;
 }
 
@@ -207,6 +208,7 @@ export interface IVendorPayload {
   city: string;
   state: string;
   zip: string;
+  logo?: string;
   restaurantName: string;
   addressLine1: string;
   addressLine2: string;
