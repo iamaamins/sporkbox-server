@@ -12,22 +12,20 @@ router.post(
   "/add-to-favorite",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId }: IFavoritePayload = req.body;
-
-    // If all the fields aren't provided
-    if (!restaurantId || !itemId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role, _id } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { restaurantId, itemId }: IFavoritePayload = req.body;
+
+        // If all the fields aren't provided
+        if (!restaurantId || !itemId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Find the restaurant
           const restaurant = await Restaurant.findById(restaurantId)
@@ -92,16 +90,21 @@ router.delete(
   "/:favoriteId/remove-from-favorite",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { favoriteId } = req.params;
-
     // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { favoriteId } = req.params;
+
+        // If all the fields aren't provided
+        if (!favoriteId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Remove the favorite
           await Favorite.findByIdAndDelete({
@@ -125,12 +128,10 @@ router.delete(
 
 // Get all favorite
 router.get("/me", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { role, _id } = req.user;
 
-    // If role is customer
     if (role === "CUSTOMER") {
       try {
         // Find the favorites

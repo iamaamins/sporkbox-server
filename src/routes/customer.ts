@@ -99,7 +99,6 @@ router.post(
 
 // Get all customers
 router.get("", authUser, async (req: Request, res: Response) => {
-  // If there is a user
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
@@ -131,23 +130,21 @@ router.patch(
   "/:customerId/update-customer-details",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { customerId } = req.params;
-    const { firstName, lastName, email }: IEditCustomerPayload = req.body;
-
-    // If all the fields aren't provided
-    if (!customerId || !firstName || !lastName || !email) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // If there is a user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { customerId } = req.params;
+        const { firstName, lastName, email }: IEditCustomerPayload = req.body;
+
+        // If all the fields aren't provided
+        if (!customerId || !firstName || !lastName || !email) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Get all customers
           const updatedCustomer = await User.findOneAndUpdate(
@@ -182,26 +179,24 @@ router.patch(
   "/:customerId/change-customer-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from request
-    const { customerId } = req.params;
-    const { action }: IStatusChangePayload = req.body;
-
-    // If all the fields aren't provided
-    if (!customerId || !action) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check actions validity
-    checkActions(undefined, action, res);
-
-    // If there is a user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from request
+        const { customerId } = req.params;
+        const { action }: IStatusChangePayload = req.body;
+
+        // If all the fields aren't provided
+        if (!customerId || !action) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
+        // Check actions validity
+        checkActions(undefined, action, res);
+
         try {
           // Get all customers
           const updatedCustomer = await User.findOneAndUpdate(
