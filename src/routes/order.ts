@@ -16,7 +16,7 @@ import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
 // Initialize router
 const router = express.Router();
 
-// Get customer's upcoming orders
+// Get customer's all upcoming orders
 router.get(
   "/me/upcoming-orders",
   authUser,
@@ -50,7 +50,7 @@ router.get(
   }
 );
 
-// Get customer's delivered orders
+// Get customer's limited delivered orders
 router.get(
   "/me/delivered-orders/:limit",
   authUser,
@@ -349,7 +349,7 @@ router.get(
   }
 );
 
-// Get all delivered orders
+// Get limited delivered orders
 router.get(
   "/all-delivered-orders/:limit",
   authUser,
@@ -379,6 +379,42 @@ router.get(
           res.status(200).json(deliveredOrders);
         } catch (err) {
           // If delivered orders aren't fetched successfully
+          throw err;
+        }
+      } else {
+        // If role isn't admin
+        res.status(403);
+        throw new Error("Not authorized");
+      }
+    }
+  }
+);
+
+// Get all delivered orders of a customer
+router.get(
+  "/:customerId/all-delivered-orders",
+  authUser,
+  async (req: Request, res: Response) => {
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      if (role === "ADMIN") {
+        // Destructure data from req
+        const { customerId } = req.params;
+
+        try {
+          const customerDeliveredOrders = await Order.find({
+            "customer._id": customerId,
+            status: "DELIVERED",
+          })
+            .sort({ "delivery.date": -1 })
+            .select("-__v -updatedAt");
+
+          // Send orders with response
+          res.status(200).json(customerDeliveredOrders);
+        } catch (err) {
+          // If orders aren't found
           throw err;
         }
       } else {

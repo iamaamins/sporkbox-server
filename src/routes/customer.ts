@@ -103,7 +103,6 @@ router.get("", authUser, async (req: Request, res: Response) => {
     // Destructure data from req
     const { role } = req.user;
 
-    // If role is admin
     if (role === "ADMIN") {
       try {
         // Get all customers
