@@ -16,17 +16,15 @@ import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
 // Initialize router
 const router = express.Router();
 
-// Get customer's upcoming orders
+// Get customer's all upcoming orders
 router.get(
   "/me/upcoming-orders",
   authUser,
   async (req: Request, res: Response) => {
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { _id, role } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
         try {
           // Find the upcoming orders of the customer
@@ -52,20 +50,25 @@ router.get(
   }
 );
 
-// Get customer's delivered orders
+// Get customer's limited delivered orders
 router.get(
   "/me/delivered-orders/:limit",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure req data
-    const { limit } = req.params;
-
-    // If there is an user
     if (req.user) {
+      // Destructure data from req
       const { role, _id } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure req data
+        const { limit } = req.params;
+
+        // If all the fields aren't provided
+        if (!limit) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Find the delivered orders of the customer
           const customerDeliveredOrders = await Order.find({
@@ -93,31 +96,29 @@ router.get(
 
 // Create orders
 router.post("/create-orders", authUser, async (req: Request, res: Response) => {
-  // Get data from req user and body
-  const { ordersPayload }: IOrdersPayload = req.body;
-
-  // If required data aren't provided
-  if (
-    !ordersPayload ||
-    !ordersPayload.every(
-      (orderPayload) =>
-        orderPayload.itemId &&
-        orderPayload.quantity &&
-        orderPayload.restaurantId &&
-        orderPayload.deliveryDate
-    )
-  ) {
-    res.status(401);
-    throw new Error("Please provide all the orders data");
-  }
-
-  // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { _id, firstName, lastName, email, role, company } = req.user;
 
-    // If role is customer
     if (role === "CUSTOMER" && company) {
+      // Get data from req user and body
+      const { ordersPayload }: IOrdersPayload = req.body;
+
+      // If required data aren't provided
+      if (
+        !ordersPayload ||
+        !ordersPayload.every(
+          (orderPayload) =>
+            orderPayload.itemId &&
+            orderPayload.quantity &&
+            orderPayload.restaurantId &&
+            orderPayload.deliveryDate
+        )
+      ) {
+        res.status(401);
+        throw new Error("Please provide all the orders data");
+      }
+
       // Get upcoming week restaurants
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
         company.name
@@ -203,6 +204,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                   tags: item.tags,
                   description: item.description,
                   quantity: orderPayload.quantity,
+                  image: item.image || restaurant.logo,
                   total: unitPrice * orderPayload.quantity,
                 },
               };
@@ -321,12 +323,10 @@ router.get(
   "/all-upcoming-orders",
   authUser,
   async (req: Request, res: Response) => {
-    // Check if there is an user
     if (req.user) {
       // Get data from req user
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
         try {
           // Find the upcoming orders
@@ -349,27 +349,25 @@ router.get(
   }
 );
 
-// Get all delivered orders
+// Get limited delivered orders
 router.get(
   "/all-delivered-orders/:limit",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { limit } = req.params;
-
-    // If all the fields aren't provided
-    if (!limit) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { limit } = req.params;
+
+        // If all the fields aren't provided
+        if (!limit) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Get delivered orders
           const deliveredOrders = await Order.find({ status: "DELIVERED" })
@@ -392,27 +390,61 @@ router.get(
   }
 );
 
+// Get all delivered orders of a customer
+router.get(
+  "/:customerId/all-delivered-orders",
+  authUser,
+  async (req: Request, res: Response) => {
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      if (role === "ADMIN") {
+        // Destructure data from req
+        const { customerId } = req.params;
+
+        try {
+          const customerDeliveredOrders = await Order.find({
+            "customer._id": customerId,
+            status: "DELIVERED",
+          })
+            .sort({ "delivery.date": -1 })
+            .select("-__v -updatedAt");
+
+          // Send orders with response
+          res.status(200).json(customerDeliveredOrders);
+        } catch (err) {
+          // If orders aren't found
+          throw err;
+        }
+      } else {
+        // If role isn't admin
+        res.status(403);
+        throw new Error("Not authorized");
+      }
+    }
+  }
+);
+
 // Change bulk orders and send delivery email
 router.patch(
   "/change-orders-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { orderIds }: IOrdersStatusPayload = req.body;
-
-    // If order ids aren't provides
-    if (!orderIds) {
-      res.status(400);
-      throw new Error("Please provide order ids");
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { orderIds }: IOrdersStatusPayload = req.body;
+
+        // If order ids aren't provides
+        if (!orderIds) {
+          res.status(400);
+          throw new Error("Please provide order ids");
+        }
+
         try {
           // Update orders status
           await Order.updateMany(
@@ -464,16 +496,14 @@ router.patch(
   "/:orderId/change-order-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { orderId } = req.params;
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { orderId } = req.params;
+
         try {
           // Update order status
           const updatedOrder = await Order.findOneAndUpdate(

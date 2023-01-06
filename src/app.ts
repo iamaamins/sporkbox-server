@@ -4,6 +4,7 @@ import express from "express";
 import "express-async-errors";
 import mail from "@sendgrid/mail";
 import User from "./routes/user";
+import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
@@ -46,6 +47,7 @@ app.use(
 // Routes
 app.use("/users", User);
 app.use("/orders", Order);
+app.use("/admins", Admin);
 app.use("/vendors", Vendor);
 app.use("/customers", Customer);
 app.use("/companies", Company);

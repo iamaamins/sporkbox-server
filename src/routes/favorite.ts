@@ -1,3 +1,4 @@
+import Restaurant from "../models/restaurant";
 import Favorite from "../models/favorite";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -11,63 +12,68 @@ router.post(
   "/add-to-favorite",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId }: IFavoritePayload = req.body;
-
-    // If all the fields aren't provided
-    if (!restaurantId || !itemId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role, _id } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { restaurantId, itemId }: IFavoritePayload = req.body;
+
+        // If all the fields aren't provided
+        if (!restaurantId || !itemId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
-          // Add item to favorite
-          const response = await Favorite.create({
-            customerId: _id,
-            itemId: itemId,
-            restaurant: restaurantId,
-          });
+          // Find the restaurant
+          const restaurant = await Restaurant.findById(restaurantId)
+            .lean()
+            .orFail();
 
-          try {
-            // Populate restaurant
-            const favoriteWithRestaurant = await response.populate<{
-              restaurant: IFavoriteRestaurant;
-            }>("restaurant", "_id name items");
+          // Find the item
+          const item = restaurant.items.find(
+            (item) => item._id?.toString() === itemId
+          );
 
-            // Find the item
-            const item = favoriteWithRestaurant.restaurant.items.find(
-              (item) =>
-                item._id.toString() === favoriteWithRestaurant.itemId.toString()
-            );
+          if (item) {
+            try {
+              // Add item to favorite
+              const response = await Favorite.create({
+                customer: _id,
+                item: itemId,
+                restaurant: restaurantId,
+              });
 
-            // If item is found
-            if (item) {
               // Create favorite
               const favorite = {
-                _id: favoriteWithRestaurant._id,
-                itemId: item._id,
-                itemName: item.name,
-                customerId: favoriteWithRestaurant.customerId,
-                restaurantId: favoriteWithRestaurant.restaurant._id,
-                restaurantName: favoriteWithRestaurant.restaurant.name,
+                _id: response._id,
+                item: {
+                  _id: item._id,
+                  name: item.name,
+                  image: item.image || restaurant.logo,
+                },
+                customer: response.customer,
+                restaurant: {
+                  _id: restaurant._id,
+                  name: restaurant.name,
+                },
               };
 
               // Send data with response
               res.status(201).json(favorite);
+            } catch (err) {
+              // If item isn't added to favorite
+              throw err;
             }
-          } catch (err) {
-            // If restaurant isn't populated
-            throw err;
+          } else {
+            // If no item is found
+            res.status(400);
+            throw new Error("No item found");
           }
         } catch (err) {
-          // If item isn't added to favorite
+          // If restaurant isn't found
           throw err;
         }
       } else {
@@ -84,16 +90,21 @@ router.delete(
   "/:favoriteId/remove-from-favorite",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { favoriteId } = req.params;
-
     // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { favoriteId } = req.params;
+
+        // If all the fields aren't provided
+        if (!favoriteId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Remove the favorite
           await Favorite.findByIdAndDelete({
@@ -117,38 +128,43 @@ router.delete(
 
 // Get all favorite
 router.get("/me", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { role, _id } = req.user;
 
-    // If role is customer
     if (role === "CUSTOMER") {
       try {
         // Find the favorites
         const response = await Favorite.find({
-          customerId: _id,
-        }).populate<{ restaurant: IFavoriteRestaurant }>(
-          "restaurant",
-          "_id name items"
-        );
+          customer: _id,
+        })
+          .populate<{ restaurant: IFavoriteRestaurant }>(
+            "restaurant",
+            "_id name logo items"
+          )
+          .select("-__v");
 
         // Create favorites
         const favorites = response.map((favorite) => {
           // Get the item
           const item = favorite.restaurant.items.find(
-            (item) => item._id.toString() === favorite.itemId.toString()
+            (item) => item._id.toString() === favorite.item._id.toString()
           );
 
           // If there is an item
           if (item) {
             return {
               _id: favorite._id,
-              itemId: item._id,
-              itemName: item.name,
-              customerId: favorite.customerId,
-              restaurantId: favorite.restaurant._id,
-              restaurantName: favorite.restaurant.name,
+              item: {
+                _id: item._id,
+                name: item.name,
+                image: item.image || favorite.restaurant.logo,
+              },
+              customer: favorite.customer,
+              restaurant: {
+                _id: favorite.restaurant._id,
+                name: favorite.restaurant.name,
+              },
             };
           }
         });

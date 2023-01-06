@@ -18,8 +18,8 @@ export interface ICompanySchema {
 }
 
 export interface IFavoriteSchema {
-  itemId: Types.ObjectId;
-  customerId: Types.ObjectId;
+  customer: Types.ObjectId;
+  item: Types.ObjectId;
   restaurant: Types.ObjectId;
 }
 
@@ -49,6 +49,7 @@ export interface IOrderSchema {
     _id: Types.ObjectId;
     name: string;
     tags: string;
+    image: string;
     description: string;
     quantity: number;
     total: number;
@@ -81,6 +82,7 @@ export interface ISchedulesSchema {
 
 export interface IRestaurantSchema {
   name: string;
+  logo: string;
   address: string;
   items: Types.DocumentArray<IItemSchema>;
   schedules: Types.DocumentArray<ISchedulesSchema>;
@@ -113,6 +115,7 @@ interface IRestaurantItem {
   name: string;
   tags: string;
   price: number;
+  image: string;
   description: string;
   reviews: IReviewSchema[];
 }
@@ -120,6 +123,7 @@ interface IRestaurantItem {
 export interface IFavoriteRestaurant {
   _id: Types.ObjectId;
   name: string;
+  logo: string;
   items: IRestaurantItem[];
 }
 
@@ -170,8 +174,8 @@ export interface ICustomerPayload {
 }
 
 export interface IFavoritePayload {
-  restaurantId: string;
   itemId: string;
+  restaurantId: string;
 }
 
 export interface IScheduleRestaurantPayload {
@@ -184,7 +188,7 @@ export interface IItemPayload {
   name: string;
   tags: string;
   price: number;
-  image: string;
+  image?: string;
   description: string;
 }
 
@@ -207,6 +211,7 @@ export interface IVendorPayload {
   city: string;
   state: string;
   zip: string;
+  logo?: string;
   restaurantName: string;
   addressLine1: string;
   addressLine2: string;

@@ -9,42 +9,40 @@ const router = express.Router();
 
 // Add a company
 router.post("/add-company", authUser, async (req: Request, res: Response) => {
-  // Destructure body data
-  const {
-    name,
-    code,
-    city,
-    state,
-    zip,
-    website,
-    dailyBudget,
-    addressLine1,
-    addressLine2,
-  }: ICompanyPayload = req.body;
-
-  // If all the fields aren't provided
-  if (
-    !name ||
-    !code ||
-    !city ||
-    !state ||
-    !zip ||
-    !website ||
-    !dailyBudget ||
-    !addressLine1 ||
-    !addressLine2
-  ) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    // If role is admin
     if (role === "ADMIN") {
+      // Destructure body data
+      const {
+        name,
+        code,
+        city,
+        state,
+        zip,
+        website,
+        dailyBudget,
+        addressLine1,
+        addressLine2,
+      }: ICompanyPayload = req.body;
+
+      // If all the fields aren't provided
+      if (
+        !name ||
+        !code ||
+        !city ||
+        !state ||
+        !zip ||
+        !website ||
+        !dailyBudget ||
+        !addressLine1 ||
+        !addressLine2
+      ) {
+        res.status(400);
+        throw new Error("Please provide all the fields");
+      }
+
       try {
         // Create a new company
         const response = await Company.create({
@@ -78,12 +76,10 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
 
 // Get all companies
 router.get("/", authUser, async (req: Request, res: Response) => {
-  // Check if there is an user
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    // If role is admin
     if (role === "ADMIN") {
       try {
         // Create a new company
@@ -110,44 +106,42 @@ router.patch(
   "/:companyId/update-company-details",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { companyId } = req.params;
-    const {
-      name,
-      code,
-      city,
-      state,
-      zip,
-      website,
-      dailyBudget,
-      addressLine1,
-      addressLine2,
-    }: ICompanyPayload = req.body;
-
-    // If all the fields aren't provided
-    if (
-      !companyId ||
-      !name ||
-      !code ||
-      !city ||
-      !state ||
-      !zip ||
-      !website ||
-      !dailyBudget ||
-      !addressLine1 ||
-      !addressLine2
-    ) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { companyId } = req.params;
+        const {
+          name,
+          code,
+          city,
+          state,
+          zip,
+          website,
+          dailyBudget,
+          addressLine1,
+          addressLine2,
+        }: ICompanyPayload = req.body;
+
+        // If all the fields aren't provided
+        if (
+          !companyId ||
+          !name ||
+          !code ||
+          !city ||
+          !state ||
+          !zip ||
+          !website ||
+          !dailyBudget ||
+          !addressLine1 ||
+          !addressLine2
+        ) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Find and update the company
           const updatedCompany = await Company.findOneAndUpdate(
@@ -187,26 +181,24 @@ router.patch(
   "/:companyId/change-company-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { companyId } = req.params;
-    const { action }: IStatusChangePayload = req.body;
-
-    // If all the fields aren't provided
-    if (!companyId || !action) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check actions validity
-    checkActions(undefined, action, res);
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { companyId } = req.params;
+        const { action }: IStatusChangePayload = req.body;
+
+        // If all the fields aren't provided
+        if (!companyId || !action) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
+        // Check actions validity
+        checkActions(undefined, action, res);
+
         try {
           // Find and update company status
           const updatedCompany = await Company.findOneAndUpdate(

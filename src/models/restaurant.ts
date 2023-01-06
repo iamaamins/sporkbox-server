@@ -5,10 +5,17 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
   {
     name: {
       type: String,
+      trim: true,
       required: [true, "Please provide a name"],
+    },
+    logo: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide a logo"],
     },
     address: {
       type: String,
+      trim: true,
       required: [true, "Please provide an email"],
     },
     schedules: [
@@ -24,6 +31,7 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           },
           name: {
             type: String,
+            trim: true,
             required: [true, "Please provide a company name"],
           },
         },
@@ -38,10 +46,12 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       new Schema({
         name: {
           type: String,
+          trim: true,
           required: [true, "Please provide item name"],
         },
         tags: {
           type: String,
+          trim: true,
           required: [true, "Please provide item tags"],
         },
         price: {
@@ -51,6 +61,7 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
         image: String,
         description: {
           type: String,
+          trim: true,
           required: [true, "Please provide item description"],
         },
         status: {
@@ -71,6 +82,7 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             },
             comment: {
               type: String,
+              trim: true,
               required: [true, "Please provide a rating"],
             },
           }),

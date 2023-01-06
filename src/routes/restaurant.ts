@@ -31,12 +31,10 @@ router.get(
   "/upcoming-restaurants",
   authUser,
   async (req: Request, res: Response) => {
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role, company } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER" && company) {
         // Get upcoming week restaurants
         const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
@@ -59,12 +57,10 @@ router.get(
   "/scheduled-restaurants",
   authUser,
   async (req: Request, res: Response) => {
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
         try {
           // Get the scheduled restaurants
@@ -118,42 +114,40 @@ router.post(
   "/schedule-restaurant",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
-      req.body;
-
-    // If full data isn't provided
-    if (!date || !companyId || !restaurantId) {
-      res.status(400);
-      throw new Error("Please fill all the fields");
-    }
-
-    // If provided date is a past date
-    if (convertDateToMS(date) < gte) {
-      res.status(400);
-      throw new Error("Cant' schedule a restaurant in the past");
-    }
-
-    // Get the day from provided date
-    const day = new Date(date).toUTCString().split(",")[0];
-
-    // Restrict scheduling on saturday and sunday
-    if (day === "Sat" || day === "Sun") {
-      res.status(400);
-      throw new Error(
-        `Can't schedule a restaurant on ${
-          day === "Sat" ? "Saturday" : "Sunday"
-        }`
-      );
-    }
-
-    // Check if there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { date, companyId, restaurantId }: IScheduleRestaurantPayload =
+          req.body;
+
+        // If full data isn't provided
+        if (!date || !companyId || !restaurantId) {
+          res.status(400);
+          throw new Error("Please fill all the fields");
+        }
+
+        // If provided date is a past date
+        if (convertDateToMS(date) < gte) {
+          res.status(400);
+          throw new Error("Cant' schedule a restaurant in the past");
+        }
+
+        // Get the day from provided date
+        const day = new Date(date).toUTCString().split(",")[0];
+
+        // Restrict scheduling on saturday and sunday
+        if (day === "Sat" || day === "Sun") {
+          res.status(400);
+          throw new Error(
+            `Can't schedule a restaurant on ${
+              day === "Sat" ? "Saturday" : "Sunday"
+            }`
+          );
+        }
+
         try {
           // Find the restaurant and remove past dates
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -244,26 +238,24 @@ router.patch(
   "/:restaurantId/:scheduleId/change-schedule-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, scheduleId } = req.params;
-    const { action }: IStatusChangePayload = req.body;
-
-    // If all the fields aren't provide
-    if (!action || !restaurantId || !scheduleId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check actions validity
-    checkActions(["Activate", "Deactivate"], action, res);
-
-    // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin or vendor
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { restaurantId, scheduleId } = req.params;
+        const { action }: IStatusChangePayload = req.body;
+
+        // If all the fields aren't provide
+        if (!action || !restaurantId || !scheduleId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
+        // Check actions validity
+        checkActions(["Activate", "Deactivate"], action, res);
+
         try {
           // Find and update the schedule status
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -317,22 +309,20 @@ router.patch(
   "/:restaurantId/:scheduleId/remove-schedule",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, scheduleId } = req.params;
-
-    // If all the fields aren't provide
-    if (!restaurantId || !scheduleId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin or vendor
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { restaurantId, scheduleId } = req.params;
+
+        // If all the fields aren't provide
+        if (!restaurantId || !scheduleId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Find the restaurant and remove the schedule
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -422,23 +412,21 @@ router.post(
   authUser,
   upload,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId } = req.params;
-    const { name, description, tags, price }: IItemPayload = req.body;
-
-    // If restaurant id, name, description, tags, price aren't provided
-    if (!restaurantId || !name || !description || !tags || !price) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
+        // Destructure data from req
+        const { restaurantId } = req.params;
+        const { name, description, tags, price }: IItemPayload = req.body;
+
+        // If all the fields aren't provided
+        if (!restaurantId || !name || !description || !tags || !price) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         // Create image URL
         let imageURL;
 
@@ -499,23 +487,29 @@ router.patch(
   authUser,
   upload,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId } = req.params;
-    const { name, tags, price, image, description }: IItemPayload = req.body;
-
-    // If restaurant id, name, description, tags, price aren't provided
-    if (!restaurantId || !itemId || !name || !description || !tags || !price) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If the role is either admin or vendor
       if (role === "ADMIN" || role === "VENDOR") {
+        // Destructure data from req
+        const { restaurantId, itemId } = req.params;
+        const { name, tags, price, image, description }: IItemPayload =
+          req.body;
+
+        // If all the fields aren't provided
+        if (
+          !restaurantId ||
+          !itemId ||
+          !name ||
+          !description ||
+          !tags ||
+          !price
+        ) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         // If a new file is provided and an image already exists
         if (req.file && image) {
           // Create name
@@ -583,26 +577,24 @@ router.patch(
   "/:restaurantId/:itemId/change-item-status",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId } = req.params;
-    const { action }: IStatusChangePayload = req.body;
-
-    // If all the fields aren't provided
-    if (!action || !restaurantId || !itemId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // Check actions validity
-    checkActions(undefined, action, res);
-
-    // If there is an user
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      // If role is admin or vendor
       if (role === "ADMIN") {
+        // Destructure data from req
+        const { restaurantId, itemId } = req.params;
+        const { action }: IStatusChangePayload = req.body;
+
+        // If all the fields aren't provided
+        if (!action || !restaurantId || !itemId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
+        // Check actions validity
+        checkActions(undefined, action, res);
+
         try {
           // Find the restaurant and update the item status
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -640,23 +632,21 @@ router.post(
   "/:restaurantId/:itemId/add-a-review",
   authUser,
   async (req: Request, res: Response) => {
-    // Destructure data from req
-    const { restaurantId, itemId } = req.params;
-    const { rating, comment, orderId }: IReviewPayload = req.body;
-
-    // If rating or comment isn't provided
-    if (!restaurantId || !itemId || !rating || !comment || !orderId) {
-      res.status(400);
-      throw new Error("Please provide all the fields");
-    }
-
-    // If there is an user in the req
     if (req.user) {
       // Destructure data
       const { role, _id } = req.user;
 
-      // If role is customer
       if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { restaurantId, itemId } = req.params;
+        const { rating, comment, orderId }: IReviewPayload = req.body;
+
+        // If rating or comment isn't provided
+        if (!restaurantId || !itemId || !rating || !comment || !orderId) {
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         try {
           // Find and update the order
           const order = await Order.findOneAndUpdate(

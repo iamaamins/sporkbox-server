@@ -10,6 +10,7 @@ const router = express.Router();
 
 // user login
 router.post("/login", async (req: Request, res: Response) => {
+  // Destructure data from req
   const { email, password }: ILoginPayload = req.body;
 
   // If a value isn't provided
