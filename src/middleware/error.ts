@@ -92,7 +92,7 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
     return res.status(500).json({ message: "Please provide a valid salt" });
   }
 
-  // Set error status
+  // Error thrown by throw new Error
   res.status(res.statusCode || 500).json({
     message: err.message,
   });

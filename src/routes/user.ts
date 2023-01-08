@@ -6,7 +6,10 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
 import { IResetPasswordPayload } from "./../types/index.d";
-import { passwordResetTemplate } from "../utils/emailTemplates";
+import {
+  passwordResetConfirmationTemplate,
+  passwordResetTemplate,
+} from "../utils/emailTemplates";
 import { IForgotPasswordPayload, ILoginPayload } from "../types";
 
 // Initialize router
@@ -92,12 +95,11 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     // Find the user
     const user = await User.findOne({ email }).orFail();
 
+    //  Create unique jwt secret
+    const jwtSecret = process.env.JWT_SECRET + user.password;
+
     // Create jwt token
-    const token = jwt.sign(
-      { _id: user._id },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "15m" }
-    );
+    const token = jwt.sign({ _id: user._id }, jwtSecret, { expiresIn: "15m" });
 
     // Create password reset link
     const link = `${process.env.ROOT_DOMAIN}/reset-password/${user._id}/${token}`;
@@ -119,61 +121,80 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 });
 
 // Reset password
-router.patch("/reset-password/:token", async (req: Request, res: Response) => {
-  // Destructure data from req
-  const { token } = req.params;
-  const { password }: IResetPasswordPayload = req.body;
+router.patch(
+  "/reset-password/:userId/:token",
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { userId, token } = req.params;
+    const { password }: IResetPasswordPayload = req.body;
 
-  // If all the fields aren't provided
-  if (!password || !token) {
-    res.status(400);
-    throw new Error("Please provide all the fields");
-  }
-
-  try {
-    // Decode the token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    ) as JwtPayload;
+    // If all the fields aren't provided
+    if (!password || !userId || !token) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
 
     try {
-      // Create salt
-      const salt = await bcrypt.genSalt(10);
+      // Find the user
+      const user = await User.findById(userId).orFail();
+
+      // Create the secret
+      const jwtSecret = process.env.JWT_SECRET + user.password;
 
       try {
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, salt);
+        // Verify the token
+        jwt.verify(token, jwtSecret);
 
         try {
-          // Find the user update the user
-          await User.findOneAndUpdate(
-            { _id: decoded._id },
-            {
-              password: hashedPassword,
-            }
-          )
-            .lean()
-            .orFail();
+          // Create salt
+          const salt = await bcrypt.genSalt(10);
 
-          // Send the response
-          res.status(201).json("Password reset successful");
+          try {
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            try {
+              // Find the user update the user
+              await User.findOneAndUpdate(
+                { _id: userId },
+                {
+                  password: hashedPassword,
+                }
+              ).orFail();
+
+              try {
+                // Email user
+                await mail.send(
+                  passwordResetConfirmationTemplate(user.toObject())
+                );
+
+                // Send the response
+                res.status(201).json("Password reset successful");
+              } catch (err) {
+                // If email isn't sent
+                throw err;
+              }
+            } catch (err) {
+              // If user isn't updated
+              throw err;
+            }
+          } catch (err) {
+            // If password isn't hashed
+            throw err;
+          }
         } catch (err) {
-          // If user isn't found
+          // If failed to create salt
           throw err;
         }
       } catch (err) {
-        // If password isn't hashed
+        // If token in invalid or expired
         throw err;
       }
     } catch (err) {
-      // If failed to create salt
+      // If user isn't found
       throw err;
     }
-  } catch (err) {
-    // If token is invalid or expired
-    throw err;
   }
-});
+);
 
 export default router;

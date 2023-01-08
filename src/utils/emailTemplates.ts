@@ -43,3 +43,14 @@ export function passwordResetTemplate(user: IUser, link: string) {
         `,
   };
 }
+
+export function passwordResetConfirmationTemplate(user: IUser) {
+  return {
+    to: user.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Sporkbox Password Reset`,
+    html: `
+        <p>Hi ${user.firstName} ${user.lastName}, your Sporkbox password reset is successful.</p>
+        `,
+  };
+}
