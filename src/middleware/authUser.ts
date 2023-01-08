@@ -24,36 +24,41 @@ export default async function handler(
     throw new Error("Not authorized");
   }
 
-  // Decode the token
-  const decoded = jwt.verify(
-    token,
-    process.env.JWT_SECRET as string
-  ) as JwtPayload;
-
   try {
-    // Find the user
-    const user = await User.findById(decoded._id)
-      .select("-__v -password -updatedAt -createdAt")
-      // .populate<{restaurant: IRestaurant}>(
-      //   "restaurant",
-      //   "-__v -updatedAt -createdAt"
-      // )
-      .populate<{ company: IUserCompany }>(
-        "company",
-        "-__v -updatedAt -createdAt -code -website"
-      )
-      .lean();
+    // Decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload;
 
-    // If there is a user in db
-    if (user) {
-      // Send User data to the next middleware
-      req.user = user;
+    try {
+      // Find the user
+      const user = await User.findById(decoded._id)
+        .select("-__v -password -updatedAt -createdAt")
+        // .populate<{restaurant: IRestaurant}>(
+        //   "restaurant",
+        //   "-__v -updatedAt -createdAt"
+        // )
+        .populate<{ company: IUserCompany }>(
+          "company",
+          "-__v -updatedAt -createdAt -code -website"
+        )
+        .lean();
 
-      // Call the next middleware
-      next();
+      // If there is a user in db
+      if (user) {
+        // Send User data to the next middleware
+        req.user = user;
+
+        // Call the next middleware
+        next();
+      }
+    } catch (err) {
+      // If user isn't found
+      throw err;
     }
   } catch (err) {
-    // If user isn't found
+    // If token is invalid or expired
     throw err;
   }
 }

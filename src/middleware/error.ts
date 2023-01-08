@@ -72,6 +72,26 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
     });
   }
 
+  // If jwt token is expired
+  if (err.name === "TokenExpiredError") {
+    // Send the error message
+    return res
+      .status(500)
+      .json({ message: "Token expired, please request the service again" });
+  }
+
+  // If jwt token is invalid
+  if (err.name === "JsonWebTokenError") {
+    // Send the error message
+    return res.status(500).json({ message: "Please provide a valid token" });
+  }
+
+  // If password salt is invalid
+  if (err.message.includes("Invalid salt")) {
+    // Send the error message
+    return res.status(500).json({ message: "Please provide a valid salt" });
+  }
+
   // Set error status
   res.status(res.statusCode || 500).json({
     message: err.message,

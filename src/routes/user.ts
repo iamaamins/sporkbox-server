@@ -96,7 +96,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     const token = jwt.sign(
       { _id: user._id },
       process.env.JWT_SECRET as string,
-      { expiresIn: "1m" }
+      { expiresIn: "15m" }
     );
 
     // Create password reset link
@@ -130,43 +130,48 @@ router.patch("/reset-password/:token", async (req: Request, res: Response) => {
     throw new Error("Please provide all the fields");
   }
 
-  // Decode the token
-  const decoded = jwt.verify(
-    token,
-    process.env.JWT_SECRET as string
-  ) as JwtPayload;
-
   try {
-    // Create salt
-    const salt = await bcrypt.genSalt(10);
+    // Decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload;
 
     try {
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, salt);
+      // Create salt
+      const salt = await bcrypt.genSalt(10);
 
       try {
-        // Find the user update the user
-        await User.findOneAndUpdate(
-          { _id: decoded._id },
-          {
-            password: hashedPassword,
-          }
-        )
-          .lean()
-          .orFail();
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Send the response
-        res.status(201).json("Password reset successful");
+        try {
+          // Find the user update the user
+          await User.findOneAndUpdate(
+            { _id: decoded._id },
+            {
+              password: hashedPassword,
+            }
+          )
+            .lean()
+            .orFail();
+
+          // Send the response
+          res.status(201).json("Password reset successful");
+        } catch (err) {
+          // If user isn't found
+          throw err;
+        }
       } catch (err) {
-        // If user isn't found
+        // If password isn't hashed
         throw err;
       }
     } catch (err) {
-      // If password isn't hashed
+      // If failed to create salt
       throw err;
     }
   } catch (err) {
-    // If failed to create salt
+    // If token is invalid or expired
     throw err;
   }
 });
