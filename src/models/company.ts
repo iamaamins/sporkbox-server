@@ -15,9 +15,30 @@ const companySchema = new Schema<ICompanySchema>(
       required: [true, "Please provide a website"],
     },
     address: {
-      type: String,
-      trim: true,
-      required: [true, "Please provide an address"],
+      addressLine1: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide address line 1"],
+      },
+      addressLine2: {
+        type: String,
+        trim: true,
+      },
+      city: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a city"],
+      },
+      state: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a state"],
+      },
+      zip: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a zip code"],
+      },
     },
     code: {
       type: String,

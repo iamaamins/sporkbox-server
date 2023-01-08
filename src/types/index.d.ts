@@ -11,7 +11,13 @@ declare global {
 export interface ICompanySchema {
   name: string;
   website: string;
-  address: string;
+  address: {
+    city: string;
+    state: string;
+    zip: string;
+    addressLine1: string;
+    addressLine2?: string;
+  };
   code: string;
   status: string;
   dailyBudget: number;
@@ -163,7 +169,7 @@ export interface ICompanyPayload {
   website: string;
   dailyBudget: number;
   addressLine1: string;
-  addressLine2: string;
+  addressLine2?: string;
 }
 
 export interface ICustomerPayload {
