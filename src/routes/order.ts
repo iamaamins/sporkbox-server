@@ -12,6 +12,7 @@ import {
 } from "../utils/emailTemplates";
 import mail from "@sendgrid/mail";
 import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
+import { stripeCheckout } from "../config/stripe";
 
 // Initialize router
 const router = express.Router();
@@ -116,7 +117,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         )
       ) {
         res.status(401);
-        throw new Error("Please provide all the orders data");
+        throw new Error("Please provide valid orders data");
       }
 
       // Get upcoming week restaurants
@@ -171,12 +172,6 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
 
             // If the item is found
             if (item) {
-              // Discount item price to company budget
-              const unitPrice =
-                item.price > company.dailyBudget
-                  ? company.dailyBudget
-                  : item.price;
-
               // Return individual order
               return {
                 customer: {
@@ -205,7 +200,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                   description: item.description,
                   quantity: orderPayload.quantity,
                   image: item.image || restaurant.logo,
-                  total: unitPrice * orderPayload.quantity,
+                  total: item.price * orderPayload.quantity,
                 },
               };
             } else {
@@ -261,51 +256,80 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             }
           });
 
-        // Check if the daily budget has exceeded
-        const hasDailyBudgetExceeded = nextWeekBudgetAndDates.some(
+        const payableAmounts = nextWeekBudgetAndDates.map(
           (nextWeekBudgetAndDate) => {
-            return (
-              nextWeekBudgetAndDate.budgetOnHand -
+            return {
+              date: new Date(nextWeekBudgetAndDate.nextWeekDate)
+                .toUTCString()
+                .split(" ")
+                .slice(0, 3)
+                .join(" "),
+              amount:
+                nextWeekBudgetAndDate.budgetOnHand -
                 orders
                   .filter(
                     (order) =>
                       order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
                   )
-                  .reduce((acc, order) => acc + order.item.total, 0) <
-              0
-            );
+                  .reduce((acc, order) => acc + order.item.total, 0),
+            };
           }
         );
+        // .filter((budgetOnHand) => budgetOnHand < 0);
 
-        // If daily budget has exceeded
-        if (hasDailyBudgetExceeded) {
-          res.status(400);
-          throw new Error("One of your orders has exceeded the daily budget");
+        if (payableAmounts.length > 0) {
+          const response = await stripeCheckout(payableAmounts);
+
+          console.log(response);
         }
 
-        try {
-          // Create orders
-          const response = await Order.insertMany(orders);
+        res.end();
 
-          // Format orders for customer
-          const customerOrders = response.map((order) => ({
-            _id: order._id,
-            item: order.item,
-            status: order.status,
-            createdAt: order.createdAt,
-            restaurant: order.restaurant,
-            delivery: {
-              date: order.delivery.date,
-            },
-            hasReviewed: order.hasReviewed,
-          }));
+        // // Check if the daily budget has exceeded
+        // const hasDailyBudgetExceeded = nextWeekBudgetAndDates.some(
+        //   (nextWeekBudgetAndDate) => {
+        //     return (
+        //       nextWeekBudgetAndDate.budgetOnHand -
+        //         orders
+        //           .filter(
+        //             (order) =>
+        //               order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
+        //           )
+        //           .reduce((acc, order) => acc + order.item.total, 0) <
+        //       0
+        //     );
+        //   }
+        // );
 
-          // Send the data with response
-          res.status(201).json(customerOrders);
-        } catch (err) {
-          // If orders aren't created
-          throw err;
-        }
+        // // If daily budget has exceeded
+        // if (hasDailyBudgetExceeded) {
+        //   res.status(400);
+        //   throw new Error("One of your orders has exceeded the daily budget");
+        // }
+
+        // try {
+        //   // Create orders
+        //   const response = await Order.insertMany(orders);
+
+        //   // Format orders for customer
+        //   const customerOrders = response.map((order) => ({
+        //     _id: order._id,
+        //     item: order.item,
+        //     status: order.status,
+        //     createdAt: order.createdAt,
+        //     restaurant: order.restaurant,
+        //     delivery: {
+        //       date: order.delivery.date,
+        //     },
+        //     hasReviewed: order.hasReviewed,
+        //   }));
+
+        //   // Send the data with response
+        //   res.status(201).json(customerOrders);
+        // } catch (err) {
+        //   // If orders aren't created
+        //   throw err;
+        // }
       } catch (err) {
         // If upcoming orders aren't fetched
         throw err;
