@@ -44,7 +44,7 @@ export async function uploadImage(
     await s3Client.send(new PutObjectCommand(params));
 
     // Return the image URL
-    return `https://d1nsp5ljvyq4nc.cloudfront.net/${name}`;
+    return `${process.env.CLOUDFRONT_DOMAIN}/${name}`;
   } catch (err) {
     // If image upload fails
     res.status(500);
