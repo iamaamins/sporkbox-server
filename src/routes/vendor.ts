@@ -37,8 +37,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     !state ||
     !zip ||
     !restaurantName ||
-    !addressLine1 ||
-    !addressLine2
+    !addressLine1
   ) {
     res.status(400);
     throw new Error("Please fill all the fields");
@@ -74,7 +73,13 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
       const restaurant = await Restaurant.create({
         name: restaurantName,
         logo: logoURL,
-        address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+        address: {
+          city,
+          state,
+          zip,
+          addressLine1,
+          addressLine2,
+        },
       });
 
       // If restaurant is created successfully
@@ -185,8 +190,7 @@ router.post(
           !state ||
           !zip ||
           !restaurantName ||
-          !addressLine1 ||
-          !addressLine2
+          !addressLine1
         ) {
           res.status(400);
           throw new Error("Please fill all the fields");
@@ -222,7 +226,13 @@ router.post(
             const restaurant = await Restaurant.create({
               name: restaurantName,
               logo: logoURL,
-              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+              address: {
+                city,
+                state,
+                zip,
+                addressLine1,
+                addressLine2,
+              },
             });
 
             // If restaurant is created successfully
@@ -369,9 +379,8 @@ router.patch(
           !city ||
           !state ||
           !zip ||
-          !restaurantName ||
           !addressLine1 ||
-          !addressLine2
+          !restaurantName
         ) {
           res.status(400);
           throw new Error("Please fill all the fields");
@@ -403,9 +412,9 @@ router.patch(
           const updatedVendor = await User.findOneAndUpdate(
             { _id: vendorId },
             {
-              firstName,
-              lastName,
               email,
+              lastName,
+              firstName,
             },
             { returnDocument: "after" }
           )
@@ -419,7 +428,13 @@ router.patch(
               {
                 name: restaurantName,
                 logo: logoURL,
-                address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+                address: {
+                  city,
+                  state,
+                  zip,
+                  addressLine1,
+                  addressLine2,
+                },
               },
               {
                 returnDocument: "after",

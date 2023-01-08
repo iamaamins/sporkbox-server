@@ -14,9 +14,30 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       required: [true, "Please provide a logo"],
     },
     address: {
-      type: String,
-      trim: true,
-      required: [true, "Please provide an email"],
+      city: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a city"],
+      },
+      state: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a state"],
+      },
+      zip: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a zip code"],
+      },
+      addressLine1: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide address line 1"],
+      },
+      addressLine2: {
+        type: String,
+        trim: true,
+      },
     },
     schedules: [
       new Schema({
