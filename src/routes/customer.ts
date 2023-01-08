@@ -75,23 +75,23 @@ router.post(
                 res.status(201).json(customer);
               }
             } catch (err) {
-              // If company isn't populated successfully
+              // If company isn't populated
               throw err;
             }
           } catch (err) {
-            // If user isn't created successfully
+            // If user isn't created
             throw err;
           }
         } catch (err) {
-          // If password has isn't create successfully
+          // If password hash isn't created
           throw err;
         }
       } catch (err) {
-        // If salt isn't create successfully
+        // If salt isn't created
         throw err;
       }
     } catch (err) {
-      // // If company doesn't exist
+      // If company doesn't exist
       throw err;
     }
   }

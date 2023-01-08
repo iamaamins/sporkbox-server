@@ -469,17 +469,14 @@ router.patch(
               res.status(200).json("Delivery email sent");
             } catch (err) {
               // If emails aren't sent
-              res.status(500);
-              throw new Error("Failed to send email");
+              throw err;
             }
           } catch (err) {
             // If orders aren't fetched
-            res.status(500);
             throw err;
           }
         } catch (err) {
           // If order status isn't updated
-          res.status(500);
           throw err;
         }
       } else {
@@ -516,7 +513,7 @@ router.patch(
             .select("-__v -updatedAt")
             .orFail();
 
-          // If order is updated successfully
+          // If order is updated
           try {
             // Send cancellation email
             await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
@@ -524,11 +521,11 @@ router.patch(
             // Send updated order with the response
             res.status(201).json(updatedOrder);
           } catch (err) {
-            // If email isn't sent successfully
+            // If email isn't sent
             throw err;
           }
         } catch (err) {
-          // If order status isn't updated successfully
+          // If order status isn't updated
           throw err;
         }
       } else {

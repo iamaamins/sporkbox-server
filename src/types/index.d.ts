@@ -278,3 +278,11 @@ export interface IEditCustomerPayload {
 export interface IStatusChangePayload {
   action: string;
 }
+
+export interface IResetPasswordPayload {
+  password: string;
+}
+
+export interface IForgotPasswordPayload {
+  email: string;
+}

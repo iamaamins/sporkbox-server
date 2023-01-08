@@ -32,7 +32,7 @@ export default async function handler(
 
   try {
     // Find the user
-    const user = await User.findById(decoded.id)
+    const user = await User.findById(decoded._id)
       .select("-__v -password -updatedAt -createdAt")
       // .populate<{restaurant: IRestaurant}>(
       //   "restaurant",

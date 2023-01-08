@@ -7,9 +7,9 @@ import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
 // Generate token and set cookie to header
-export const setCookie = (res: Response, id: Types.ObjectId): void => {
+export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   // Generate token
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET as string, {
+  const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
     expiresIn: "7d",
   });
 

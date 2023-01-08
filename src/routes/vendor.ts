@@ -131,22 +131,20 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
                 throw err;
               }
             } catch (err) {
-              // If vendor isn't created successfully
+              // If vendor isn't created
               throw err;
             }
           } catch (err) {
             // If password hashing isn't  successful
-            res.status(500);
-            throw new Error("Failed to hash password");
+            throw err;
           }
         } catch (err) {
-          // If salt isn't created successfully
-          res.status(500);
-          throw new Error("Failed to create slat");
+          // If salt isn't created
+          throw err;
         }
       }
     } catch (err) {
-      // If restaurant isn't created successfully
+      // If restaurant isn't created
       throw err;
     }
   } catch (err) {
@@ -280,26 +278,24 @@ router.post(
                       throw err;
                     }
                   } catch (err) {
-                    // If vendor isn't created successfully
+                    // If vendor isn't created
                     throw err;
                   }
                 } catch (err) {
                   // If password hashing isn't successful
-                  res.status(500);
-                  throw new Error("Failed to hash password");
+                  throw err;
                 }
               } catch (err) {
-                // If slat isn't create successfully
-                res.status(500);
-                throw new Error("Failed to create slat");
+                // If slat isn't created
+                throw err;
               }
             }
           } catch (err) {
-            // If restaurant isn't created successfully
+            // If restaurant isn't created
             throw err;
           }
         } catch (err) {
-          // If vendor isn't found successfully
+          // If vendor isn't found
           throw err;
         }
       } else {
