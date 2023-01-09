@@ -174,3 +174,7 @@ export async function resizeImage(
     throw new Error("Failed to resize image");
   }
 }
+
+// Convert date to string
+export const convertDateToText = (date: Date | string | number): string =>
+  new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");

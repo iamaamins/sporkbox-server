@@ -46,7 +46,13 @@ export interface IOrderSchema {
   };
   delivery: {
     date: Date;
-    address: string;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
   };
   status: string;
   hasReviewed: boolean;
@@ -151,7 +157,13 @@ export interface IOrdersPayload {
 export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
-  address: string;
+  address: {
+    city: string;
+    state: string;
+    zip: string;
+    addressLine1: string;
+    addressLine2?: string;
+  };
   dailyBudget: number;
 }
 
@@ -238,9 +250,8 @@ export interface IOrdersStatusPayload {
 }
 
 export interface IOrder {
-  _id: string;
   customer: {
-    _id: string;
+    _id: Types.ObjectId;
     firstName: string;
     lastName: string;
     email: string;
@@ -253,16 +264,21 @@ export interface IOrder {
     name: string;
   };
   delivery: {
-    date: string;
-    address: string;
+    date: number;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
   };
   status: string;
-  hasReviewed: boolean;
-  createdAt: string;
   item: {
     _id: string;
     name: string;
     tags: string;
+    image: string;
     description: string;
     quantity: number;
     total: number;
@@ -285,4 +301,9 @@ export interface IResetPasswordPayload {
 
 export interface IForgotPasswordPayload {
   email: string;
+}
+
+export interface IStripePayableItems {
+  date: string;
+  amount: number;
 }
