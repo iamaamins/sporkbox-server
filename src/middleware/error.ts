@@ -92,6 +92,14 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
     return res.status(500).json({ message: "Please provide a valid salt" });
   }
 
+  // Stripe signature verification error
+  if (err.message.includes("StripeSignatureVerificationError")) {
+    // Send the error message
+    return res
+      .status(400)
+      .json({ message: "Stripe signature verification failed" });
+  }
+
   // Error thrown by throw new Error
   res.status(res.statusCode || 500).json({
     message: err.message,

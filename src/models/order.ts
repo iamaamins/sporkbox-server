@@ -87,6 +87,7 @@ const orderSchema = new Schema<IOrderSchema>(
       type: Boolean,
       default: false,
     },
+    pendingId: String,
     item: {
       _id: {
         type: Schema.Types.ObjectId,

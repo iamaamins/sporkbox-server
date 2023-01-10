@@ -56,6 +56,7 @@ export interface IOrderSchema {
   };
   status: string;
   hasReviewed: boolean;
+  pendingId?: string;
   createdAt: Date;
   item: {
     _id: Types.ObjectId;

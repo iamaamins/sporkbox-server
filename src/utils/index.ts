@@ -1,8 +1,9 @@
 import sharp from "sharp";
-import moment from "moment-timezone";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
+import moment from "moment-timezone";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
@@ -178,3 +179,6 @@ export async function resizeImage(
 // Convert date to string
 export const convertDateToText = (date: Date | string | number): string =>
   new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
+
+// Generate unique string
+export const randomString = crypto.randomBytes(16).toString("hex");

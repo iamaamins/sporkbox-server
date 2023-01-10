@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import dotenv from "dotenv";
 import { Response } from "express";
 import {
@@ -6,6 +5,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
+import { randomString } from "../utils";
 
 //Configure dot env
 dotenv.config();
@@ -25,26 +25,20 @@ export async function uploadImage(
   buffer: Buffer,
   mimetype: string
 ) {
-  // Generate random image name
-  const generateRandomImageName = () => crypto.randomBytes(16).toString("hex");
-
-  // Create a name
-  const name = generateRandomImageName();
-
   // Create params
   const params = {
-    Key: name,
+    Key: randomString,
     Body: buffer,
     ContentType: mimetype,
     Bucket: process.env.AWS_BUCKET_NAME,
   };
 
   try {
-    // Upload image to s3
+    // Upload image to S3
     await s3Client.send(new PutObjectCommand(params));
 
     // Return the image URL
-    return `${process.env.CLOUDFRONT_DOMAIN}/${name}`;
+    return `${process.env.CLOUDFRONT_DOMAIN}/${randomString}`;
   } catch (err) {
     // If image upload fails
     res.status(500);
@@ -60,7 +54,7 @@ export async function deleteImage(res: Response, name: string) {
   };
 
   try {
-    // Delete the image from s3
+    // Delete the image from S3
     await s3Client.send(new DeleteObjectCommand(params));
   } catch (err) {
     // If image delete fails

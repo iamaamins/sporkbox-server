@@ -6,28 +6,16 @@ import { IStripePayableItems } from "../types";
 dotenv.config();
 
 // Create stripe instance
-const stripe = new Stripe(process.env.STRIPE_TEST_KEY as string, {
+export const stripe = new Stripe(process.env.STRIPE_TEST_KEY as string, {
   apiVersion: "2022-11-15",
 });
 
 // Create stripe checkout session
 export async function stripeCheckout(
-  orderIds: string[],
   customerEmail: string,
+  pendingId: string,
   payableItems: IStripePayableItems[]
 ) {
-  // Convert orderIds array to object
-  const ordersMetaData = orderIds.reduce(
-    (acc: { [key: string]: string }, curr: string, i: number) => {
-      // Put a new item in the object
-      acc[i] = curr;
-
-      // Return the object
-      return acc;
-    },
-    {}
-  );
-
   try {
     // Create a session
     const session = await stripe.checkout.sessions.create({
@@ -45,7 +33,7 @@ export async function stripeCheckout(
           quantity: 1,
         };
       }),
-      metadata: ordersMetaData,
+      metadata: { pendingId },
       customer_email: customerEmail,
       success_url: `${process.env.CLIENT_URL}/success?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}`,

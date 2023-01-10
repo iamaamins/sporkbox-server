@@ -6,6 +6,7 @@ import {
   convertDateToText,
   formatNumberToUS,
   getUpcomingWeekRestaurants,
+  randomString,
 } from "../utils";
 import {
   orderArchiveTemplate,
@@ -243,12 +244,15 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                   0
                 );
 
-              // Return the date and company budget - upcoming orders total
+              // Return the date and budget on hand
               return {
                 nextWeekDate,
-                budgetOnHand: formatNumberToUS(
-                  company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
-                ),
+                budgetOnHand:
+                  upcomingOrdersTotalOnADateNextWeek > company.dailyBudget
+                    ? 0
+                    : formatNumberToUS(
+                        company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
+                      ),
               };
             } else {
               // If no upcoming orders are found with the
@@ -278,21 +282,23 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
           .filter((payableItem) => payableItem.amount < 0);
 
         if (payableItems.length > 0) {
+          // Create stripe checkout sessions
+          const session = await stripeCheckout(
+            email,
+            randomString,
+            payableItems
+          );
+
           // Create pending orders
           const pendingOrders = orders.map((order) => ({
             ...order,
             status: "PENDING",
+            pendingId: randomString,
           }));
 
           try {
             // Create orders
-            const response = await Order.insertMany(pendingOrders);
-
-            // Get all the order ids
-            const orderIds = response.map((order) => order._id.toString());
-
-            // Create stripe checkout sessions
-            const session = await stripeCheckout(orderIds, email, payableItems);
+            await Order.insertMany(pendingOrders);
 
             // Send the session url with response
             res.status(200).json(session.url);
