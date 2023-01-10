@@ -42,7 +42,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         );
 
         // Send the response
-        res.status(201).json("Order status updated");
+        res.status(201).json("Orders status updated");
       } catch (err) {
         // If order status update fails
         throw err;
@@ -56,7 +56,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         await Order.deleteMany({ pendingId, status: "PENDING" });
 
         // Send the response
-        res.status(201).json("Order deleted");
+        res.status(201).json("Orders deleted");
       } catch (err) {
         // If orders aren't deleted
         throw err;
