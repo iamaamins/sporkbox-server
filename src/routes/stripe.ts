@@ -26,10 +26,16 @@ router.post(
     try {
       // Test event
       const event = stripe.webhooks.constructEvent(
-        payload,
-        header,
+        req.body,
+        signature,
         process.env.STRIPE_WEBHOOK_SECRET as string
       );
+
+      // stripe.webhooks.constructEvent(
+      //   payload,
+      //   header,
+      //   process.env.STRIPE_WEBHOOK_SECRET as string
+      // );
 
       // stripe.webhooks.constructEvent(
       //   req.body,
