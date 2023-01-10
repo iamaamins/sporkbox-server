@@ -35,7 +35,6 @@ const rawBody = express.raw({ type: "application/json" });
 const app = express();
 
 // Middleware
-app.use("/stripe/webhook", rawBody);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
@@ -45,6 +44,7 @@ app.use(
     origin: "https://sporkbox.octib.com",
   })
 );
+app.use("/stripe/webhook", express.raw({ type: "application/json" }));
 
 // https://www.sporkbox.app
 // https://sporkbox.octib.com
