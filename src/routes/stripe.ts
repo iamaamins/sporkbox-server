@@ -12,7 +12,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   const signature = req.headers["stripe-signature"] as string;
 
   // Create payload
-  const payload = JSON.stringify(req.body);
+  const payload = JSON.stringify(req.body, null, 2);
 
   try {
     // Product event config
