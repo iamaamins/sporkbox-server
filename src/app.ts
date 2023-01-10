@@ -32,6 +32,7 @@ mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 const app = express();
 
 // Middleware
+app.use("/stripe/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
