@@ -58,4 +58,4 @@ app.use("/restaurants", Restaurant);
 app.use(error);
 
 // Run the server
-app.listen(PORT, () => console.log("Server running"));
+app.listen(PORT, () => console.log("Server started"));
