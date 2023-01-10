@@ -51,15 +51,15 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
             // Send the data with response
             res.status(201).json(admin);
           } catch (err) {
-            // If admin isn't created successfully
+            // If admin isn't created
             throw err;
           }
         } catch (err) {
-          // If password hash isn't create successfully
+          // If password hash isn't created
           throw err;
         }
       } catch (err) {
-        // If salt isn't create successfully
+        // If salt isn't created
         throw err;
       }
     } else {

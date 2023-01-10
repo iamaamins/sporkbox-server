@@ -36,8 +36,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         !zip ||
         !website ||
         !dailyBudget ||
-        !addressLine1 ||
-        !addressLine2
+        !addressLine1
       ) {
         res.status(400);
         throw new Error("Please provide all the fields");
@@ -49,9 +48,15 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
           name,
           code,
           website,
+          address: {
+            city,
+            state,
+            zip,
+            addressLine1,
+            addressLine2,
+          },
           dailyBudget,
           status: "ACTIVE",
-          address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
         });
 
         // Convert company document to object
@@ -135,8 +140,7 @@ router.patch(
           !zip ||
           !website ||
           !dailyBudget ||
-          !addressLine1 ||
-          !addressLine2
+          !addressLine1
         ) {
           res.status(400);
           throw new Error("Please provide all the fields");
@@ -148,10 +152,16 @@ router.patch(
             { _id: companyId },
             {
               name,
-              website,
               code,
+              website,
+              address: {
+                city,
+                state,
+                zip,
+                addressLine1,
+                addressLine2,
+              },
               dailyBudget,
-              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
             },
             { returnDocument: "after" }
           )

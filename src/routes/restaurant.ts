@@ -385,8 +385,7 @@ router.patch(
                 }
               } catch (err) {
                 // If emails aren't sent
-                res.status(500);
-                throw new Error("Failed to send email");
+                throw err;
               }
             } catch (err) {
               // If orders aren't fetched

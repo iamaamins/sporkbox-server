@@ -72,7 +72,43 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
     });
   }
 
-  // Set error status
+  // If jwt token is expired
+  if (err.name === "TokenExpiredError") {
+    // Send the error message
+    return res
+      .status(500)
+      .json({ message: "Token expired, please request the service again" });
+  }
+
+  // If jwt token is invalid
+  if (err.name === "JsonWebTokenError") {
+    // Send the error message
+    return res.status(500).json({ message: "Please provide a valid token" });
+  }
+
+  // If password salt is invalid
+  if (err.message.includes("Invalid salt")) {
+    // Send the error message
+    return res.status(500).json({ message: "Please provide a valid salt" });
+  }
+
+  // Stripe signature verification error
+  if (err.message.includes("StripeSignatureVerificationError")) {
+    // Send the error message
+    return res
+      .status(400)
+      .json({ message: "Stripe signature verification failed" });
+  }
+
+  // Stripe invalid checkout session id is provided
+  if (err.message.includes("No such checkout.session")) {
+    // Send the error message
+    return res
+      .status(400)
+      .json({ message: "Please provide a valid checkout session" });
+  }
+
+  // Error thrown by throw new Error
   res.status(res.statusCode || 500).json({
     message: err.message,
   });

@@ -6,6 +6,7 @@ import mail from "@sendgrid/mail";
 import User from "./routes/user";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
+import Stripe from "./routes/stripe";
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
 import error from "./middleware/error";
@@ -48,6 +49,7 @@ app.use(
 app.use("/users", User);
 app.use("/orders", Order);
 app.use("/admins", Admin);
+app.use("/stripe", Stripe);
 app.use("/vendors", Vendor);
 app.use("/customers", Customer);
 app.use("/companies", Company);

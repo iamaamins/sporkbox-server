@@ -1,9 +1,16 @@
 import bcrypt from "bcrypt";
+import mail from "@sendgrid/mail";
 import User from "../models/user";
-import { ILoginPayload } from "../types";
 import authUser from "../middleware/authUser";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
+import { IResetPasswordPayload } from "./../types/index.d";
+import {
+  passwordResetConfirmationTemplate,
+  passwordResetTemplate,
+} from "../utils/emailTemplates";
+import { IForgotPasswordPayload, ILoginPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -72,5 +79,122 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
   // Send the user with response
   res.status(200).json(req.user);
 });
+
+// Forgot password
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  // Destructure data from req
+  const { email }: IForgotPasswordPayload = req.body;
+
+  // If no email is provided
+  if (!email) {
+    res.status(400);
+    throw new Error("Please provide a valid email");
+  }
+
+  try {
+    // Find the user
+    const user = await User.findOne({ email }).orFail();
+
+    //  Create unique jwt secret
+    const jwtSecret = process.env.JWT_SECRET + user.password;
+
+    // Create jwt token
+    const token = jwt.sign({ _id: user._id }, jwtSecret, { expiresIn: "15m" });
+
+    // Create password reset link
+    const link = `${process.env.CLIENT_URL}/reset-password/${user._id}/${token}`;
+
+    try {
+      // Email user the password reset link
+      await mail.send(passwordResetTemplate(user.toObject(), link));
+
+      // Send the response
+      res.status(200).json("Password reset details sent to your email");
+    } catch (err) {
+      // If email send fails
+      throw err;
+    }
+  } catch (err) {
+    // If no user is found
+    throw err;
+  }
+});
+
+// Reset password
+router.patch(
+  "/reset-password/:userId/:token",
+  async (req: Request, res: Response) => {
+    // Destructure data from req
+    const { userId, token } = req.params;
+    const { password }: IResetPasswordPayload = req.body;
+
+    // If all the fields aren't provided
+    if (!password || !userId || !token) {
+      res.status(400);
+      throw new Error("Please provide all the fields");
+    }
+
+    try {
+      // Find the user
+      const user = await User.findById(userId).orFail();
+
+      // Create the secret
+      const jwtSecret = process.env.JWT_SECRET + user.password;
+
+      try {
+        // Verify the token
+        jwt.verify(token, jwtSecret);
+
+        try {
+          // Create salt
+          const salt = await bcrypt.genSalt(10);
+
+          try {
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            try {
+              // Find the user update the user
+              await User.findOneAndUpdate(
+                { _id: userId },
+                {
+                  password: hashedPassword,
+                }
+              ).orFail();
+
+              try {
+                // Email user
+                await mail.send(
+                  passwordResetConfirmationTemplate(user.toObject())
+                );
+
+                // Send the response
+                res.status(201).json("Password reset successful");
+              } catch (err) {
+                // If email isn't sent
+                throw err;
+              }
+            } catch (err) {
+              // If user isn't updated
+              throw err;
+            }
+          } catch (err) {
+            // If password isn't hashed
+            throw err;
+          }
+        } catch (err) {
+          // If failed to create salt
+          throw err;
+        }
+      } catch (err) {
+        // If token in invalid or expired
+        throw err;
+      }
+    } catch (err) {
+      // If user isn't found
+      throw err;
+    }
+  }
+);
 
 export default router;

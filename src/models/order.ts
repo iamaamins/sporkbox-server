@@ -52,20 +52,42 @@ const orderSchema = new Schema<IOrderSchema>(
         required: [true, "Please provide delivery date"],
       },
       address: {
-        type: String,
-        trim: true,
-        required: [true, "Please provide delivery address"],
+        city: {
+          type: String,
+          trim: true,
+          required: [true, "Please provide a city"],
+        },
+        state: {
+          type: String,
+          trim: true,
+          required: [true, "Please provide a state"],
+        },
+        zip: {
+          type: String,
+          trim: true,
+          required: [true, "Please provide a zip code"],
+        },
+        addressLine1: {
+          type: String,
+          trim: true,
+          required: [true, "Please provide address line 1"],
+        },
+        addressLine2: {
+          type: String,
+          trim: true,
+        },
       },
     },
     status: {
       type: String,
-      enum: ["PROCESSING", "DELIVERED", "ARCHIVED"],
+      enum: ["PENDING", "PROCESSING", "DELIVERED", "ARCHIVED"],
       required: [true, "Please provide a status"],
     },
     hasReviewed: {
       type: Boolean,
       default: false,
     },
+    pendingId: String,
     item: {
       _id: {
         type: Schema.Types.ObjectId,

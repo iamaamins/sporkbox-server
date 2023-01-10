@@ -3,8 +3,10 @@ import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
   convertDateToMS,
+  convertDateToText,
   formatNumberToUS,
   getUpcomingWeekRestaurants,
+  randomString,
 } from "../utils";
 import {
   orderArchiveTemplate,
@@ -12,6 +14,7 @@ import {
 } from "../utils/emailTemplates";
 import mail from "@sendgrid/mail";
 import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
+import { stripeCheckout } from "../config/stripe";
 
 // Initialize router
 const router = express.Router();
@@ -116,13 +119,97 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         )
       ) {
         res.status(401);
-        throw new Error("Please provide all the orders data");
+        throw new Error("Please provide valid orders data");
       }
 
       // Get upcoming week restaurants
       const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
         company.name
       );
+
+      // Check if the provided items are valid
+      const itemsAreValid = ordersPayload.every((orderPayload) =>
+        upcomingWeekRestaurants.some(
+          (upcomingWeekRestaurant) =>
+            upcomingWeekRestaurant._id.toString() ===
+              orderPayload.restaurantId &&
+            convertDateToMS(upcomingWeekRestaurant.date) ===
+              orderPayload.deliveryDate &&
+            upcomingWeekRestaurant.items.some(
+              (item) => item._id?.toString() === orderPayload.itemId
+            )
+        )
+      );
+
+      // If items are not valid
+      if (!itemsAreValid) {
+        res.status(400);
+        throw new Error("Orders are not valid");
+      }
+
+      // Create orders
+      const orders = ordersPayload.map((orderPayload) => {
+        // Find the restaurant
+        const restaurant = upcomingWeekRestaurants.find(
+          (upcomingWeekRestaurant) =>
+            upcomingWeekRestaurant._id.toString() === orderPayload.restaurantId
+        );
+
+        if (restaurant) {
+          // Find the item
+          const item = restaurant.items.find(
+            (item) => item._id?.toString() === orderPayload.itemId
+          );
+
+          if (item) {
+            // Create and return individual order
+            return {
+              customer: {
+                _id: _id,
+                firstName,
+                lastName,
+                email,
+              },
+              restaurant: {
+                _id: orderPayload.restaurantId,
+                name: restaurant.name,
+              },
+              company: {
+                _id: company._id,
+                name: company.name,
+              },
+              delivery: {
+                date: orderPayload.deliveryDate,
+                address: {
+                  city: company.address.city,
+                  state: company.address.state,
+                  zip: company.address.zip,
+                  addressLine1: company.address.addressLine1,
+                  addressLine2: company.address.addressLine2,
+                },
+              },
+              status: "PROCESSING",
+              item: {
+                _id: orderPayload.itemId,
+                name: item.name,
+                tags: item.tags,
+                description: item.description,
+                quantity: orderPayload.quantity,
+                image: item.image || restaurant.logo,
+                total: item.price * orderPayload.quantity,
+              },
+            };
+          } else {
+            // If item isn't found
+            res.status(400);
+            throw new Error("Item is not found");
+          }
+        } else {
+          // If restaurant isn't found
+          res.status(400);
+          throw new Error("Restaurant is not found");
+        }
+      });
 
       try {
         // Get customer upcoming orders
@@ -132,93 +219,6 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         })
           .select("delivery item")
           .sort({ "delivery.date": 1 });
-
-        // Check if the provided items are valid
-        const itemsAreValid = ordersPayload.every((orderPayload) =>
-          upcomingWeekRestaurants.some(
-            (upcomingWeekRestaurant) =>
-              upcomingWeekRestaurant._id.toString() ===
-                orderPayload.restaurantId &&
-              convertDateToMS(upcomingWeekRestaurant.date) ===
-                orderPayload.deliveryDate &&
-              upcomingWeekRestaurant.items.some(
-                (item) => item._id?.toString() === orderPayload.itemId
-              )
-          )
-        );
-
-        // If items are not valid
-        if (!itemsAreValid) {
-          res.status(400);
-          throw new Error("Orders are not valid");
-        }
-
-        // Create orders
-        const orders = ordersPayload.map((orderPayload) => {
-          // Find the restaurant
-          const restaurant = upcomingWeekRestaurants.find(
-            (upcomingWeekRestaurant) =>
-              upcomingWeekRestaurant._id.toString() ===
-              orderPayload.restaurantId
-          );
-
-          // If restaurant is found
-          if (restaurant) {
-            // Find the item
-            const item = restaurant.items.find(
-              (item) => item._id?.toString() === orderPayload.itemId
-            );
-
-            // If the item is found
-            if (item) {
-              // Discount item price to company budget
-              const unitPrice =
-                item.price > company.dailyBudget
-                  ? company.dailyBudget
-                  : item.price;
-
-              // Return individual order
-              return {
-                customer: {
-                  _id: _id,
-                  firstName,
-                  lastName,
-                  email,
-                },
-                restaurant: {
-                  _id: orderPayload.restaurantId,
-                  name: restaurant.name,
-                },
-                company: {
-                  _id: company._id,
-                  name: company.name,
-                },
-                delivery: {
-                  date: orderPayload.deliveryDate,
-                  address: company.address,
-                },
-                status: "PROCESSING",
-                item: {
-                  _id: orderPayload.itemId,
-                  name: item.name,
-                  tags: item.tags,
-                  description: item.description,
-                  quantity: orderPayload.quantity,
-                  image: item.image || restaurant.logo,
-                  total: unitPrice * orderPayload.quantity,
-                },
-              };
-            } else {
-              // If item isn't found
-              res.status(400);
-              throw new Error("Item is not found");
-            }
-          } else {
-            // If restaurant isn't found
-            res.status(400);
-            throw new Error("Restaurant is not found");
-          }
-        });
 
         // Get next week dates and budget on hand
         const nextWeekBudgetAndDates = upcomingWeekRestaurants
@@ -244,12 +244,15 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                   0
                 );
 
-              // Return the date and company budget - upcoming orders total
+              // Return the date and budget on hand
               return {
                 nextWeekDate,
-                budgetOnHand: formatNumberToUS(
-                  company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
-                ),
+                budgetOnHand:
+                  upcomingOrdersTotalOnADateNextWeek > company.dailyBudget
+                    ? 0
+                    : formatNumberToUS(
+                        company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
+                      ),
               };
             } else {
               // If no upcoming orders are found with the
@@ -261,53 +264,75 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             }
           });
 
-        // Check if the daily budget has exceeded
-        const hasDailyBudgetExceeded = nextWeekBudgetAndDates.some(
-          (nextWeekBudgetAndDate) => {
-            return (
-              nextWeekBudgetAndDate.budgetOnHand -
+        // Create payable items with date and amount
+        const payableItems = nextWeekBudgetAndDates
+          .map((nextWeekBudgetAndDate) => {
+            return {
+              date: convertDateToText(nextWeekBudgetAndDate.nextWeekDate),
+              amount:
+                nextWeekBudgetAndDate.budgetOnHand -
                 orders
                   .filter(
                     (order) =>
                       order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
                   )
-                  .reduce((acc, order) => acc + order.item.total, 0) <
-              0
-            );
-          }
-        );
+                  .reduce((acc, order) => acc + order.item.total, 0),
+            };
+          })
+          .filter((payableItem) => payableItem.amount < 0);
 
-        // If daily budget has exceeded
-        if (hasDailyBudgetExceeded) {
-          res.status(400);
-          throw new Error("One of your orders has exceeded the daily budget");
-        }
+        if (payableItems.length > 0) {
+          // Create stripe checkout sessions
+          const session = await stripeCheckout(
+            email,
+            randomString,
+            payableItems
+          );
 
-        try {
-          // Create orders
-          const response = await Order.insertMany(orders);
-
-          // Format orders for customer
-          const customerOrders = response.map((order) => ({
-            _id: order._id,
-            item: order.item,
-            status: order.status,
-            createdAt: order.createdAt,
-            restaurant: order.restaurant,
-            delivery: {
-              date: order.delivery.date,
-            },
-            hasReviewed: order.hasReviewed,
+          // Create pending orders
+          const pendingOrders = orders.map((order) => ({
+            ...order,
+            status: "PENDING",
+            pendingId: randomString,
           }));
 
-          // Send the data with response
-          res.status(201).json(customerOrders);
-        } catch (err) {
-          // If orders aren't created
-          throw err;
+          try {
+            // Create orders
+            await Order.insertMany(pendingOrders);
+
+            // Send the session url with response
+            res.status(200).json(session.url);
+          } catch (err) {
+            // If orders fails to create
+            throw err;
+          }
+        } else {
+          try {
+            // Create orders
+            const response = await Order.insertMany(orders);
+
+            // Format orders for customer
+            const customerOrders = response.map((order) => ({
+              _id: order._id,
+              item: order.item,
+              status: order.status,
+              createdAt: order.createdAt,
+              restaurant: order.restaurant,
+              delivery: {
+                date: order.delivery.date,
+              },
+              hasReviewed: order.hasReviewed,
+            }));
+
+            // Send the data with response
+            res.status(201).json(customerOrders);
+          } catch (err) {
+            // If orders fails to create
+            throw err;
+          }
         }
       } catch (err) {
-        // If upcoming orders aren't fetched
+        // If upcoming orders fails to fetch
         throw err;
       }
     } else {
@@ -469,17 +494,14 @@ router.patch(
               res.status(200).json("Delivery email sent");
             } catch (err) {
               // If emails aren't sent
-              res.status(500);
-              throw new Error("Failed to send email");
+              throw err;
             }
           } catch (err) {
             // If orders aren't fetched
-            res.status(500);
             throw err;
           }
         } catch (err) {
           // If order status isn't updated
-          res.status(500);
           throw err;
         }
       } else {
@@ -516,7 +538,7 @@ router.patch(
             .select("-__v -updatedAt")
             .orFail();
 
-          // If order is updated successfully
+          // If order is updated
           try {
             // Send cancellation email
             await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
@@ -524,11 +546,11 @@ router.patch(
             // Send updated order with the response
             res.status(201).json(updatedOrder);
           } catch (err) {
-            // If email isn't sent successfully
+            // If email isn't sent
             throw err;
           }
         } catch (err) {
-          // If order status isn't updated successfully
+          // If order status isn't updated
           throw err;
         }
       } else {
@@ -539,5 +561,9 @@ router.patch(
     }
   }
 );
+
+router.delete("/delete-pending", async (req: Request, res: Response) => {
+  await Order.deleteMany({ status: "PENDING" });
+});
 
 export default router;

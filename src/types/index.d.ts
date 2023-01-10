@@ -11,7 +11,13 @@ declare global {
 export interface ICompanySchema {
   name: string;
   website: string;
-  address: string;
+  address: {
+    city: string;
+    state: string;
+    zip: string;
+    addressLine1: string;
+    addressLine2?: string;
+  };
   code: string;
   status: string;
   dailyBudget: number;
@@ -40,10 +46,17 @@ export interface IOrderSchema {
   };
   delivery: {
     date: Date;
-    address: string;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
   };
   status: string;
   hasReviewed: boolean;
+  pendingId?: string;
   createdAt: Date;
   item: {
     _id: Types.ObjectId;
@@ -83,7 +96,13 @@ export interface ISchedulesSchema {
 export interface IRestaurantSchema {
   name: string;
   logo: string;
-  address: string;
+  address: {
+    city: string;
+    state: string;
+    zip: string;
+    addressLine1: string;
+    addressLine2?: string;
+  };
   items: Types.DocumentArray<IItemSchema>;
   schedules: Types.DocumentArray<ISchedulesSchema>;
 }
@@ -139,7 +158,13 @@ export interface IOrdersPayload {
 export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
-  address: string;
+  address: {
+    city: string;
+    state: string;
+    zip: string;
+    addressLine1: string;
+    addressLine2?: string;
+  };
   dailyBudget: number;
 }
 
@@ -163,7 +188,7 @@ export interface ICompanyPayload {
   website: string;
   dailyBudget: number;
   addressLine1: string;
-  addressLine2: string;
+  addressLine2?: string;
 }
 
 export interface ICustomerPayload {
@@ -214,7 +239,7 @@ export interface IVendorPayload {
   logo?: string;
   restaurantName: string;
   addressLine1: string;
-  addressLine2: string;
+  addressLine2?: string;
 }
 
 export interface IVendorStatusPayload {
@@ -226,9 +251,8 @@ export interface IOrdersStatusPayload {
 }
 
 export interface IOrder {
-  _id: string;
   customer: {
-    _id: string;
+    _id: Types.ObjectId;
     firstName: string;
     lastName: string;
     email: string;
@@ -241,16 +265,21 @@ export interface IOrder {
     name: string;
   };
   delivery: {
-    date: string;
-    address: string;
+    date: number;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
   };
   status: string;
-  hasReviewed: boolean;
-  createdAt: string;
   item: {
     _id: string;
     name: string;
     tags: string;
+    image: string;
     description: string;
     quantity: number;
     total: number;
@@ -265,4 +294,17 @@ export interface IEditCustomerPayload {
 
 export interface IStatusChangePayload {
   action: string;
+}
+
+export interface IResetPasswordPayload {
+  password: string;
+}
+
+export interface IForgotPasswordPayload {
+  email: string;
+}
+
+export interface IStripePayableItems {
+  date: string;
+  amount: number;
 }

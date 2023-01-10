@@ -1,4 +1,4 @@
-import { IOrder } from "../types";
+import { IOrder, IUser } from "../types";
 
 export function orderDeliveryTemplate(order: IOrder) {
   return {
@@ -29,6 +29,28 @@ export function orderCancelTemplate(order: IOrder) {
     subject: `Order Status Update`,
     html: `
         <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is cancelled. </p>
+        `,
+  };
+}
+
+export function passwordResetTemplate(user: IUser, link: string) {
+  return {
+    to: user.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Sporkbox Password Reset`,
+    html: `
+        <p>Hi ${user.firstName} ${user.lastName}, please reset your password here: ${link}. Please ignore if you haven't requested this change.</p>
+        `,
+  };
+}
+
+export function passwordResetConfirmationTemplate(user: IUser) {
+  return {
+    to: user.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Sporkbox Password Reset`,
+    html: `
+        <p>Hi ${user.firstName} ${user.lastName}, your Sporkbox password reset is successful.</p>
         `,
   };
 }

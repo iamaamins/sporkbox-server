@@ -37,8 +37,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     !state ||
     !zip ||
     !restaurantName ||
-    !addressLine1 ||
-    !addressLine2
+    !addressLine1
   ) {
     res.status(400);
     throw new Error("Please fill all the fields");
@@ -74,7 +73,13 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
       const restaurant = await Restaurant.create({
         name: restaurantName,
         logo: logoURL,
-        address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+        address: {
+          city,
+          state,
+          zip,
+          addressLine1,
+          addressLine2,
+        },
       });
 
       // If restaurant is created successfully
@@ -126,22 +131,20 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
                 throw err;
               }
             } catch (err) {
-              // If vendor isn't created successfully
+              // If vendor isn't created
               throw err;
             }
           } catch (err) {
             // If password hashing isn't  successful
-            res.status(500);
-            throw new Error("Failed to hash password");
+            throw err;
           }
         } catch (err) {
-          // If salt isn't created successfully
-          res.status(500);
-          throw new Error("Failed to create slat");
+          // If salt isn't created
+          throw err;
         }
       }
     } catch (err) {
-      // If restaurant isn't created successfully
+      // If restaurant isn't created
       throw err;
     }
   } catch (err) {
@@ -185,8 +188,7 @@ router.post(
           !state ||
           !zip ||
           !restaurantName ||
-          !addressLine1 ||
-          !addressLine2
+          !addressLine1
         ) {
           res.status(400);
           throw new Error("Please fill all the fields");
@@ -222,7 +224,13 @@ router.post(
             const restaurant = await Restaurant.create({
               name: restaurantName,
               logo: logoURL,
-              address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+              address: {
+                city,
+                state,
+                zip,
+                addressLine1,
+                addressLine2,
+              },
             });
 
             // If restaurant is created successfully
@@ -270,26 +278,24 @@ router.post(
                       throw err;
                     }
                   } catch (err) {
-                    // If vendor isn't created successfully
+                    // If vendor isn't created
                     throw err;
                   }
                 } catch (err) {
                   // If password hashing isn't successful
-                  res.status(500);
-                  throw new Error("Failed to hash password");
+                  throw err;
                 }
               } catch (err) {
-                // If slat isn't create successfully
-                res.status(500);
-                throw new Error("Failed to create slat");
+                // If slat isn't created
+                throw err;
               }
             }
           } catch (err) {
-            // If restaurant isn't created successfully
+            // If restaurant isn't created
             throw err;
           }
         } catch (err) {
-          // If vendor isn't found successfully
+          // If vendor isn't found
           throw err;
         }
       } else {
@@ -369,9 +375,8 @@ router.patch(
           !city ||
           !state ||
           !zip ||
-          !restaurantName ||
           !addressLine1 ||
-          !addressLine2
+          !restaurantName
         ) {
           res.status(400);
           throw new Error("Please fill all the fields");
@@ -403,9 +408,9 @@ router.patch(
           const updatedVendor = await User.findOneAndUpdate(
             { _id: vendorId },
             {
-              firstName,
-              lastName,
               email,
+              lastName,
+              firstName,
             },
             { returnDocument: "after" }
           )
@@ -419,7 +424,13 @@ router.patch(
               {
                 name: restaurantName,
                 logo: logoURL,
-                address: `${addressLine1}, ${addressLine2}, ${city}, ${state} ${zip}`,
+                address: {
+                  city,
+                  state,
+                  zip,
+                  addressLine1,
+                  addressLine2,
+                },
               },
               {
                 returnDocument: "after",

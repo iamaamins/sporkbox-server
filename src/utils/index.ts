@@ -1,15 +1,16 @@
 import sharp from "sharp";
-import moment from "moment-timezone";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
+import moment from "moment-timezone";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
 // Generate token and set cookie to header
-export const setCookie = (res: Response, id: Types.ObjectId): void => {
+export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   // Generate token
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET as string, {
+  const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
     expiresIn: "7d",
   });
 
@@ -174,3 +175,10 @@ export async function resizeImage(
     throw new Error("Failed to resize image");
   }
 }
+
+// Convert date to string
+export const convertDateToText = (date: Date | string | number): string =>
+  new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
+
+// Generate unique string
+export const randomString = crypto.randomBytes(16).toString("hex");
