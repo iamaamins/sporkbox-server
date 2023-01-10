@@ -8,11 +8,11 @@ const router = express.Router();
 
 // Event webhook
 router.post("/webhook", async (req: Request, res: Response) => {
-  // Signature
-  const signature = req.headers["stripe-signature"] as string;
-
   // Parsed body
   const parsedBody = JSON.parse(req.body);
+
+  // Signature
+  const signature = req.headers["stripe-signature"] as string;
 
   try {
     // Product event config

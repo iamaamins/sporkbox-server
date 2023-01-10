@@ -2,8 +2,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import "express-async-errors";
-import mail from "@sendgrid/mail";
 import User from "./routes/user";
+import mail from "@sendgrid/mail";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Stripe from "./routes/stripe";
@@ -27,9 +27,6 @@ connectDB();
 
 // Configure mail
 mail.setApiKey(process.env.SENDGRID_API_KEY as string);
-
-// Raw body
-const rawBody = express.raw({ type: "application/json" });
 
 // App
 const app = express();
@@ -55,9 +52,9 @@ app.use("/orders", Order);
 app.use("/admins", Admin);
 app.use("/stripe", Stripe);
 app.use("/vendors", Vendor);
-app.use("/customers", Customer);
 app.use("/companies", Company);
 app.use("/favorites", Favorite);
+app.use("/customers", Customer);
 app.use("/restaurants", Restaurant);
 
 // Error middleware
