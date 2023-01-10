@@ -25,7 +25,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
     // Handle the event
     if (event.type === "checkout.session.completed") {
       // Get pending id
-      const pendingId = req.body.data.object.metadata.pendingId;
+      const pendingId = JSON.parse(req.body).data.object.metadata.pendingId;
 
       try {
         // Update order status
@@ -49,7 +49,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
       }
     } else if (event.type === "checkout.session.expired") {
       // Get pending id
-      const pendingId = req.body.data.object.metadata.pendingId;
+      const pendingId = JSON.parse(req.body).data.object.metadata.pendingId;
 
       try {
         // Delete pending order
