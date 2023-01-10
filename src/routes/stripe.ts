@@ -1,5 +1,6 @@
 import Order from "../models/order";
 import { stripe } from "../config/stripe";
+import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 
 // Initialize router
@@ -83,6 +84,38 @@ router.post(
       } catch (err) {
         // If orders aren't deleted
         throw err;
+      }
+    }
+  }
+);
+
+// Get session details
+router.get(
+  "/session/:sessionId",
+  authUser,
+  async (req: Request, res: Response) => {
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      if (role === "CUSTOMER") {
+        // Destructure data from req
+        const { sessionId } = req.params;
+
+        try {
+          // Get session details
+          const response = await stripe.checkout.sessions.retrieve(sessionId);
+
+          // Send data with response
+          res.status(200).json(response.amount_total);
+        } catch (err) {
+          // If session retrieval fails
+          throw err;
+        }
+      } else {
+        // If role isn't customer
+        res.status(403);
+        throw new Error("Not authorized");
       }
     }
   }
