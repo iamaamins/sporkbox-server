@@ -11,8 +11,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
   // Signature
   const signature = req.headers["stripe-signature"] as string;
 
-  // Create payload
-  const payload = JSON.stringify(req.body, null, 2);
+  // Parsed body
+  const parsedBody = JSON.parse(req.body);
 
   try {
     // Product event config
@@ -25,7 +25,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
     // Handle the event
     if (event.type === "checkout.session.completed") {
       // Get pending id
-      const pendingId = JSON.parse(req.body).data.object.metadata.pendingId;
+      const pendingId = parsedBody.data.object.metadata.pendingId;
 
       try {
         // Update order status
@@ -49,7 +49,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
       }
     } else if (event.type === "checkout.session.expired") {
       // Get pending id
-      const pendingId = JSON.parse(req.body).data.object.metadata.pendingId;
+      const pendingId = parsedBody.data.object.metadata.pendingId;
 
       try {
         // Delete pending order

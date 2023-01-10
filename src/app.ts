@@ -28,11 +28,14 @@ connectDB();
 // Configure mail
 mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
+// Raw body
+const rawBody = express.raw({ type: "application/json" });
+
 // App
 const app = express();
 
 // Middleware
-app.use("/stripe/webhook", express.raw({ type: "application/json" }));
+app.use("/stripe/webhook", rawBody);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
