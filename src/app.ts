@@ -31,7 +31,8 @@ mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 // App
 const app = express();
 
-// Middleware
+// Middleware - Put raw middleware before json
+app.use("/stripe/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
@@ -56,8 +57,8 @@ app.use("/favorites", Favorite);
 app.use("/customers", Customer);
 app.use("/restaurants", Restaurant);
 
-// Error middleware - Put after all the routes
+// Error middleware - Put after all main routes
 app.use(error);
 
-// Start the server
+// Run the server
 app.listen(PORT, () => console.log("Server started"));
