@@ -562,8 +562,4 @@ router.patch(
   }
 );
 
-router.delete("/delete-pending", async (req: Request, res: Response) => {
-  await Order.deleteMany({ status: "PENDING" });
-});
-
 export default router;

@@ -43,9 +43,6 @@ app.use(
   })
 );
 
-// https://www.sporkbox.app
-// https://sporkbox.octib.com
-
 // Routes
 app.use("/users", User);
 app.use("/orders", Order);
