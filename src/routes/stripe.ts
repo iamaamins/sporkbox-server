@@ -7,67 +7,71 @@ import express, { Request, Response } from "express";
 const router = express.Router();
 
 // Event webhook
-router.post("/webhook", async (req: Request, res: Response) => {
-  // Parsed body
-  const parsedBody = JSON.parse(req.body);
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req: Request, res: Response) => {
+    // Parsed body
+    const parsedBody = JSON.parse(req.body);
 
-  // Signature
-  const signature = req.headers["stripe-signature"] as string;
+    // Signature
+    const signature = req.headers["stripe-signature"] as string;
 
-  try {
-    // Product event config
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET as string
-    );
+    try {
+      // Product event config
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET as string
+      );
 
-    // Handle the event
-    if (event.type === "checkout.session.completed") {
-      // Get pending id
-      const pendingId = parsedBody.data.object.metadata.pendingId;
+      // Handle the event
+      if (event.type === "checkout.session.completed") {
+        // Get pending id
+        const pendingId = parsedBody.data.object.metadata.pendingId;
 
-      try {
-        // Update order status
-        await Order.updateMany(
-          { pendingId, status: "PENDING" },
-          {
-            $set: {
-              status: "PROCESSING",
-            },
-            $unset: {
-              pendingId,
-            },
-          }
-        );
+        try {
+          // Update order status
+          await Order.updateMany(
+            { pendingId, status: "PENDING" },
+            {
+              $set: {
+                status: "PROCESSING",
+              },
+              $unset: {
+                pendingId,
+              },
+            }
+          );
 
-        // Send the response
-        res.status(201).json("Orders status updated");
-      } catch (err) {
-        // If order status update fails
-        throw err;
+          // Send the response
+          res.status(201).json("Orders status updated");
+        } catch (err) {
+          // If order status update fails
+          throw err;
+        }
+      } else if (event.type === "checkout.session.expired") {
+        // Get pending id
+        const pendingId = parsedBody.data.object.metadata.pendingId;
+
+        try {
+          // Delete pending order
+          await Order.deleteMany({ pendingId, status: "PENDING" });
+
+          // Send the response
+          res.status(201).json("Orders deleted");
+        } catch (err) {
+          // If orders aren't deleted
+          throw err;
+        }
       }
-    } else if (event.type === "checkout.session.expired") {
-      // Get pending id
-      const pendingId = parsedBody.data.object.metadata.pendingId;
-
-      try {
-        // Delete pending order
-        await Order.deleteMany({ pendingId, status: "PENDING" });
-
-        // Send the response
-        res.status(201).json("Orders deleted");
-      } catch (err) {
-        // If orders aren't deleted
-        throw err;
-      }
+    } catch (err) {
+      // If event fails to create
+      console.log("Stripe event verification failed");
+      throw err;
     }
-  } catch (err) {
-    // If event fails to create
-    console.log("Stripe event verification failed");
-    throw err;
   }
-});
+);
 
 // Get session details
 router.get(
