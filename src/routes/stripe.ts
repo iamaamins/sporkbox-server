@@ -24,10 +24,10 @@ router.post(
     });
 
     try {
-      // Test event
+      // Product event config
       const event = stripe.webhooks.constructEvent(
-        req.body,
-        signature,
+        payload,
+        header,
         process.env.STRIPE_WEBHOOK_SECRET as string
       );
 
