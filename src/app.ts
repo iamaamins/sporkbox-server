@@ -39,7 +39,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: "https://sporkbox.octib.com",
+    origin: "http://localhost:3000",
   })
 );
 
