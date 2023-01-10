@@ -39,7 +39,7 @@ export async function stripeCheckout(
       cancel_url: `${process.env.CLIENT_URL}`,
     });
 
-    // Return the session url
+    // Return the session
     return session;
   } catch (err) {
     // If session fails to create
