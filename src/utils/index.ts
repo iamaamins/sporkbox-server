@@ -181,4 +181,5 @@ export const convertDateToText = (date: Date | string | number): string =>
   new Date(date).toUTCString().split(" ").slice(0, 3).join(" ");
 
 // Generate unique string
-export const randomString = crypto.randomBytes(16).toString("hex");
+export const generateRandomString = () =>
+  crypto.randomBytes(16).toString("hex");

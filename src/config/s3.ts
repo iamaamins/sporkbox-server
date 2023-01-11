@@ -5,7 +5,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { randomString } from "../utils";
+import { generateRandomString } from "../utils";
 
 //Configure dot env
 dotenv.config();
@@ -25,9 +25,12 @@ export async function uploadImage(
   buffer: Buffer,
   mimetype: string
 ) {
+  // Generate random name
+  const name = generateRandomString();
+
   // Create params
   const params = {
-    Key: randomString,
+    Key: name,
     Body: buffer,
     ContentType: mimetype,
     Bucket: process.env.AWS_BUCKET_NAME,
@@ -38,7 +41,7 @@ export async function uploadImage(
     await s3Client.send(new PutObjectCommand(params));
 
     // Return the image URL
-    return `${process.env.CLOUDFRONT_DOMAIN}/${randomString}`;
+    return `${process.env.CLOUDFRONT_DOMAIN}/${name}`;
   } catch (err) {
     // If image upload fails
     res.status(500);

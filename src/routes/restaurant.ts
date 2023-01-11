@@ -498,12 +498,12 @@ router.patch(
 
         // If all the fields aren't provided
         if (
-          !restaurantId ||
           !itemId ||
           !name ||
-          !description ||
           !tags ||
-          !price
+          !price ||
+          !description ||
+          !restaurantId
         ) {
           res.status(400);
           throw new Error("Please provide all the fields");
