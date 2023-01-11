@@ -36,7 +36,7 @@ export async function stripeCheckout(
       metadata: { pendingId },
       customer_email: customerEmail,
       success_url: `${process.env.CLIENT_URL}/success?session={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}`,
+      cancel_url: `${process.env.CLIENT_URL}/dashboard`,
     });
 
     // Return the session
