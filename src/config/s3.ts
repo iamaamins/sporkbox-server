@@ -49,6 +49,7 @@ export async function uploadImage(
   }
 }
 
+// Delete image from S3
 export async function deleteImage(res: Response, name: string) {
   // Params
   const params = {
