@@ -72,9 +72,6 @@ router.post("/webhook", async (req: Request, res: Response) => {
     console.log("Stripe event verification failed");
     throw err;
   }
-
-  // End the response
-  // res.status(201).json("hello").end();
 });
 
 // Get session details
