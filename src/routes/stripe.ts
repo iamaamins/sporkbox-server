@@ -74,7 +74,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   }
 
   // End the response
-  res.status(201).end();
+  // res.status(201).json("hello").end();
 });
 
 // Get session details
