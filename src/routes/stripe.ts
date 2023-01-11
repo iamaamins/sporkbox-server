@@ -23,7 +23,11 @@ router.post("/webhook", async (req: Request, res: Response) => {
     );
 
     // Handle the event
-    if (event.type === "checkout.session.completed") {
+    if (
+      event.type === "charge.succeeded" ||
+      event.type === "payment_intent.succeeded" ||
+      event.type === "checkout.session.completed"
+    ) {
       // Get pending id
       const pendingId = parsedBody.data.object.metadata.pendingId;
 
@@ -44,6 +48,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         // Send the response
         res.status(201).json("Orders status updated");
       } catch (err) {
+        console.log(err);
         // If order status update fails
         throw err;
       }
@@ -67,6 +72,9 @@ router.post("/webhook", async (req: Request, res: Response) => {
     console.log("Stripe event verification failed");
     throw err;
   }
+
+  // End the response
+  res.status(201).end();
 });
 
 // Get session details
