@@ -5,16 +5,16 @@ import {
   convertDateToMS,
   convertDateToText,
   formatNumberToUS,
+  generateRandomString,
   getUpcomingWeekRestaurants,
-  randomString,
 } from "../utils";
 import {
   orderArchiveTemplate,
   orderDeliveryTemplate,
 } from "../utils/emailTemplates";
 import mail from "@sendgrid/mail";
-import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
 import { stripeCheckout } from "../config/stripe";
+import { IOrdersPayload, IOrdersStatusPayload } from "./../types/index.d";
 
 // Initialize router
 const router = express.Router();
@@ -282,18 +282,17 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
           .filter((payableItem) => payableItem.amount < 0);
 
         if (payableItems.length > 0) {
+          // Create random pending Id
+          const pendingId = generateRandomString();
+
           // Create stripe checkout sessions
-          const session = await stripeCheckout(
-            email,
-            randomString,
-            payableItems
-          );
+          const session = await stripeCheckout(email, pendingId, payableItems);
 
           // Create pending orders
           const pendingOrders = orders.map((order) => ({
             ...order,
+            pendingId,
             status: "PENDING",
-            pendingId: randomString,
           }));
 
           try {
