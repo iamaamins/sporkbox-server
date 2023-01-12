@@ -82,7 +82,7 @@ const orderSchema = new Schema<IOrderSchema>(
       type: Boolean,
       default: false,
     },
-    pendingId: String,
+    pendingOrderId: String,
     status: {
       type: String,
       enum: ["PENDING", "PROCESSING", "DELIVERED", "ARCHIVED"],

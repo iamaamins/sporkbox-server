@@ -285,15 +285,19 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
 
         if (payableItems.length > 0) {
           // Create random pending Id
-          const pendingId = generateRandomString();
+          const pendingOrderId = generateRandomString();
 
           // Create stripe checkout sessions
-          const session = await stripeCheckout(email, pendingId, payableItems);
+          const session = await stripeCheckout(
+            email,
+            pendingOrderId,
+            payableItems
+          );
 
           // Create pending orders
           const pendingOrders = orders.map((order) => ({
             ...order,
-            pendingId,
+            pendingOrderId,
             status: "PENDING",
           }));
 

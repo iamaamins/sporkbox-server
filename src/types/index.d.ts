@@ -57,7 +57,7 @@ export interface IOrderSchema {
   status: string;
   hasReviewed: boolean;
   createdAt: Date;
-  pendingId?: string;
+  pendingOrderId?: string;
   item: {
     _id: Types.ObjectId;
     name: string;

@@ -22,25 +22,30 @@ router.post("/webhook", async (req: Request, res: Response) => {
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
 
+    // Check if the company is sporkbox
+    const isSporkbox =
+      parsedBody.data.object.metadata.details.company === "sporkbox";
+
     // Handle the event
     if (
-      event.type === "charge.succeeded" ||
-      event.type === "payment_intent.succeeded" ||
-      event.type === "checkout.session.completed"
+      (event.type === "charge.succeeded" && isSporkbox) ||
+      (event.type === "payment_intent.succeeded" && isSporkbox) ||
+      (event.type === "checkout.session.completed" && isSporkbox)
     ) {
       // Get pending id
-      const pendingId = parsedBody.data.object.metadata.pendingId;
+      const pendingOrderId =
+        parsedBody.data.object.metadata.details.pendingOrderId;
 
       try {
         // Update order status
         await Order.updateMany(
-          { pendingId, status: "PENDING" },
+          { pendingOrderId, status: "PENDING" },
           {
             $set: {
               status: "PROCESSING",
             },
             $unset: {
-              pendingId,
+              pendingOrderId,
             },
           }
         );
@@ -54,11 +59,11 @@ router.post("/webhook", async (req: Request, res: Response) => {
       }
     } else if (event.type === "checkout.session.expired") {
       // Get pending id
-      const pendingId = parsedBody.data.object.metadata.pendingId;
+      const pendingOrderId = parsedBody.data.object.metadata.pendingOrderId;
 
       try {
         // Delete pending order
-        await Order.deleteMany({ pendingId, status: "PENDING" });
+        await Order.deleteMany({ pendingOrderId, status: "PENDING" });
 
         // Send the response
         res.status(201).json("Orders deleted");
