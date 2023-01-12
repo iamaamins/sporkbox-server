@@ -13,7 +13,7 @@ export const stripe = new Stripe(process.env.STRIPE_TEST_KEY as string, {
 // Create stripe checkout session
 export async function stripeCheckout(
   customerEmail: string,
-  pendingId: string,
+  pendingOrderId: string,
   payableItems: IStripePayableItems[]
 ) {
   try {
@@ -33,7 +33,9 @@ export async function stripeCheckout(
           quantity: 1,
         };
       }),
-      metadata: { pendingId },
+      metadata: {
+        details: JSON.stringify({ company: "sporkbox", pendingOrderId }),
+      },
       customer_email: customerEmail,
       success_url: `${process.env.CLIENT_URL}/success?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,

@@ -56,8 +56,8 @@ export interface IOrderSchema {
   };
   status: string;
   hasReviewed: boolean;
-  pendingId?: string;
   createdAt: Date;
+  pendingOrderId?: string;
   item: {
     _id: Types.ObjectId;
     name: string;
@@ -66,6 +66,8 @@ export interface IOrderSchema {
     description: string;
     quantity: number;
     total: number;
+    addedIngredients?: string;
+    removedIngredients?: string;
   };
 }
 
@@ -81,6 +83,8 @@ interface IItemSchema {
   price: number;
   image: string;
   description: string;
+  addableIngredients?: string;
+  removableIngredients?: string;
   reviews: Types.DocumentArray<IReviewSchema>;
 }
 
@@ -152,6 +156,8 @@ export interface IOrdersPayload {
     quantity: number;
     restaurantId: string;
     deliveryDate: number;
+    addedIngredients?: string;
+    removedIngredients?: string;
   }[];
 }
 
@@ -215,6 +221,8 @@ export interface IItemPayload {
   price: number;
   image?: string;
   description: string;
+  addableIngredients?: string;
+  removableIngredients?: string;
 }
 
 export interface IReviewPayload {

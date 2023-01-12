@@ -418,10 +418,17 @@ router.post(
       if (role === "ADMIN" || role === "VENDOR") {
         // Destructure data from req
         const { restaurantId } = req.params;
-        const { name, description, tags, price }: IItemPayload = req.body;
+        const {
+          name,
+          tags,
+          price,
+          description,
+          addableIngredients,
+          removableIngredients,
+        }: IItemPayload = req.body;
 
         // If all the fields aren't provided
-        if (!restaurantId || !name || !description || !tags || !price) {
+        if (!restaurantId || !name || !tags || !price || !description) {
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -451,9 +458,11 @@ router.post(
                   name,
                   tags,
                   price,
-                  image: imageURL,
                   description,
+                  image: imageURL,
                   status: "ACTIVE",
+                  addableIngredients,
+                  removableIngredients,
                 },
               },
             },
@@ -493,8 +502,15 @@ router.patch(
       if (role === "ADMIN" || role === "VENDOR") {
         // Destructure data from req
         const { restaurantId, itemId } = req.params;
-        const { name, tags, price, image, description }: IItemPayload =
-          req.body;
+        const {
+          name,
+          tags,
+          price,
+          image,
+          description,
+          addableIngredients,
+          removableIngredients,
+        }: IItemPayload = req.body;
 
         // If all the fields aren't provided
         if (
@@ -544,6 +560,8 @@ router.patch(
                 "items.$.price": price,
                 "items.$.image": imageURL,
                 "items.$.description": description,
+                "items.$.addableIngredients": addableIngredients,
+                "items.$.removableIngredients": removableIngredients,
               },
             },
             {
