@@ -78,16 +78,16 @@ const orderSchema = new Schema<IOrderSchema>(
         },
       },
     },
-    status: {
-      type: String,
-      enum: ["PENDING", "PROCESSING", "DELIVERED", "ARCHIVED"],
-      required: [true, "Please provide a status"],
-    },
     hasReviewed: {
       type: Boolean,
       default: false,
     },
     pendingId: String,
+    status: {
+      type: String,
+      enum: ["PENDING", "PROCESSING", "DELIVERED", "ARCHIVED"],
+      required: [true, "Please provide a status"],
+    },
     item: {
       _id: {
         type: Schema.Types.ObjectId,
@@ -120,6 +120,16 @@ const orderSchema = new Schema<IOrderSchema>(
       total: {
         type: Number,
         required: [true, "Please provide a total price"],
+      },
+      addedIngredients: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      removedIngredients: {
+        type: String,
+        trim: true,
+        lowercase: true,
       },
     },
   },

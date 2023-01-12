@@ -56,8 +56,8 @@ export interface IOrderSchema {
   };
   status: string;
   hasReviewed: boolean;
-  pendingId?: string;
   createdAt: Date;
+  pendingId?: string;
   item: {
     _id: Types.ObjectId;
     name: string;
@@ -66,6 +66,8 @@ export interface IOrderSchema {
     description: string;
     quantity: number;
     total: number;
+    addedIngredients?: string;
+    removedIngredients?: string;
   };
 }
 
@@ -154,6 +156,8 @@ export interface IOrdersPayload {
     quantity: number;
     restaurantId: string;
     deliveryDate: number;
+    addedIngredients?: string;
+    removedIngredients?: string;
   }[];
 }
 

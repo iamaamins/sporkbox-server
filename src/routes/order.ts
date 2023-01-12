@@ -197,6 +197,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                 quantity: orderPayload.quantity,
                 image: item.image || restaurant.logo,
                 total: item.price * orderPayload.quantity,
+                addedIngredients: orderPayload.addedIngredients,
+                removedIngredients: orderPayload.removedIngredients,
               },
             };
           } else {
