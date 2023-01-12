@@ -22,9 +22,9 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     city,
     state,
     zip,
-    restaurantName,
     addressLine1,
     addressLine2,
+    restaurantName,
   }: IVendorPayload = req.body;
 
   // If a value isn't provided
@@ -36,8 +36,8 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     !city ||
     !state ||
     !zip ||
-    !restaurantName ||
-    !addressLine1
+    !addressLine1 ||
+    !restaurantName
   ) {
     res.status(400);
     throw new Error("Please fill all the fields");
@@ -173,9 +173,9 @@ router.post(
           city,
           state,
           zip,
-          restaurantName,
           addressLine1,
           addressLine2,
+          restaurantName,
         }: IVendorPayload = req.body;
 
         // If a value isn't provided
@@ -187,8 +187,8 @@ router.post(
           !city ||
           !state ||
           !zip ||
-          !restaurantName ||
-          !addressLine1
+          !addressLine1 ||
+          !restaurantName
         ) {
           res.status(400);
           throw new Error("Please fill all the fields");

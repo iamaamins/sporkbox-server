@@ -81,6 +81,8 @@ interface IItemSchema {
   price: number;
   image: string;
   description: string;
+  addableIngredients?: string;
+  removableIngredients?: string;
   reviews: Types.DocumentArray<IReviewSchema>;
 }
 
@@ -215,6 +217,8 @@ export interface IItemPayload {
   price: number;
   image?: string;
   description: string;
+  addableIngredients?: string;
+  removableIngredients?: string;
 }
 
 export interface IReviewPayload {
