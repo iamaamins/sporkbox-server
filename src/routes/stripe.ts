@@ -11,6 +11,17 @@ router.post("/webhook", async (req: Request, res: Response) => {
   // Parsed body
   const parsedBody = JSON.parse(req.body);
 
+  // Parsed metadata details
+  const parsedMetadataDetails = JSON.parse(
+    parsedBody.data.object.metadata.details
+  );
+
+  // Check if the company is sporkbox
+  const isSporkbox = parsedMetadataDetails.company === "sporkbox";
+
+  // Get pending order id
+  const pendingOrderId = parsedMetadataDetails.pendingOrderId;
+
   // Signature
   const signature = req.headers["stripe-signature"] as string;
 
@@ -22,20 +33,12 @@ router.post("/webhook", async (req: Request, res: Response) => {
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
 
-    // Check if the company is sporkbox
-    const isSporkbox =
-      parsedBody.data.object.metadata.details.company === "sporkbox";
-
     // Handle the event
     if (
       (event.type === "charge.succeeded" && isSporkbox) ||
       (event.type === "payment_intent.succeeded" && isSporkbox) ||
       (event.type === "checkout.session.completed" && isSporkbox)
     ) {
-      // Get pending id
-      const pendingOrderId =
-        parsedBody.data.object.metadata.details.pendingOrderId;
-
       try {
         // Update order status
         await Order.updateMany(
@@ -53,14 +56,10 @@ router.post("/webhook", async (req: Request, res: Response) => {
         // Send the response
         res.status(201).json("Orders status updated");
       } catch (err) {
-        console.log(err);
         // If order status update fails
         throw err;
       }
-    } else if (event.type === "checkout.session.expired") {
-      // Get pending id
-      const pendingOrderId = parsedBody.data.object.metadata.pendingOrderId;
-
+    } else if (event.type === "checkout.session.expired" && isSporkbox) {
       try {
         // Delete pending order
         await Order.deleteMany({ pendingOrderId, status: "PENDING" });
