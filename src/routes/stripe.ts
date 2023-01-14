@@ -60,7 +60,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         // If order status update fails
         throw err;
       }
-    } else if (event.type === "checkout.session.expired") {
+    } else if (event.type === "checkout.session.expired" && isSporkbox) {
       try {
         // Delete pending order
         await Order.deleteMany({ pendingOrderId, status: "PENDING" });
