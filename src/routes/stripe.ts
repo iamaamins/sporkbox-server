@@ -56,7 +56,6 @@ router.post("/webhook", async (req: Request, res: Response) => {
         // Send the response
         res.status(201).json("Orders status updated");
       } catch (err) {
-        console.log(err);
         // If order status update fails
         throw err;
       }
