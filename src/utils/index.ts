@@ -71,9 +71,7 @@ export function getFutureDate(dayToAdd: number) {
 // Get dates in iso string
 const nextSaturdayUTCTimestamp = getFutureDate(6);
 const nextWeekMondayUTCTimestamp = getFutureDate(8);
-const nextWeekSaturdayUTCTimestamp = getFutureDate(13);
 const followingWeekMondayUTCTimestamp = getFutureDate(15);
-const followingWeekSaturdayUTCTimestamp = getFutureDate(20);
 
 // Timestamp of current moment
 const now = Date.now();
@@ -81,22 +79,18 @@ const now = Date.now();
 // Check if isDST
 const isDST = moment.tz(new Date(), "America/Los_Angeles").isDST();
 
-// Los Angeles time zone offset
-const losAngelesTimeZoneOffsetInMS = isDST ? 420 : 480 * 60000;
+// Milliseconds to make Friday 3pm Los Angeles time
+const MSToMakeFriday3PMLosAngelesTime = isDST ? 120 : 60 * 60000;
 
-// Timestamp of Los Angeles next Saturday
-const nextSaturdayLosAngelesTimeStamp =
-  nextSaturdayUTCTimestamp + losAngelesTimeZoneOffsetInMS;
+// Get Friday 3pm Los Angeles timestamp
+const nextFriday3PMLosAngelesTimeStamp =
+  nextSaturdayUTCTimestamp - MSToMakeFriday3PMLosAngelesTime;
 
-// Filters
+// Greater than or equal to
 export const gte =
-  now < nextSaturdayLosAngelesTimeStamp
+  now < nextFriday3PMLosAngelesTimeStamp
     ? nextWeekMondayUTCTimestamp
     : followingWeekMondayUTCTimestamp;
-export const lt =
-  now < nextSaturdayLosAngelesTimeStamp
-    ? nextWeekSaturdayUTCTimestamp
-    : followingWeekSaturdayUTCTimestamp;
 
 export async function getUpcomingWeekRestaurants(companyName: string) {
   try {
