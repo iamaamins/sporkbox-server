@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import mail from "@sendgrid/mail";
+import jwt from "jsonwebtoken";
 import User from "../models/user";
 import authUser from "../middleware/authUser";
-import jwt, { JwtPayload } from "jsonwebtoken";
 import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
 import { IResetPasswordPayload } from "./../types/index.d";
@@ -65,9 +65,9 @@ router.post("/logout", async (req: Request, res: Response) => {
   // Clear cookie
   res
     .clearCookie("token", {
-      httpOnly: true,
       path: "/",
       maxAge: 0,
+      httpOnly: true,
       sameSite: "strict",
       secure: process.env.NODE_ENV !== "development",
     })

@@ -16,8 +16,8 @@ export const setCookie = (res: Response, _id: Types.ObjectId): void => {
 
   // Set cookie to header
   res.cookie("token", jwtToken, {
-    httpOnly: true,
     path: "/",
+    httpOnly: true,
     sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     secure: process.env.NODE_ENV !== "development",
