@@ -34,11 +34,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
     );
 
     // Handle the event
-    if (
-      (event.type === "charge.succeeded" && isSporkbox) ||
-      (event.type === "payment_intent.succeeded" && isSporkbox) ||
-      (event.type === "checkout.session.completed" && isSporkbox)
-    ) {
+    if (event.type === "checkout.session.completed" && isSporkbox) {
       try {
         // Update order status
         await Order.updateMany(
