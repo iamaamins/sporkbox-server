@@ -271,6 +271,12 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
           .map((nextWeekBudgetAndDate) => {
             return {
               date: convertDateToText(nextWeekBudgetAndDate.nextWeekDate),
+              items: orders
+                .filter(
+                  (order) =>
+                    order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
+                )
+                .map((order) => order.item.name),
               amount:
                 nextWeekBudgetAndDate.budgetOnHand -
                 orders

@@ -314,5 +314,6 @@ export interface IForgotPasswordPayload {
 
 export interface IStripePayableItems {
   date: string;
+  items: string[];
   amount: number;
 }

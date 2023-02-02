@@ -27,6 +27,7 @@ export async function stripeCheckout(
             currency: "usd",
             product_data: {
               name: payableItem.date,
+              description: payableItem.items.join(", "),
             },
             unit_amount: Math.round(Math.abs(payableItem.amount) * 100),
           },
