@@ -26,7 +26,7 @@ import { orderCancelTemplate } from "../utils/emailTemplates";
 // Initialize router
 const router = express.Router();
 
-// Get upcoming week restaurants
+// Get upcoming restaurants
 router.get(
   "/upcoming-restaurants",
   authUser,

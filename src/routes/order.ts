@@ -123,19 +123,16 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       }
 
       // Get upcoming week restaurants
-      const upcomingWeekRestaurants = await getUpcomingRestaurants(
-        company.name
-      );
+      const upcomingRestaurants = await getUpcomingRestaurants(company.name);
 
       // Check if the provided items are valid
       const itemsAreValid = ordersPayload.every((orderPayload) =>
-        upcomingWeekRestaurants.some(
-          (upcomingWeekRestaurant) =>
-            upcomingWeekRestaurant._id.toString() ===
-              orderPayload.restaurantId &&
-            convertDateToMS(upcomingWeekRestaurant.date) ===
+        upcomingRestaurants.some(
+          (upcomingRestaurant) =>
+            upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
+            convertDateToMS(upcomingRestaurant.date) ===
               orderPayload.deliveryDate &&
-            upcomingWeekRestaurant.items.some(
+            upcomingRestaurant.items.some(
               (item) => item._id?.toString() === orderPayload.itemId
             )
         )
@@ -150,9 +147,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       // Create orders
       const orders = ordersPayload.map((orderPayload) => {
         // Find the restaurant
-        const restaurant = upcomingWeekRestaurants.find(
-          (upcomingWeekRestaurant) =>
-            upcomingWeekRestaurant._id.toString() === orderPayload.restaurantId
+        const restaurant = upcomingRestaurants.find(
+          (upcomingRestaurant) =>
+            upcomingRestaurant._id.toString() === orderPayload.restaurantId
         );
 
         if (restaurant) {
@@ -213,78 +210,75 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         }
       });
 
-      try {
-        // Get customer upcoming orders
-        const customerUpcomingOrders = await Order.find({
-          "customer._id": _id,
-          status: "PROCESSING",
-        })
-          .select("delivery item")
-          .sort({ "delivery.date": 1 });
+      // Get upcoming dates
+      const upcomingDates = upcomingRestaurants
+        .map((upcomingRestaurant) => convertDateToMS(upcomingRestaurant.date))
+        .filter(
+          (upcomingDate, index, upcomingDates) =>
+            upcomingDates.indexOf(upcomingDate) === index
+        );
 
-        // Get next week dates and budget on hand
-        const nextWeekBudgetAndDates = upcomingWeekRestaurants
-          .map((upcomingWeekRestaurant) =>
-            convertDateToMS(upcomingWeekRestaurant.date)
-          )
-          .filter((date, index, dates) => dates.indexOf(date) === index)
-          .map((nextWeekDate) => {
-            // Find the upcoming orders which match the date
-            const upcomingOrdersOnADateNextWeek = customerUpcomingOrders.filter(
-              (customerUpcomingOrder) =>
-                convertDateToMS(customerUpcomingOrder.delivery.date) ===
-                nextWeekDate
+      try {
+        // Get customer orders which delivery dates are
+        // greater than or equal to the smallest upcoming dates
+        const customerOrders = await Order.find({
+          "customer._id": _id,
+          "delivery.date": {
+            $gte: Math.min(...upcomingDates),
+          },
+        }).select("delivery item");
+
+        // Get next upcoming dates and budget on hand
+        const budgetOnDates = upcomingDates.map((upcomingDate) => {
+          // Find the upcoming orders which match the date
+          const ordersOnDate = customerOrders.filter(
+            (customerOrder) =>
+              convertDateToMS(customerOrder.delivery.date) === upcomingDate
+          );
+
+          // If upcoming orders are found on the date
+          if (ordersOnDate.length > 0) {
+            // Get upcoming orders total on the date
+            const ordersTotalOnDate = ordersOnDate.reduce(
+              (acc, curr) => acc + curr.item.total,
+              0
             );
 
-            // If upcoming orders are found on the date
-            if (upcomingOrdersOnADateNextWeek.length > 0) {
-              // Get upcoming orders total on the date
-              const upcomingOrdersTotalOnADateNextWeek =
-                upcomingOrdersOnADateNextWeek.reduce(
-                  (acc, upcomingOrderOnADateNextWeek) =>
-                    acc + upcomingOrderOnADateNextWeek.item.total,
-                  0
-                );
-
-              // Return the date and budget on hand
-              return {
-                nextWeekDate,
-                budgetOnHand:
-                  upcomingOrdersTotalOnADateNextWeek > company.dailyBudget
-                    ? 0
-                    : formatNumberToUS(
-                        company.dailyBudget - upcomingOrdersTotalOnADateNextWeek
-                      ),
-              };
-            } else {
-              // If no upcoming orders are found with the
-              // date then return the date and company budget
-              return {
-                nextWeekDate,
-                budgetOnHand: company.dailyBudget,
-              };
-            }
-          });
+            // Return the date and budget on hand
+            return {
+              upcomingDate,
+              budgetOnHand:
+                ordersTotalOnDate > company.dailyBudget
+                  ? 0
+                  : formatNumberToUS(company.dailyBudget - ordersTotalOnDate),
+            };
+          } else {
+            // If no upcoming orders are found with the
+            // date then return the date and company budget
+            return {
+              upcomingDate,
+              budgetOnHand: company.dailyBudget,
+            };
+          }
+        });
 
         // Create payable items with date and amount
-        const payableItems = nextWeekBudgetAndDates
-          .map((nextWeekBudgetAndDate) => {
+        const payableItems = budgetOnDates
+          .map((budgetOnDate) => {
             return {
-              date: convertDateToText(nextWeekBudgetAndDate.nextWeekDate),
+              date: convertDateToText(budgetOnDate.upcomingDate),
               items: orders
                 .filter(
-                  (order) =>
-                    order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
+                  (order) => order.delivery.date === budgetOnDate.upcomingDate
                 )
                 .map((order) => order.item.name),
               amount:
-                nextWeekBudgetAndDate.budgetOnHand -
+                budgetOnDate.budgetOnHand -
                 orders
                   .filter(
-                    (order) =>
-                      order.delivery.date === nextWeekBudgetAndDate.nextWeekDate
+                    (order) => order.delivery.date === budgetOnDate.upcomingDate
                   )
-                  .reduce((acc, order) => acc + order.item.total, 0),
+                  .reduce((acc, curr) => acc + curr.item.total, 0),
             };
           })
           .filter((payableItem) => payableItem.amount < 0);
@@ -323,7 +317,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             const response = await Order.insertMany(orders);
 
             // Format orders for customer
-            const customerOrders = response.map((order) => ({
+            const ordersForCustomers = response.map((order) => ({
               _id: order._id,
               item: order.item,
               status: order.status,
@@ -336,7 +330,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             }));
 
             // Send the data with response
-            res.status(201).json(customerOrders);
+            res.status(201).json(ordersForCustomers);
           } catch (err) {
             // If orders fails to create
             throw err;
