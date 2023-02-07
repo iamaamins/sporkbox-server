@@ -535,32 +535,63 @@ router.patch(
         }
 
         try {
-          // Find and update the item
-          const updatedRestaurant = await Restaurant.findOneAndUpdate(
-            { _id: restaurantId, "items._id": itemId },
-            {
-              $set: {
-                "items.$.name": name,
-                "items.$.tags": tags,
-                "items.$.price": price,
-                "items.$.image": imageURL,
-                "items.$.description": description,
-                "items.$.addableIngredients": addableIngredients,
-                "items.$.removableIngredients": removableIngredients,
+          if (!imageURL) {
+            // Update the item
+            const updatedRestaurant = await Restaurant.findOneAndUpdate(
+              { _id: restaurantId, "items._id": itemId },
+              {
+                $set: {
+                  "items.$.name": name,
+                  "items.$.tags": tags,
+                  "items.$.price": price,
+                  "items.$.description": description,
+                  "items.$.addableIngredients": addableIngredients,
+                  "items.$.removableIngredients": removableIngredients,
+                },
+                $unset: {
+                  "items.$.image": null,
+                },
               },
-            },
-            {
-              returnDocument: "after",
-            }
-          )
-            .lean()
-            .orFail();
+              {
+                returnDocument: "after",
+              }
+            )
+              .lean()
+              .orFail();
 
-          // Delete fields
-          deleteFields(updatedRestaurant, ["createdAt"]);
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
 
-          // Return the updated restaurant with response
-          res.status(201).json(updatedRestaurant);
+            // Return the updated restaurant with response
+            res.status(201).json(updatedRestaurant);
+          } else if (imageURL) {
+            // Update the item
+            const updatedRestaurant = await Restaurant.findOneAndUpdate(
+              { _id: restaurantId, "items._id": itemId },
+              {
+                $set: {
+                  "items.$.name": name,
+                  "items.$.tags": tags,
+                  "items.$.price": price,
+                  "items.$.image": imageURL,
+                  "items.$.description": description,
+                  "items.$.addableIngredients": addableIngredients,
+                  "items.$.removableIngredients": removableIngredients,
+                },
+              },
+              {
+                returnDocument: "after",
+              }
+            )
+              .lean()
+              .orFail();
+
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+
+            // Return the updated restaurant with response
+            res.status(201).json(updatedRestaurant);
+          }
         } catch (err) {
           // If item isn't updated successfully
           throw err;
