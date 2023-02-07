@@ -3,7 +3,6 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
-import moment from "moment-timezone";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant } from "../types";
 
@@ -52,45 +51,8 @@ export const sortByDate = (
   b: ISortScheduledRestaurant
 ): number => convertDateToMS(a.date) - convertDateToMS(b.date);
 
-// Get future date in UTC as the restaurant
-// schedule date and delivery date has no timezone
-export function getFutureDate(dayToAdd: number) {
-  // Today
-  const today = new Date();
-
-  // Sunday's date of current week
-  const sunday = today.getUTCDate() - today.getUTCDay();
-
-  // Get future date in MS
-  const futureDate = today.setUTCDate(sunday + dayToAdd);
-
-  // Get future date without hours in MS
-  return new Date(futureDate).setUTCHours(0, 0, 0, 0);
-}
-
-// Get dates in iso string
-const nextSaturdayUTCTimestamp = getFutureDate(6);
-const nextWeekMondayUTCTimestamp = getFutureDate(8);
-const followingWeekMondayUTCTimestamp = getFutureDate(15);
-
 // Timestamp of current moment
 export const now = Date.now();
-
-// Check if isDST
-const isDST = moment.tz(new Date(), "America/Los_Angeles").isDST();
-
-// Milliseconds to make Friday 3pm Los Angeles time
-const MSToMakeFriday3PMLosAngelesTime = isDST ? 120 : 60 * 60000;
-
-// Get Friday 3pm Los Angeles timestamp
-const nextFriday3PMLosAngelesTimeStamp =
-  nextSaturdayUTCTimestamp - MSToMakeFriday3PMLosAngelesTime;
-
-// Greater than or equal to
-export const gte =
-  now < nextFriday3PMLosAngelesTimeStamp
-    ? nextWeekMondayUTCTimestamp
-    : followingWeekMondayUTCTimestamp;
 
 // Get upcoming restaurant
 export async function getUpcomingRestaurants(companyName: string) {
