@@ -6,7 +6,7 @@ import {
   convertDateToText,
   formatNumberToUS,
   generateRandomString,
-  getUpcomingWeekRestaurants,
+  getUpcomingRestaurants,
 } from "../utils";
 import {
   orderArchiveTemplate,
@@ -123,7 +123,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       }
 
       // Get upcoming week restaurants
-      const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
+      const upcomingWeekRestaurants = await getUpcomingRestaurants(
         company.name
       );
 

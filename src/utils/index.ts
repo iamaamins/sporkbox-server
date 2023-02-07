@@ -74,7 +74,7 @@ const nextWeekMondayUTCTimestamp = getFutureDate(8);
 const followingWeekMondayUTCTimestamp = getFutureDate(15);
 
 // Timestamp of current moment
-const now = Date.now();
+export const now = Date.now();
 
 // Check if isDST
 const isDST = moment.tz(new Date(), "America/Los_Angeles").isDST();
@@ -92,13 +92,14 @@ export const gte =
     ? nextWeekMondayUTCTimestamp
     : followingWeekMondayUTCTimestamp;
 
-export async function getUpcomingWeekRestaurants(companyName: string) {
+// Get upcoming restaurant
+export async function getUpcomingRestaurants(companyName: string) {
   try {
     // Get the scheduled restaurants
     const response = await Restaurant.find({
       schedules: {
         $elemMatch: {
-          date: { $gte: gte },
+          date: { $gte: now },
           status: "ACTIVE",
           "company.name": companyName,
         },
@@ -106,13 +107,13 @@ export async function getUpcomingWeekRestaurants(companyName: string) {
     }).select("-__v -updatedAt -createdAt -address");
 
     // Create upcoming week restaurants, then flat and sort
-    const upcomingWeekRestaurants = response
+    const upcomingRestaurants = response
       .map((upcomingWeekRestaurant) => ({
         ...upcomingWeekRestaurant.toObject(),
         schedules: upcomingWeekRestaurant.schedules.filter(
           (schedule) =>
             schedule.status === "ACTIVE" &&
-            convertDateToMS(schedule.date) >= gte &&
+            convertDateToMS(schedule.date) >= now &&
             schedule.company.name === companyName
         ),
       }))
@@ -132,7 +133,7 @@ export async function getUpcomingWeekRestaurants(companyName: string) {
       .sort(sortByDate);
 
     // Return the scheduled restaurants with response
-    return upcomingWeekRestaurants;
+    return upcomingRestaurants;
   } catch (err) {
     // If scheduled restaurants aren't fetched successfully
     throw err;

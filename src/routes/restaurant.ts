@@ -4,13 +4,13 @@ import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
-  gte,
+  now,
   sortByDate,
-  deleteFields,
-  convertDateToMS,
-  getUpcomingWeekRestaurants,
-  checkActions,
   resizeImage,
+  deleteFields,
+  checkActions,
+  convertDateToMS,
+  getUpcomingRestaurants,
 } from "../utils";
 import { upload } from "../config/multer";
 import { deleteImage, uploadImage } from "../config/s3";
@@ -37,12 +37,10 @@ router.get(
 
       if (role === "CUSTOMER" && company) {
         // Get upcoming week restaurants
-        const upcomingWeekRestaurants = await getUpcomingWeekRestaurants(
-          company.name
-        );
+        const upcomingRestaurants = await getUpcomingRestaurants(company.name);
 
         // Send the data with response
-        res.status(200).json(upcomingWeekRestaurants);
+        res.status(200).json(upcomingRestaurants);
       } else {
         // If role isn't customer
         res.status(403);
@@ -66,7 +64,7 @@ router.get(
           // Get the scheduled restaurants
           const response = await Restaurant.find({
             "schedules.date": {
-              $gte: gte,
+              $gte: now,
             },
           }).select("-__v -updatedAt -createdAt -address -items");
 
@@ -90,7 +88,7 @@ router.get(
             .flat(2)
             .filter(
               (scheduledRestaurant) =>
-                convertDateToMS(scheduledRestaurant.date) >= gte
+                convertDateToMS(scheduledRestaurant.date) >= now
             )
             .sort(sortByDate);
 
@@ -130,22 +128,9 @@ router.post(
         }
 
         // If provided date is a past date
-        if (convertDateToMS(date) < gte) {
+        if (convertDateToMS(date) < now) {
           res.status(400);
-          throw new Error("Cant' schedule a restaurant in the past");
-        }
-
-        // Get the day from provided date
-        const day = new Date(date).toUTCString().split(",")[0];
-
-        // Restrict scheduling on saturday and sunday
-        if (day === "Sat" || day === "Sun") {
-          res.status(400);
-          throw new Error(
-            `Can't schedule a restaurant on ${
-              day === "Sat" ? "Saturday" : "Sunday"
-            }`
-          );
+          throw new Error("Cant' schedule on the provided date");
         }
 
         try {
@@ -155,7 +140,7 @@ router.post(
             {
               $pull: {
                 schedules: {
-                  date: { $lt: Date.now() },
+                  date: { $lt: now },
                 },
               },
             },
