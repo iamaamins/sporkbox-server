@@ -156,7 +156,7 @@ export interface IOrdersPayload {
     quantity: number;
     restaurantId: string;
     deliveryDate: number;
-    addedIngredients?: string;
+    addedIngredients?: string[];
     removedIngredients?: string;
   }[];
 }
