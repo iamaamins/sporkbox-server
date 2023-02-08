@@ -153,5 +153,12 @@ export const splitAddableIngredients = (addableIngredients: string) =>
 // Check addable ingredients format
 export const isCorrectAddableIngredientsFormat = (addableIngredients: string) =>
   splitAddableIngredients(addableIngredients).every(
-    (ingredient) => ingredient.length === 2 && ingredient[1]
+    (ingredient) =>
+      ingredient.length === 2 && ingredient[1] !== "" && +ingredient[1] >= 0
   );
+
+// Format addable ingredients
+export const formatAddableIngredients = (addableIngredients: string) =>
+  splitAddableIngredients(addableIngredients)
+    .map((ingredient) => ingredient.join(" - "))
+    .join(", ");

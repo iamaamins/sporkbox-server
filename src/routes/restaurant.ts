@@ -11,6 +11,7 @@ import {
   checkActions,
   convertDateToMS,
   getUpcomingRestaurants,
+  formatAddableIngredients,
   isCorrectAddableIngredientsFormat,
 } from "../utils";
 import { upload } from "../config/multer";
@@ -391,7 +392,7 @@ router.patch(
   }
 );
 
-// Add an item to a restaurant
+// Cerate an item
 router.post(
   "/:restaurantId/add-item",
   authUser,
@@ -443,6 +444,10 @@ router.post(
           imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
+        // Formatted addable ingredients
+        const formattedAddableIngredients =
+          addableIngredients && formatAddableIngredients(addableIngredients);
+
         try {
           // Find the restaurant and add the item
           const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -456,8 +461,8 @@ router.post(
                   description,
                   image: imageURL,
                   status: "ACTIVE",
-                  addableIngredients,
                   removableIngredients,
+                  addableIngredients: formattedAddableIngredients,
                 },
               },
             },
@@ -553,6 +558,10 @@ router.patch(
           imageURL = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
+        // Formatted addable ingredients
+        const formattedAddableIngredients =
+          addableIngredients && formatAddableIngredients(addableIngredients);
+
         try {
           if (!imageURL) {
             // Update the item
@@ -564,8 +573,8 @@ router.patch(
                   "items.$.tags": tags,
                   "items.$.price": price,
                   "items.$.description": description,
-                  "items.$.addableIngredients": addableIngredients,
                   "items.$.removableIngredients": removableIngredients,
+                  "items.$.addableIngredients": formattedAddableIngredients,
                 },
                 $unset: {
                   "items.$.image": null,
@@ -594,8 +603,8 @@ router.patch(
                   "items.$.price": price,
                   "items.$.image": imageURL,
                   "items.$.description": description,
-                  "items.$.addableIngredients": addableIngredients,
                   "items.$.removableIngredients": removableIngredients,
+                  "items.$.addableIngredients": formattedAddableIngredients,
                 },
               },
               {
