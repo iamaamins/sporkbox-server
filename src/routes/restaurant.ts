@@ -11,6 +11,7 @@ import {
   checkActions,
   convertDateToMS,
   getUpcomingRestaurants,
+  isCorrectAddableIngredientsFormat,
 } from "../utils";
 import { upload } from "../config/multer";
 import { deleteImage, uploadImage } from "../config/s3";
@@ -418,6 +419,15 @@ router.post(
           throw new Error("Please provide all the fields");
         }
 
+        // Check addable ingredients format
+        if (
+          addableIngredients &&
+          !isCorrectAddableIngredientsFormat(addableIngredients)
+        ) {
+          res.status(400);
+          throw new Error("Invalid addable ingredients format");
+        }
+
         // Create image URL
         let imageURL;
 
@@ -508,6 +518,15 @@ router.patch(
         ) {
           res.status(400);
           throw new Error("Please provide all the fields");
+        }
+
+        // Check addable ingredients format
+        if (
+          addableIngredients &&
+          !isCorrectAddableIngredientsFormat(addableIngredients)
+        ) {
+          res.status(400);
+          throw new Error("Invalid addable ingredients format");
         }
 
         // If a new file is provided and an image already exists

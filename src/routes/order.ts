@@ -1,3 +1,4 @@
+import { splitAddableIngredients } from "./../utils/index";
 import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -166,16 +167,13 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
           if (item) {
             // Get total addon price
             const totalAddonPrice =
-              item.addableIngredients
-                ?.split(",")
-                .map((ingredient) => ingredient.trim())
-                .map((ingredient) =>
-                  ingredient.split("-").map((ingredient) => ingredient.trim())
-                )
-                .filter((ingredient) =>
-                  addedIngredientNames?.includes(ingredient[0].trim())
-                )
-                .reduce((acc, curr) => acc + +curr[1], 0) || 0;
+              (item.addableIngredients &&
+                splitAddableIngredients(item.addableIngredients)
+                  .filter((ingredient) =>
+                    addedIngredientNames?.includes(ingredient[0])
+                  )
+                  .reduce((acc, curr) => acc + +curr[1], 0)) ||
+              0;
 
             // Create and return individual order
             return {

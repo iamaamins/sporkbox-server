@@ -140,3 +140,18 @@ export const convertDateToText = (date: Date | string | number): string =>
 // Generate unique string
 export const generateRandomString = () =>
   crypto.randomBytes(16).toString("hex");
+
+// Split and trim addable ingredients
+export const splitAddableIngredients = (addableIngredients: string) =>
+  addableIngredients
+    .split(",")
+    .map((ingredient) => ingredient.trim())
+    .map((ingredient) =>
+      ingredient.split("-").map((ingredient) => ingredient.trim())
+    );
+
+// Check addable ingredients format
+export const isCorrectAddableIngredientsFormat = (addableIngredients: string) =>
+  splitAddableIngredients(addableIngredients).every(
+    (ingredient) => ingredient.length === 2 && ingredient[1]
+  );
