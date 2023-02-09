@@ -430,7 +430,7 @@ router.post(
         }
 
         // Create image URL
-        let imageURL;
+        let imageUrl;
 
         // If there is a file
         if (req.file) {
@@ -441,7 +441,7 @@ router.post(
           const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
           // Upload image and get the URL
-          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
+          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         // Formatted addable ingredients
@@ -459,7 +459,7 @@ router.post(
                   tags,
                   price,
                   description,
-                  image: imageURL,
+                  image: imageUrl,
                   status: "ACTIVE",
                   removableIngredients,
                   addableIngredients: formattedAddableIngredients,
@@ -544,7 +544,7 @@ router.patch(
         }
 
         // Create image URL
-        let imageURL;
+        let imageUrl = image;
 
         // If there is a file
         if (req.file) {
@@ -555,7 +555,7 @@ router.patch(
           const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
           // Upload image and get the URL
-          imageURL = await uploadImage(res, modifiedBuffer, mimetype);
+          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
         }
 
         // Formatted addable ingredients
@@ -563,7 +563,7 @@ router.patch(
           addableIngredients && formatAddableIngredients(addableIngredients);
 
         try {
-          if (!imageURL) {
+          if (!imageUrl) {
             // Update the item
             const updatedRestaurant = await Restaurant.findOneAndUpdate(
               { _id: restaurantId, "items._id": itemId },
@@ -592,7 +592,7 @@ router.patch(
 
             // Return the updated restaurant with response
             res.status(201).json(updatedRestaurant);
-          } else if (imageURL) {
+          } else if (imageUrl) {
             // Update the item
             const updatedRestaurant = await Restaurant.findOneAndUpdate(
               { _id: restaurantId, "items._id": itemId },
@@ -601,7 +601,7 @@ router.patch(
                   "items.$.name": name,
                   "items.$.tags": tags,
                   "items.$.price": price,
-                  "items.$.image": imageURL,
+                  "items.$.image": imageUrl,
                   "items.$.description": description,
                   "items.$.removableIngredients": removableIngredients,
                   "items.$.addableIngredients": formattedAddableIngredients,
