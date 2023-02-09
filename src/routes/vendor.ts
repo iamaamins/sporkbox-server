@@ -15,13 +15,13 @@ const router = express.Router();
 router.post("/register-vendor", upload, async (req: Request, res: Response) => {
   // Destructure data from req
   const {
-    firstName,
-    lastName,
-    email,
-    password,
+    zip,
     city,
     state,
-    zip,
+    email,
+    lastName,
+    password,
+    firstName,
     addressLine1,
     addressLine2,
     restaurantName,
@@ -29,13 +29,13 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
 
   // If a value isn't provided
   if (
-    !firstName ||
-    !lastName ||
-    !email ||
-    !password ||
-    !city ||
-    !state ||
     !zip ||
+    !city ||
+    !email ||
+    !state ||
+    !password ||
+    !lastName ||
+    !firstName ||
     !addressLine1 ||
     !restaurantName
   ) {
@@ -63,7 +63,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     const { buffer, mimetype } = req.file;
 
     // Resize the logo
-    const modifiedBuffer = await resizeImage(res, buffer, 400, 400);
+    const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
     // Upload logo and get the URL
     const logoURL = await uploadImage(res, modifiedBuffer, mimetype);
@@ -166,13 +166,13 @@ router.post(
       if (role === "ADMIN") {
         // Destructure data from req
         const {
-          firstName,
-          lastName,
-          email,
-          password,
+          zip,
           city,
           state,
-          zip,
+          email,
+          password,
+          lastName,
+          firstName,
           addressLine1,
           addressLine2,
           restaurantName,
@@ -180,13 +180,13 @@ router.post(
 
         // If a value isn't provided
         if (
-          !firstName ||
-          !lastName ||
-          !email ||
-          !password ||
+          !zip ||
           !city ||
           !state ||
-          !zip ||
+          !email ||
+          !lastName ||
+          !password ||
+          !firstName ||
           !addressLine1 ||
           !restaurantName
         ) {
@@ -214,7 +214,7 @@ router.post(
           const { buffer, mimetype } = req.file;
 
           // Resize the logo
-          const modifiedBuffer = await resizeImage(res, buffer, 400, 400);
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
           // Upload logo and get the URL
           const logoURL = await uploadImage(res, modifiedBuffer, mimetype);
@@ -354,13 +354,13 @@ router.patch(
         // Destructure data from req
         const { vendorId } = req.params;
         const {
+          zip,
+          city,
+          logo,
+          email,
+          state,
           firstName,
           lastName,
-          email,
-          city,
-          state,
-          zip,
-          logo,
           addressLine1,
           addressLine2,
           restaurantName,
@@ -368,13 +368,13 @@ router.patch(
 
         // If a value isn't provided
         if (
+          !zip ||
+          !city ||
+          !email ||
+          !state ||
+          !lastName ||
           !vendorId ||
           !firstName ||
-          !lastName ||
-          !email ||
-          !city ||
-          !state ||
-          !zip ||
           !addressLine1 ||
           !restaurantName
         ) {
@@ -397,7 +397,7 @@ router.patch(
           const { buffer, mimetype } = req.file;
 
           // Resize the logo
-          const modifiedBuffer = await resizeImage(res, buffer, 400, 400);
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
           // Upload logo and get the URL
           logoURL = await uploadImage(res, modifiedBuffer, mimetype);

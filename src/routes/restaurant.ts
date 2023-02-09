@@ -514,10 +514,10 @@ router.patch(
 
         // If all the fields aren't provided
         if (
-          !itemId ||
           !name ||
           !tags ||
           !price ||
+          !itemId ||
           !description ||
           !restaurantId
         ) {

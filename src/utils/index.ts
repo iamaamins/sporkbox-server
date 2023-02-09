@@ -124,7 +124,12 @@ export async function resizeImage(
   try {
     // Return the resized buffer
     return await sharp(buffer)
-      .resize({ width, height, fit: "cover" })
+      .resize({
+        width,
+        height,
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255 },
+      })
       .toBuffer();
   } catch (err) {
     // If image resize fails
