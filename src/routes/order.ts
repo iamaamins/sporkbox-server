@@ -241,6 +241,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         // greater than or equal to the smallest upcoming dates
         const customerOrders = await Order.find({
           "customer._id": _id,
+          status: {
+            $ne: "PENDING",
+          },
           "delivery.date": {
             $gte: Math.min(...upcomingDates),
           },
