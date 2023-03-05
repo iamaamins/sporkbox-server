@@ -6,7 +6,7 @@ import { IStripePayableItems } from "../types";
 dotenv.config();
 
 // Create stripe instance
-export const stripe = new Stripe(process.env.STRIPE_TEST_KEY as string, {
+export const stripe = new Stripe(process.env.STRIPE_KEY as string, {
   apiVersion: "2022-11-15",
 });
 
