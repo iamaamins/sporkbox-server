@@ -8,6 +8,11 @@ const companySchema = new Schema<ICompanySchema>(
       trim: true,
       required: [true, "Please provide a name"],
     },
+    shift: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide a shift"],
+    },
     website: {
       type: String,
       trim: true,

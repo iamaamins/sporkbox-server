@@ -1,7 +1,7 @@
 import Company from "../models/company";
-import { checkActions, deleteFields } from "../utils";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
+import { checkActions, deleteFields } from "../utils";
 import { ICompanyPayload, IStatusChangePayload } from "../types";
 
 // Initialize router
@@ -18,9 +18,10 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
       const {
         name,
         code,
+        zip,
         city,
         state,
-        zip,
+        shift,
         website,
         dailyBudget,
         addressLine1,
@@ -34,6 +35,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         !city ||
         !state ||
         !zip ||
+        !shift ||
         !website ||
         !dailyBudget ||
         !addressLine1
@@ -47,6 +49,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         const response = await Company.create({
           name,
           code,
+          shift,
           website,
           address: {
             city,
@@ -122,8 +125,9 @@ router.patch(
           name,
           code,
           city,
-          state,
           zip,
+          state,
+          shift,
           website,
           dailyBudget,
           addressLine1,
@@ -132,13 +136,14 @@ router.patch(
 
         // If all the fields aren't provided
         if (
-          !companyId ||
+          !zip ||
           !name ||
           !code ||
           !city ||
           !state ||
-          !zip ||
+          !shift ||
           !website ||
+          !companyId ||
           !dailyBudget ||
           !addressLine1
         ) {
@@ -153,6 +158,7 @@ router.patch(
             {
               name,
               code,
+              shift,
               website,
               address: {
                 city,
