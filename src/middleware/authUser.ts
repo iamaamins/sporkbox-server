@@ -36,10 +36,6 @@ export default async function handler(
       // Find the user
       const user = await User.findById(decoded._id)
         .select("-__v -password -updatedAt -createdAt")
-        .populate<{ company: IUserCompany }>(
-          "company",
-          "-__v -updatedAt -createdAt -website"
-        )
         .lean();
 
       // If there is a user in db

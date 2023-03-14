@@ -127,7 +127,20 @@ export interface IUserSchema {
   password: string;
   status: string;
   shifts: string[];
-  company: Types.ObjectId;
+  companies: {
+    _id: Types.ObjectId;
+    name: string;
+    shift: string;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
+    code: string;
+    dailyBudget: number;
+  };
   restaurant: Types.ObjectId;
 }
 
@@ -320,4 +333,8 @@ export interface IStripePayableItems {
   date: string;
   items: string[];
   amount: number;
+}
+
+export interface IShiftChangePayload {
+  shifts: string[];
 }

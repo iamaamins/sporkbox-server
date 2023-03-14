@@ -1,11 +1,15 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
-import { ICustomerPayload } from "../types";
 import authUser from "../middleware/authUser";
 import { setCookie, deleteFields, checkActions } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
-import { IEditCustomerPayload, IStatusChangePayload } from "./../types/index.d";
+import {
+  ICustomerPayload,
+  IEditCustomerPayload,
+  IShiftChangePayload,
+  IStatusChangePayload,
+} from "../types";
 
 // Initialize router
 const router = express.Router();
@@ -30,14 +34,19 @@ router.post(
     }
 
     try {
-      // Check if company exist
-      const groups = await Company.find({ code: companyCode }).lean().orFail();
+      // Get the companies with code
+      const companies = await Company.find({ code: companyCode })
+        .select("-updatedAt -createdAt -website")
+        .lean()
+        .orFail();
 
-      // Find the group where the shift is day
-      const defaultGroup = groups.find((group) => group.shift === "day");
+      // Find the company where the shift is day
+      const defaultCompany = companies.find(
+        (company) => company.shift === "day"
+      );
 
       // Available shifts
-      const shifts = groups.map((group) => group.shift);
+      const shifts = companies.map((company) => company.shift);
 
       try {
         // Create salt
@@ -49,7 +58,7 @@ router.post(
 
           try {
             // Create customer and populate the company
-            const response = await User.create({
+            const customer = await User.create({
               firstName,
               lastName,
               email,
@@ -57,31 +66,29 @@ router.post(
               status: "ACTIVE",
               role: "CUSTOMER",
               password: hashedPassword,
-              company: defaultGroup?._id,
             });
 
             try {
-              // Populate company
-              const customerWithCompany = await response.populate(
-                "company",
-                "-__v -updatedAt"
-              );
+              // Add the default company to companies
+              await customer.updateOne({
+                $push: { companies: defaultCompany },
+              });
 
-              // If customer is created successfully
-              if (customerWithCompany) {
-                // Convert customer document to object
-                const customer = customerWithCompany.toObject();
+              // Create customer
+              const customerWithCompanies = {
+                ...customer.toObject(),
+                companies: [defaultCompany],
+              };
 
-                // Generate jwt token and set
-                // cookie to the response header
-                setCookie(res, customer._id);
+              // Generate jwt token and set
+              // cookie to the response header
+              setCookie(res, customerWithCompanies._id);
 
-                // Delete fields
-                deleteFields(customer, ["createdAt", "password"]);
+              // Delete fields
+              deleteFields(customer, ["createdAt", "password"]);
 
-                // Send the data with response
-                res.status(201).json(customer);
-              }
+              // Send the data with response
+              res.status(201).json(customerWithCompanies);
             } catch (err) {
               // If company isn't populated
               throw err;
@@ -225,7 +232,55 @@ router.patch(
           throw err;
         }
       } else {
-        // If role isn't admin
+        // If role isn't customer
+        res.status(403);
+        throw new Error("Not authorized");
+      }
+    }
+  }
+);
+
+// Change customer shift
+router.patch(
+  "/:customerId/:companyCode/change-customer-shift",
+  authUser,
+  async (req: Request, res: Response) => {
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      if (role === "CUSTOMER") {
+        // Destructure data from request
+        const { customerId, companyCode } = req.params;
+        const { shifts }: IShiftChangePayload = req.body;
+
+        try {
+          // Get the companies
+          const companies = await Company.find({
+            code: companyCode,
+            shift: { $in: shifts },
+          })
+            .lean()
+            .orFail();
+
+          console.log(companies);
+
+          // try {
+          //   // Update the customer
+          //   const updatedCustomer = await User.findByIdAndUpdate(
+          //     { _id: customerId },
+          //     { $set: { companies: companies } }
+          //   );
+
+          //   console.log(updatedCustomer);
+          // } catch (err) {
+          //   throw err;
+          // }
+        } catch (err) {
+          throw err;
+        }
+      } else {
+        // If role isn't customer
         res.status(403);
         throw new Error("Not authorized");
       }
