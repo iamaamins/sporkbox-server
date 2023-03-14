@@ -2,6 +2,7 @@ import User from "../models/user";
 import { IUserCompany } from "../types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
+import company from "../models/company";
 
 export default async function handler(
   req: Request,
@@ -35,13 +36,9 @@ export default async function handler(
       // Find the user
       const user = await User.findById(decoded._id)
         .select("-__v -password -updatedAt -createdAt")
-        // .populate<{restaurant: IRestaurant}>(
-        //   "restaurant",
-        //   "-__v -updatedAt -createdAt"
-        // )
         .populate<{ company: IUserCompany }>(
           "company",
-          "-__v -updatedAt -createdAt -code -website"
+          "-__v -updatedAt -createdAt -website"
         )
         .lean();
 

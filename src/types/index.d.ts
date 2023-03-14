@@ -126,6 +126,7 @@ export interface IUserSchema {
   role: string;
   password: string;
   status: string;
+  shifts: string[];
   company: Types.ObjectId;
   restaurant: Types.ObjectId;
 }
@@ -165,6 +166,7 @@ export interface IOrdersPayload {
 export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
+  code: string;
   address: {
     city: string;
     state: string;
@@ -183,7 +185,6 @@ interface IUser {
   role: string;
   status?: string;
   company?: IUserCompany;
-  // restaurant?: IRestaurant;
 }
 
 export interface ICompanyPayload {
@@ -204,6 +205,7 @@ export interface ICustomerPayload {
   lastName: string;
   email: string;
   password: string;
+  companyCode: string;
 }
 
 export interface IFavoritePayload {

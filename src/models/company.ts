@@ -11,6 +11,7 @@ const companySchema = new Schema<ICompanySchema>(
     shift: {
       type: String,
       trim: true,
+      lowercase: true,
       required: [true, "Please provide a shift"],
     },
     website: {
@@ -47,7 +48,6 @@ const companySchema = new Schema<ICompanySchema>(
     },
     code: {
       type: String,
-      unique: true,
       trim: true,
       lowercase: true,
       required: [true, "Please provide a code"],

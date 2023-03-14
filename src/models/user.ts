@@ -39,6 +39,12 @@ const userSchema = new Schema<IUserSchema>(
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
+    shifts: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     restaurant: {
       type: Schema.Types.ObjectId,
       ref: "Restaurant",

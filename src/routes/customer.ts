@@ -15,7 +15,13 @@ router.post(
   "/register-customer",
   async (req: Request, res: Response, next: NextFunction) => {
     // Destructure data from req
-    const { firstName, lastName, email, password }: ICustomerPayload = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      companyCode,
+    }: ICustomerPayload = req.body;
 
     // If a value isn't provided
     if (!firstName || !lastName || !email || !password) {
@@ -23,14 +29,15 @@ router.post(
       throw new Error("Please provide all the fields");
     }
 
-    // Get company code from customer's email
-    const companyCode = email.split("@")[1].split(".")[0];
-
     try {
       // Check if company exist
-      const company = await Company.findOne({ code: companyCode })
-        .lean()
-        .orFail();
+      const groups = await Company.find({ code: companyCode }).lean().orFail();
+
+      // Find the group where the shift is day
+      const defaultGroup = groups.find((group) => group.shift === "day");
+
+      // Available shifts
+      const shifts = groups.map((group) => group.shift);
 
       try {
         // Create salt
@@ -46,10 +53,11 @@ router.post(
               firstName,
               lastName,
               email,
+              shifts,
               status: "ACTIVE",
               role: "CUSTOMER",
-              company: company._id,
               password: hashedPassword,
+              company: defaultGroup?._id,
             });
 
             try {

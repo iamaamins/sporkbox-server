@@ -13,6 +13,7 @@ guidelines.txt
 # misc
 .DS_Store
 *.pem
+notes.txt
 
 # debug
 npm-debug.log*

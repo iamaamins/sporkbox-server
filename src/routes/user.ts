@@ -29,10 +29,6 @@ router.post("/login", async (req: Request, res: Response) => {
   try {
     // Find the user
     const user = await User.findOne({ email })
-      // .populate(
-      //   "restaurant",
-      //   "-__v -updatedAt -createdAt"
-      // )
       .populate("company", "-__v -updatedAt -createdAt -code -website")
       .lean()
       .orFail();
