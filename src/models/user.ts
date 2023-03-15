@@ -94,6 +94,7 @@ const userSchema = new Schema<IUserSchema>(
       {
         type: String,
         trim: true,
+        enum: ["day", "night"],
       },
     ],
     restaurant: {

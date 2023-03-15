@@ -12,6 +12,7 @@ const companySchema = new Schema<ICompanySchema>(
       type: String,
       trim: true,
       lowercase: true,
+      enum: ["day", "night"],
       required: [true, "Please provide a shift"],
     },
     website: {

@@ -40,10 +40,8 @@ router.post(
         .lean()
         .orFail();
 
-      // Find the company where the shift is day
-      const defaultCompany = companies.find(
-        (company) => company.shift === "day"
-      );
+      // Get the first created company
+      const defaultCompany = companies[0];
 
       // Available shifts
       const shifts = companies.map((company) => company.shift);
@@ -121,9 +119,9 @@ router.get("", authUser, async (req: Request, res: Response) => {
     if (role === "ADMIN") {
       try {
         // Get all customers
-        const customers = await User.find({ role: "CUSTOMER" })
-          .select("-__v -updatedAt -password -role")
-          .populate("company", "address name");
+        const customers = await User.find({ role: "CUSTOMER" }).select(
+          "-__v -updatedAt -password -role"
+        );
 
         // Send the customers data with response
         res.status(200).json(customers);
@@ -221,7 +219,6 @@ router.patch(
             { returnDocument: "after" }
           )
             .select("-__v -password -updatedAt -role")
-            .populate("company", "name address")
             .lean()
             .orFail();
 
@@ -254,28 +251,35 @@ router.patch(
         const { customerId, companyCode } = req.params;
         const { shifts }: IShiftChangePayload = req.body;
 
+        // If no shift is provided
+        if (shifts.length === 0) {
+          res.status(400);
+          throw new Error("Please provide at least one shift");
+        }
+
         try {
           // Get the companies
           const companies = await Company.find({
             code: companyCode,
             shift: { $in: shifts },
           })
+            .select("-updatedAt -createdAt -website")
             .lean()
             .orFail();
 
-          console.log(companies);
+          try {
+            // Update the customer
+            await User.findByIdAndUpdate(
+              { _id: customerId },
+              { $set: { companies: companies } },
+              { returnDocument: "after" }
+            ).orFail();
 
-          // try {
-          //   // Update the customer
-          //   const updatedCustomer = await User.findByIdAndUpdate(
-          //     { _id: customerId },
-          //     { $set: { companies: companies } }
-          //   );
-
-          //   console.log(updatedCustomer);
-          // } catch (err) {
-          //   throw err;
-          // }
+            // Send the companies
+            res.status(201).json(companies);
+          } catch (err) {
+            throw err;
+          }
         } catch (err) {
           throw err;
         }
