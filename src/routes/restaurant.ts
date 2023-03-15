@@ -175,7 +175,11 @@ router.post(
             const schedule = {
               date,
               status: "ACTIVE",
-              company: { _id: company.id, name: company.name },
+              company: {
+                _id: company.id,
+                name: company.name,
+                shift: company.shift,
+              },
             };
 
             // Add the schedule details to schedules

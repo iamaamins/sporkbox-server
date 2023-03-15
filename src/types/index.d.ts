@@ -94,6 +94,7 @@ export interface ISchedulesSchema {
   company: {
     _id: Types.ObjectId;
     name: string;
+    shift: string;
   };
   status: string;
 }
@@ -156,6 +157,7 @@ export interface IOrdersPayload {
   ordersPayload: {
     itemId: string;
     quantity: number;
+    companyId: string;
     restaurantId: string;
     deliveryDate: number;
     addedIngredients?: string[];

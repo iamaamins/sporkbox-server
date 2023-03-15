@@ -91,6 +91,10 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
           return {
             ...rest,
             date: schedule.date,
+            company: {
+              _id: schedule.company._id,
+              shift: schedule.company.shift,
+            },
           };
         })
       )
