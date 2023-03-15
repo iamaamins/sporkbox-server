@@ -114,6 +114,18 @@ export function checkActions(
   }
 }
 
+// Check shifts function
+export function checkShifts(res: Response, providedShifts: string[]) {
+  if (
+    !providedShifts.every((providedShift) =>
+      ["day", "night"].includes(providedShift)
+    )
+  ) {
+    res.status(400);
+    throw new Error("Please provide a correct shift");
+  }
+}
+
 // Resize image
 export async function resizeImage(
   res: Response,

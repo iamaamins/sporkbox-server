@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields, checkActions } from "../utils";
+import { setCookie, deleteFields, checkActions, checkShifts } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
 import {
   ICustomerPayload,
@@ -256,6 +256,9 @@ router.patch(
           res.status(400);
           throw new Error("Please provide at least one shift");
         }
+
+        // Check provided shifts validity
+        checkShifts(res, shifts);
 
         try {
           // Get the companies
