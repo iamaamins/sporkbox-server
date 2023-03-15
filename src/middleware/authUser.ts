@@ -1,5 +1,5 @@
 import User from "../models/user";
-import { IUserCompany } from "../types";
+import { IUser, IUserCompany } from "../types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import company from "../models/company";

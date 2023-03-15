@@ -127,20 +127,7 @@ export interface IUserSchema {
   password: string;
   status: string;
   shifts: string[];
-  companies: {
-    _id: Types.ObjectId;
-    name: string;
-    shift: string;
-    address: {
-      city: string;
-      state: string;
-      zip: string;
-      addressLine1: string;
-      addressLine2?: string;
-    };
-    code: string;
-    dailyBudget: number;
-  };
+  companies: IUserCompany[];
   restaurant: Types.ObjectId;
 }
 
@@ -180,6 +167,7 @@ export interface IUserCompany {
   _id: Types.ObjectId;
   name: string;
   code: string;
+  shift: string;
   address: {
     city: string;
     state: string;
@@ -196,8 +184,9 @@ interface IUser {
   lastName: string;
   email: string;
   role: string;
-  status?: string;
-  company?: IUserCompany;
+  status: string;
+  shifts?: string[];
+  companies?: IUserCompany[];
 }
 
 export interface ICompanyPayload {

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import { Response } from "express";
 import Restaurant from "../models/restaurant";
-import { ISortScheduledRestaurant } from "../types";
+import { ISortScheduledRestaurant, IUserCompany } from "../types";
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -55,7 +55,10 @@ export const sortByDate = (
 export const now = Date.now();
 
 // Get upcoming restaurant
-export async function getUpcomingRestaurants(companyName: string) {
+export async function getUpcomingRestaurants(companies: IUserCompany[]) {
+  // Get company names
+  const companyNames = companies.map((company) => company.name);
+
   try {
     // Get the scheduled restaurants
     const response = await Restaurant.find({
@@ -63,7 +66,7 @@ export async function getUpcomingRestaurants(companyName: string) {
         $elemMatch: {
           date: { $gte: now },
           status: "ACTIVE",
-          "company.name": companyName,
+          "company.name": { $in: companyNames },
         },
       },
     }).select("-__v -updatedAt -createdAt -address");
@@ -76,7 +79,7 @@ export async function getUpcomingRestaurants(companyName: string) {
           (schedule) =>
             schedule.status === "ACTIVE" &&
             convertDateToMS(schedule.date) >= now &&
-            schedule.company.name === companyName
+            companyNames.includes(schedule.company.name)
         ),
       }))
       .map((upcomingWeekRestaurant) =>
@@ -115,12 +118,8 @@ export function checkActions(
 }
 
 // Check shifts function
-export function checkShifts(res: Response, providedShifts: string[]) {
-  if (
-    !providedShifts.every((providedShift) =>
-      ["day", "night"].includes(providedShift)
-    )
-  ) {
+export function checkShifts(res: Response, shifts: string[]) {
+  if (!shifts.every((shift) => ["day", "night"].includes(shift))) {
     res.status(400);
     throw new Error("Please provide a correct shift");
   }

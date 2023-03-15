@@ -35,11 +35,11 @@ router.get(
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
-      const { role, company } = req.user;
+      const { role, companies } = req.user;
 
-      if (role === "CUSTOMER" && company) {
+      if (role === "CUSTOMER" && companies && companies.length > 0) {
         // Get upcoming week restaurants
-        const upcomingRestaurants = await getUpcomingRestaurants(company.name);
+        const upcomingRestaurants = await getUpcomingRestaurants(companies);
 
         // Send the data with response
         res.status(200).json(upcomingRestaurants);
