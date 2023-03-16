@@ -84,7 +84,7 @@ const userSchema = new Schema<IUserSchema>(
           lowercase: true,
           required: [true, "Please provide a code"],
         },
-        dailyBudget: {
+        shiftBudget: {
           type: Number,
           required: [true, "Please provide a daily budget"],
         },

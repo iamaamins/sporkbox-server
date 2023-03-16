@@ -21,7 +21,7 @@ export interface ICompanySchema {
   };
   code: string;
   status: string;
-  dailyBudget: number;
+  shiftBudget: number;
 }
 
 export interface IFavoriteSchema {
@@ -44,6 +44,7 @@ export interface IOrderSchema {
   company: {
     _id: Types.ObjectId;
     name: string;
+    shift: string;
   };
   delivery: {
     date: Date;
@@ -177,7 +178,7 @@ export interface IUserCompany {
     addressLine1: string;
     addressLine2?: string;
   };
-  dailyBudget: number;
+  shiftBudget: number;
 }
 
 interface IUser {
@@ -199,7 +200,7 @@ export interface ICompanyPayload {
   state: string;
   shift: string;
   website: string;
-  dailyBudget: number;
+  shiftBudget: number;
   addressLine1: string;
   addressLine2?: string;
 }

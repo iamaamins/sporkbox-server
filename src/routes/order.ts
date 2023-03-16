@@ -205,6 +205,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
               company: {
                 _id: company._id,
                 name: company.name,
+                shift: company.shift,
               },
               delivery: {
                 date: orderPayload.deliveryDate,
@@ -286,16 +287,16 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             return {
               upcomingDate,
               budgetOnHand:
-                ordersTotalOnDate > company.dailyBudget
+                ordersTotalOnDate > company.shiftBudget
                   ? 0
-                  : formatNumberToUS(company.dailyBudget - ordersTotalOnDate),
+                  : formatNumberToUS(company.shiftBudget - ordersTotalOnDate),
             };
           } else {
             // If no upcoming orders are found with the
             // date then return the date and company budget
             return {
               upcomingDate,
-              budgetOnHand: company.dailyBudget,
+              budgetOnHand: company.shiftBudget,
             };
           }
         });

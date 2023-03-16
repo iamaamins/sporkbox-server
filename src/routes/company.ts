@@ -23,7 +23,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         state,
         shift,
         website,
-        dailyBudget,
+        shiftBudget,
         addressLine1,
         addressLine2,
       }: ICompanyPayload = req.body;
@@ -37,7 +37,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         !zip ||
         !shift ||
         !website ||
-        !dailyBudget ||
+        !shiftBudget ||
         !addressLine1
       ) {
         res.status(400);
@@ -58,7 +58,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
             addressLine1,
             addressLine2,
           },
-          dailyBudget,
+          shiftBudget,
           status: "ACTIVE",
         });
 
@@ -129,7 +129,7 @@ router.patch(
           state,
           shift,
           website,
-          dailyBudget,
+          shiftBudget,
           addressLine1,
           addressLine2,
         }: ICompanyPayload = req.body;
@@ -144,7 +144,7 @@ router.patch(
           !shift ||
           !website ||
           !companyId ||
-          !dailyBudget ||
+          !shiftBudget ||
           !addressLine1
         ) {
           res.status(400);
@@ -167,7 +167,7 @@ router.patch(
                 addressLine1,
                 addressLine2,
               },
-              dailyBudget,
+              shiftBudget,
             },
             { returnDocument: "after" }
           )

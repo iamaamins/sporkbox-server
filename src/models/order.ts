@@ -45,6 +45,11 @@ const orderSchema = new Schema<IOrderSchema>(
         trim: true,
         required: [true, "Please provide company name"],
       },
+      shift: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide company name"],
+      },
     },
     delivery: {
       date: {

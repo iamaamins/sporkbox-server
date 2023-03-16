@@ -53,7 +53,7 @@ const companySchema = new Schema<ICompanySchema>(
       lowercase: true,
       required: [true, "Please provide a code"],
     },
-    dailyBudget: {
+    shiftBudget: {
       type: Number,
       required: [true, "Please provide a daily budget"],
     },
