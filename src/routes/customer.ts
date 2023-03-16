@@ -274,8 +274,7 @@ router.patch(
             // Update the customer
             await User.findByIdAndUpdate(
               { _id: customerId },
-              { $set: { companies: companies } },
-              { returnDocument: "after" }
+              { $set: { companies: companies } }
             ).orFail();
 
             // Send the companies

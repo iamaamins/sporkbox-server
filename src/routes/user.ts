@@ -28,10 +28,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
   try {
     // Find the user
-    const user = await User.findOne({ email })
-      .populate("company", "-__v -updatedAt -createdAt -code -website")
-      .lean()
-      .orFail();
+    const user = await User.findOne({ email }).lean().orFail();
 
     // If user exists and password matches
     if (user && (await bcrypt.compare(password, user.password))) {
