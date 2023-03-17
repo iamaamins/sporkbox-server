@@ -300,7 +300,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             // If upcoming orders are found on the date
             if (upcomingOrdersOnShift.length > 0) {
               // Calculate the upcoming orders total
-              const upcomingOrdersTotal = upcomingOrdersOnShift.reduce(
+              const upcomingOrdersTotalOnShift = upcomingOrdersOnShift.reduce(
                 (acc, order) => acc + order.item.total,
                 0
               );
@@ -309,9 +309,12 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
               return {
                 ...upcomingDateAndShift,
                 shift: company.shift,
-                budgetCredit: formatNumberToUS(
-                  company.shiftBudget - upcomingOrdersTotal
-                ),
+                budgetCredit:
+                  upcomingOrdersTotalOnShift > company.shiftBudget
+                    ? 0
+                    : formatNumberToUS(
+                        company.shiftBudget - upcomingOrdersTotalOnShift
+                      ),
               };
             } else {
               // If no upcoming orders are found with the
