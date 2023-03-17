@@ -1,3 +1,4 @@
+import User from "../models/user";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -45,33 +46,57 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
       }
 
       try {
-        // Create a new company
-        const response = await Company.create({
-          name,
-          code,
-          shift,
-          website,
-          address: {
-            city,
-            state,
-            zip,
-            addressLine1,
-            addressLine2,
-          },
-          shiftBudget,
-          status: "ACTIVE",
-        });
+        // Check if a company exists with the provided shift
+        const companyExist = await Company.findOne({ code, shift });
 
-        // Convert company document to object
-        const company = response.toObject();
+        // Throw error if a company with the same shift exists
+        if (companyExist) {
+          res.status(400);
+          throw new Error("A company with a same shift already exists");
+        }
 
-        // Delete fields
-        deleteFields(company);
+        try {
+          // Create a new company
+          const response = await Company.create({
+            name,
+            code,
+            shift,
+            website,
+            address: {
+              city,
+              state,
+              zip,
+              addressLine1,
+              addressLine2,
+            },
+            shiftBudget,
+            status: "ACTIVE",
+          });
 
-        // Send the company with response
-        res.status(200).json(company);
+          try {
+            // Add the new shift to all users
+            await User.updateMany(
+              { "companies.code": code },
+              { $push: { shifts: response.shift } }
+            );
+
+            // Convert company document to object
+            const company = response.toObject();
+
+            // Delete fields
+            deleteFields(company);
+
+            // Send the company with response
+            res.status(200).json(company);
+          } catch (err) {
+            throw err;
+          }
+        } catch (err) {
+          // If company isn't created successfully
+          throw err;
+        }
       } catch (err) {
-        // If company isn't created successfully
+        // If company isn't fetched successfully
         throw err;
       }
     } else {
@@ -123,11 +148,9 @@ router.patch(
         const { companyId } = req.params;
         const {
           name,
-          code,
           city,
           zip,
           state,
-          shift,
           website,
           shiftBudget,
           addressLine1,
@@ -138,10 +161,8 @@ router.patch(
         if (
           !zip ||
           !name ||
-          !code ||
           !city ||
           !state ||
-          !shift ||
           !website ||
           !companyId ||
           !shiftBudget ||
@@ -157,8 +178,6 @@ router.patch(
             { _id: companyId },
             {
               name,
-              code,
-              shift,
               website,
               address: {
                 city,
