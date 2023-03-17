@@ -112,9 +112,6 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       // Get data from req user and body
       const { ordersPayload }: IOrdersPayload = req.body;
 
-      // Declare company
-      let company: IUserCompany;
-
       // If required data aren't provided
       if (
         !ordersPayload ||
@@ -164,9 +161,11 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         );
 
         // Find the company
-        company = companies.find(
+        const company = companies.find(
           (company) => company._id.toString() === orderPayload.companyId
-        ) as IUserCompany;
+        );
+
+        console.log(ordersPayload);
 
         if (restaurant && company) {
           // Find the item
@@ -240,9 +239,13 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         } else {
           // If restaurant isn't found
           res.status(400);
-          throw new Error("Restaurant is not found");
+          throw new Error("Restaurant or company is not found");
         }
       });
+
+      console.log(orders);
+
+      return res.end();
 
       // TODO: Get the unique date for each shift
 
@@ -254,131 +257,131 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             upcomingDates.indexOf(upcomingDate) === index
         );
 
-      try {
-        // Get customer orders which delivery dates are
-        // greater than or equal to the smallest upcoming dates
-        const customerOrders = await Order.find({
-          "customer._id": _id,
-          status: {
-            $ne: "PENDING",
-          },
-          "delivery.date": {
-            $gte: Math.min(...upcomingDates),
-          },
-        }).select("delivery item");
+      // try {
+      //   // Get customer orders which delivery dates are
+      //   // greater than or equal to the smallest upcoming dates
+      //   const customerOrders = await Order.find({
+      //     "customer._id": _id,
+      //     status: {
+      //       $ne: "PENDING",
+      //     },
+      //     "delivery.date": {
+      //       $gte: Math.min(...upcomingDates),
+      //     },
+      //   }).select("delivery item");
 
-        // Get next upcoming dates and budget on hand
-        const budgetOnDates = upcomingDates.map((upcomingDate) => {
-          // Find the upcoming orders which match the date
-          const ordersOnDate = customerOrders.filter(
-            (customerOrder) =>
-              convertDateToMS(customerOrder.delivery.date) === upcomingDate
-          );
+      //   // Get next upcoming dates and budget on hand
+      //   const budgetOnDates = upcomingDates.map((upcomingDate) => {
+      //     // Find the upcoming orders which match the date
+      //     const ordersOnDate = customerOrders.filter(
+      //       (customerOrder) =>
+      //         convertDateToMS(customerOrder.delivery.date) === upcomingDate
+      //     );
 
-          // If upcoming orders are found on the date
-          if (ordersOnDate.length > 0) {
-            // Get upcoming orders total on the date
-            const ordersTotalOnDate = ordersOnDate.reduce(
-              (acc, curr) => acc + curr.item.total,
-              0
-            );
+      //     // If upcoming orders are found on the date
+      //     if (ordersOnDate.length > 0) {
+      //       // Get upcoming orders total on the date
+      //       const ordersTotalOnDate = ordersOnDate.reduce(
+      //         (acc, curr) => acc + curr.item.total,
+      //         0
+      //       );
 
-            // Return the date and budget on hand
-            return {
-              upcomingDate,
-              budgetOnHand:
-                ordersTotalOnDate > company.shiftBudget
-                  ? 0
-                  : formatNumberToUS(company.shiftBudget - ordersTotalOnDate),
-            };
-          } else {
-            // If no upcoming orders are found with the
-            // date then return the date and company budget
-            return {
-              upcomingDate,
-              budgetOnHand: company.shiftBudget,
-            };
-          }
-        });
+      //       // Return the date and budget on hand
+      //       return {
+      //         upcomingDate,
+      //         budgetOnHand:
+      //           ordersTotalOnDate > company.shiftBudget
+      //             ? 0
+      //             : formatNumberToUS(company.shiftBudget - ordersTotalOnDate),
+      //       };
+      //     } else {
+      //       // If no upcoming orders are found with the
+      //       // date then return the date and company budget
+      //       return {
+      //         upcomingDate,
+      //         budgetOnHand: company.shiftBudget,
+      //       };
+      //     }
+      //   });
 
-        // Create payable items with date and amount
-        const payableItems = budgetOnDates
-          .map((budgetOnDate) => {
-            return {
-              date: convertDateToText(budgetOnDate.upcomingDate),
-              items: orders
-                .filter(
-                  (order) => order.delivery.date === budgetOnDate.upcomingDate
-                )
-                .map((order) => order.item.name),
-              amount:
-                budgetOnDate.budgetOnHand -
-                orders
-                  .filter(
-                    (order) => order.delivery.date === budgetOnDate.upcomingDate
-                  )
-                  .reduce((acc, curr) => acc + curr.item.total, 0),
-            };
-          })
-          .filter((payableItem) => payableItem.amount < 0);
+      //   // Create payable items with date and amount
+      //   const payableItems = budgetOnDates
+      //     .map((budgetOnDate) => {
+      //       return {
+      //         date: convertDateToText(budgetOnDate.upcomingDate),
+      //         items: orders
+      //           .filter(
+      //             (order) => order.delivery.date === budgetOnDate.upcomingDate
+      //           )
+      //           .map((order) => order.item.name),
+      //         amount:
+      //           budgetOnDate.budgetOnHand -
+      //           orders
+      //             .filter(
+      //               (order) => order.delivery.date === budgetOnDate.upcomingDate
+      //             )
+      //             .reduce((acc, curr) => acc + curr.item.total, 0),
+      //       };
+      //     })
+      //     .filter((payableItem) => payableItem.amount < 0);
 
-        if (payableItems.length > 0) {
-          // Create random pending Id
-          const pendingOrderId = generateRandomString();
+      //   if (payableItems.length > 0) {
+      //     // Create random pending Id
+      //     const pendingOrderId = generateRandomString();
 
-          // Create stripe checkout sessions
-          const session = await stripeCheckout(
-            email,
-            pendingOrderId,
-            payableItems
-          );
+      //     // Create stripe checkout sessions
+      //     const session = await stripeCheckout(
+      //       email,
+      //       pendingOrderId,
+      //       payableItems
+      //     );
 
-          // Create pending orders
-          const pendingOrders = orders.map((order) => ({
-            ...order,
-            pendingOrderId,
-            status: "PENDING",
-          }));
+      //     // Create pending orders
+      //     const pendingOrders = orders.map((order) => ({
+      //       ...order,
+      //       pendingOrderId,
+      //       status: "PENDING",
+      //     }));
 
-          try {
-            // Create orders
-            await Order.insertMany(pendingOrders);
+      //     try {
+      //       // Create orders
+      //       await Order.insertMany(pendingOrders);
 
-            // Send the session url with response
-            res.status(200).json(session.url);
-          } catch (err) {
-            // If orders fails to create
-            throw err;
-          }
-        } else {
-          try {
-            // Create orders
-            const response = await Order.insertMany(orders);
+      //       // Send the session url with response
+      //       res.status(200).json(session.url);
+      //     } catch (err) {
+      //       // If orders fails to create
+      //       throw err;
+      //     }
+      //   } else {
+      //     try {
+      //       // Create orders
+      //       const response = await Order.insertMany(orders);
 
-            // Format orders for customer
-            const ordersForCustomers = response.map((order) => ({
-              _id: order._id,
-              item: order.item,
-              status: order.status,
-              createdAt: order.createdAt,
-              restaurant: order.restaurant,
-              delivery: {
-                date: order.delivery.date,
-              },
-              hasReviewed: order.hasReviewed,
-            }));
+      //       // Format orders for customer
+      //       const ordersForCustomers = response.map((order) => ({
+      //         _id: order._id,
+      //         item: order.item,
+      //         status: order.status,
+      //         createdAt: order.createdAt,
+      //         restaurant: order.restaurant,
+      //         delivery: {
+      //           date: order.delivery.date,
+      //         },
+      //         hasReviewed: order.hasReviewed,
+      //       }));
 
-            // Send the data with response
-            res.status(201).json(ordersForCustomers);
-          } catch (err) {
-            // If orders fails to create
-            throw err;
-          }
-        }
-      } catch (err) {
-        // If upcoming orders fails to fetch
-        throw err;
-      }
+      //       // Send the data with response
+      //       res.status(201).json(ordersForCustomers);
+      //     } catch (err) {
+      //       // If orders fails to create
+      //       throw err;
+      //     }
+      //   }
+      // } catch (err) {
+      //   // If upcoming orders fails to fetch
+      //   throw err;
+      // }
     } else {
       // If role isn't customer
       res.status(403);

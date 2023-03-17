@@ -56,8 +56,8 @@ export const now = Date.now();
 
 // Get upcoming restaurant
 export async function getUpcomingRestaurants(companies: IUserCompany[]) {
-  // Get company names
-  const companyNames = companies.map((company) => company.name);
+  // Get company ids
+  const companyIds = companies.map((company) => company._id.toString());
 
   try {
     // Get the scheduled restaurants
@@ -66,7 +66,7 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
         $elemMatch: {
           date: { $gte: now },
           status: "ACTIVE",
-          "company.name": { $in: companyNames },
+          "company._id": { $in: companyIds },
         },
       },
     }).select("-__v -updatedAt -createdAt -address");
@@ -79,7 +79,7 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
           (schedule) =>
             schedule.status === "ACTIVE" &&
             convertDateToMS(schedule.date) >= now &&
-            companyNames.includes(schedule.company.name)
+            companyIds.includes(schedule.company._id.toString())
         ),
       }))
       .map((upcomingWeekRestaurant) =>
