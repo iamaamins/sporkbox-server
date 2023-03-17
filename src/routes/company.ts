@@ -193,11 +193,28 @@ router.patch(
             .lean()
             .orFail();
 
-          // Delete fields
-          deleteFields(updatedCompany);
+          try {
+            // Update all users's company
+            await User.updateMany(
+              { "companies._id": companyId },
+              {
+                $set: {
+                  "companies.$.name": updatedCompany.name,
+                  "companies.$.shiftBudget": updatedCompany.shiftBudget,
+                  "companies.$.address": updatedCompany.address,
+                },
+              }
+            );
 
-          // Send the updated company with response
-          res.status(201).json(updatedCompany);
+            // Delete fields
+            deleteFields(updatedCompany);
+
+            // Send the updated company with response
+            res.status(201).json(updatedCompany);
+          } catch (err) {
+            // If users aren't updated successfully
+            throw err;
+          }
         } catch (err) {
           // If company isn't updated successfully
           throw err;
