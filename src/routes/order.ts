@@ -310,7 +310,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                 ...upcomingDateAndShift,
                 shift: company.shift,
                 budgetCredit:
-                  upcomingOrdersTotalOnShift > company.shiftBudget
+                  upcomingOrdersTotalOnShift >= company.shiftBudget
                     ? 0
                     : formatNumberToUS(
                         company.shiftBudget - upcomingOrdersTotalOnShift
