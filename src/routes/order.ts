@@ -41,7 +41,9 @@ router.get(
             status: "PROCESSING",
           })
             .sort({ "delivery.date": 1 })
-            .select("-__v -updatedAt -customer -delivery.address -company");
+            .select(
+              "-__v -updatedAt -customer -delivery.address -company.name -company._id"
+            );
 
           // Send the data with response
           res.status(200).json(customerUpcomingOrders);
@@ -85,7 +87,9 @@ router.get(
           })
             .limit(+limit)
             .sort({ "delivery.date": -1 })
-            .select("-__v -updatedAt -customer -delivery.address -company");
+            .select(
+              "-__v -updatedAt -customer -delivery.address -company.name -company._id"
+            );
 
           // Send the data with response
           res.status(200).json(customerDeliveredOrders);
@@ -393,8 +397,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
               delivery: {
                 date: order.delivery.date,
               },
-              shift: order.company.shift,
               hasReviewed: order.hasReviewed,
+              company: { shift: order.company.shift },
             }));
 
             // Send the data with response
