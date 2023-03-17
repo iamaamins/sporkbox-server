@@ -180,9 +180,9 @@ router.patch(
               name,
               website,
               address: {
+                zip,
                 city,
                 state,
-                zip,
                 addressLine1,
                 addressLine2,
               },

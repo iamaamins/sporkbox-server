@@ -34,17 +34,22 @@ router.post(
     }
 
     try {
-      // Get the companies with code
-      const companies = await Company.find({ code: companyCode })
+      // Get the active companies with provided code
+      const activeCompanies = await Company.find({
+        code: companyCode,
+        status: "ACTIVE",
+      })
         .select("-updatedAt -createdAt -website")
         .lean()
         .orFail();
 
-      // Get the first created company
-      const defaultCompany = companies[0];
+      // Get the first active company
+      const defaultCompany = activeCompanies[0];
 
-      // Available shifts
-      const shifts = companies.map((company) => company.shift);
+      // Get available shifts of the active companies
+      const shifts = activeCompanies.map(
+        (activeCompany) => activeCompany.shift
+      );
 
       try {
         // Create salt
