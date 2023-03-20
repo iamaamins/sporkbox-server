@@ -43,9 +43,6 @@ router.post(
         .lean()
         .orFail();
 
-      // Get the first active company
-      const defaultCompany = activeCompanies[0];
-
       // Get available shifts of the active companies
       const shifts = activeCompanies.map(
         (activeCompany) => activeCompany.shift
@@ -69,33 +66,18 @@ router.post(
               status: "ACTIVE",
               role: "CUSTOMER",
               password: hashedPassword,
+              companies: activeCompanies,
             });
 
-            try {
-              // Add the default company to companies
-              await customer.updateOne({
-                $push: { companies: defaultCompany },
-              });
+            // Generate jwt token and set
+            // cookie to the response header
+            setCookie(res, customer._id);
 
-              // Create customer
-              const customerWithCompanies = {
-                ...customer.toObject(),
-                companies: [defaultCompany],
-              };
+            // Delete fields
+            deleteFields(customer, ["createdAt", "password"]);
 
-              // Generate jwt token and set
-              // cookie to the response header
-              setCookie(res, customerWithCompanies._id);
-
-              // Delete fields
-              deleteFields(customer, ["createdAt", "password"]);
-
-              // Send the data with response
-              res.status(201).json(customerWithCompanies);
-            } catch (err) {
-              // If company isn't populated
-              throw err;
-            }
+            // Send the data with response
+            res.status(201).json(customer);
           } catch (err) {
             // If user isn't created
             throw err;

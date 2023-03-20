@@ -268,7 +268,9 @@ router.patch(
             try {
               // Remove the shift and the company status of users
               await User.updateMany(
-                { "companies._id": updatedCompany._id },
+                {
+                  "companies._id": updatedCompany._id,
+                },
                 {
                   $pull: {
                     shifts: updatedCompany.shift,
@@ -295,9 +297,6 @@ router.patch(
                 {
                   $push: {
                     shifts: updatedCompany.shift,
-                  },
-                  $set: {
-                    "companies.$.status": updatedCompany.status,
                   },
                 }
               );
