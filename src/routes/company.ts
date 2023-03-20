@@ -74,17 +74,25 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
           });
 
           try {
-            // Add the new shift to all users
-            await User.updateMany(
-              { "companies.code": code },
-              { $push: { shifts: response.shift } }
-            );
-
             // Convert company document to object
             const company = response.toObject();
 
             // Delete fields
             deleteFields(company);
+
+            // Destructure the company
+            const { website, createdAt, ...rest } = company;
+
+            // Add the new shift to all users
+            await User.updateMany(
+              { "companies.code": code },
+              {
+                $push: {
+                  shifts: company.shift,
+                  companies: { ...rest, status: "ARCHIVED" },
+                },
+              }
+            );
 
             // Send the company with response
             res.status(200).json(company);
