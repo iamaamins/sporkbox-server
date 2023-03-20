@@ -245,15 +245,15 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         }
       });
 
-      // Upcoming dates and shifts
+      // Unique upcoming dates and shifts
       const upcomingDatesAndShifts = upcomingRestaurants
         .map((upcomingRestaurant) => ({
           date: convertDateToMS(upcomingRestaurant.date),
           companyId: upcomingRestaurant.company._id.toString(),
         }))
         .filter(
-          (dateAndShift, index, dateAndShifts) =>
-            dateAndShifts.findIndex(
+          (dateAndShift, index, datesAndShifts) =>
+            datesAndShifts.findIndex(
               (element) =>
                 element.date === dateAndShift.date &&
                 element.companyId === dateAndShift.companyId
@@ -332,9 +332,11 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         const payableItems = budgetCreditOnShifts
           .map((budgetCreditOnShift) => {
             return {
-              date: `${convertDateToText(budgetCreditOnShift.date)} - ${
-                budgetCreditOnShift.shift
-              }`,
+              date: `${convertDateToText(
+                budgetCreditOnShift.date
+              )} - ${`${budgetCreditOnShift.shift[0].toUpperCase()}${budgetCreditOnShift.shift.slice(
+                1
+              )}`}`,
               items: orders
                 .filter(
                   (order) =>
