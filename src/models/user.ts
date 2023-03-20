@@ -78,6 +78,11 @@ const userSchema = new Schema<IUserSchema>(
             trim: true,
           },
         },
+        status: {
+          type: String,
+          enum: ["ARCHIVED", "ACTIVE"],
+          required: [true, "Please provide a status"],
+        },
         code: {
           type: String,
           trim: true,

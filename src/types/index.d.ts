@@ -21,6 +21,7 @@ export interface ICompanySchema {
   };
   code: string;
   status: string;
+  createdAt: Date;
   shiftBudget: number;
 }
 
@@ -178,6 +179,7 @@ export interface IUserCompany {
     addressLine1: string;
     addressLine2?: string;
   };
+  status: string;
   shiftBudget: number;
 }
 

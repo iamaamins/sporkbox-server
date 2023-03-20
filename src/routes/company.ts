@@ -200,8 +200,8 @@ router.patch(
               {
                 $set: {
                   "companies.$.name": updatedCompany.name,
-                  "companies.$.shiftBudget": updatedCompany.shiftBudget,
                   "companies.$.address": updatedCompany.address,
+                  "companies.$.shiftBudget": updatedCompany.shiftBudget,
                 },
               }
             );
@@ -264,8 +264,51 @@ router.patch(
             .lean()
             .orFail();
 
-          // Send data with response
-          res.status(200).json(updatedCompany);
+          if (updatedCompany.status === "ARCHIVED") {
+            try {
+              // Remove the shift and the company status of users
+              await User.updateMany(
+                { "companies._id": updatedCompany._id },
+                {
+                  $pull: {
+                    shifts: updatedCompany.shift,
+                  },
+                  $set: {
+                    "companies.$.status": updatedCompany.status,
+                  },
+                }
+              );
+
+              // Send data with response
+              res.status(200).json(updatedCompany);
+            } catch (err) {
+              // If users aren't updated
+              throw err;
+            }
+          } else if (updatedCompany.status === "ACTIVE") {
+            // Add the shift and the company from all users
+
+            try {
+              // Remove the shift and the company from all users
+              await User.updateMany(
+                { "companies.code": updatedCompany.code },
+                {
+                  $push: {
+                    shifts: updatedCompany.shift,
+                  },
+                  $set: {
+                    "companies.$.status": updatedCompany.status,
+                  },
+                }
+              );
+
+              // Send data with response
+              res.status(200).json(updatedCompany);
+            } catch (err) {
+              // If users aren't updated
+              throw err;
+            }
+          }
         } catch (err) {
           // If company status isn't changed successfully
           throw err;
