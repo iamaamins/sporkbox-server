@@ -34,19 +34,18 @@ router.post(
     }
 
     try {
-      // Get the active companies with provided code
-      const activeCompanies = await Company.find({
+      // Get the companies with provided code
+      const companies = await Company.find({
         code: companyCode,
-        status: "ACTIVE",
       })
         .select("-updatedAt -createdAt -website")
         .lean()
         .orFail();
 
-      // Get available shifts of the active companies
-      const shifts = activeCompanies.map(
-        (activeCompany) => activeCompany.shift
-      );
+      // Get shifts of the active companies
+      const shifts = companies
+        .filter((company) => company.status === "ACTIVE")
+        .map((activeCompany) => activeCompany.shift);
 
       try {
         // Create salt
@@ -65,8 +64,8 @@ router.post(
               shifts,
               status: "ACTIVE",
               role: "CUSTOMER",
+              companies: companies,
               password: hashedPassword,
-              companies: activeCompanies,
             });
 
             // Generate jwt token and set
@@ -248,14 +247,45 @@ router.patch(
         checkShifts(res, shifts);
 
         try {
-          // Get the companies
-          const companies = await Company.find({
+          // Get all the companies
+          const response = await Company.find({
             code: companyCode,
-            shift: { $in: shifts },
           })
-            .select("-updatedAt -createdAt -website")
+            .select("-__v -updatedAt -createdAt -website")
             .lean()
             .orFail();
+
+          // Get active companies
+          const activeCompanies = response.filter(
+            (company) => company.status === "ACTIVE"
+          );
+
+          // If provided shift doesn't exist in active companies
+          if (
+            !activeCompanies.some((activeCompany) =>
+              shifts.includes(activeCompany.shift)
+            )
+          ) {
+            res.status(404);
+            throw new Error("Please provide valid shifts");
+          }
+
+          // Change active company status
+          // to archive if the shift of the company
+          // doesn't match with one of the provided shifts
+          const updatedCompanies = activeCompanies.map((company) =>
+            shifts.includes(company.shift)
+              ? company
+              : { ...company, status: "ARCHIVED" }
+          );
+
+          // Get inactive companies
+          const archivedCompanies = response.filter(
+            (company) => company.status !== "ACTIVE"
+          );
+
+          // Create all companies
+          const companies = [...archivedCompanies, ...updatedCompanies];
 
           try {
             // Update the customer
