@@ -57,7 +57,9 @@ export const now = Date.now();
 // Get upcoming restaurant
 export async function getUpcomingRestaurants(companies: IUserCompany[]) {
   // Get company ids
-  const companyIds = companies.map((company) => company._id.toString());
+  const companyIds = companies
+    .filter((company) => company.status === "ACTIVE")
+    .map((company) => company._id.toString());
 
   try {
     // Get the scheduled restaurants
