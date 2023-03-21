@@ -273,8 +273,6 @@ router.patch(
               .select("_id")
               .lean();
 
-            console.log(orders);
-
             // Throw error if there are active orders
             if (orders.length > 0) {
               res.status(404);
