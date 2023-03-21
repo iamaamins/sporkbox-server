@@ -42,6 +42,12 @@ router.post(
         .lean()
         .orFail();
 
+      // Change all companies status archived
+      const archivedCompanies = companies.map((company) => ({
+        ...company,
+        status: "ARCHIVED",
+      }));
+
       // Get shifts of the active companies
       const shifts = companies
         .filter((company) => company.status === "ACTIVE")
@@ -64,8 +70,8 @@ router.post(
               shifts,
               status: "ACTIVE",
               role: "CUSTOMER",
-              companies: companies,
               password: hashedPassword,
+              companies: archivedCompanies,
             });
 
             // Generate jwt token and set
