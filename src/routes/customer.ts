@@ -1,14 +1,9 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
+import Order from "../models/order";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
-import {
-  setCookie,
-  deleteFields,
-  checkActions,
-  checkShifts,
-  getUpcomingRestaurants,
-} from "../utils";
+import { setCookie, deleteFields, checkActions, checkShifts } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
 import {
   ICustomerPayload,
@@ -242,7 +237,7 @@ router.patch(
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
-      const { role } = req.user;
+      const { _id, role, companies } = req.user;
 
       if (role === "CUSTOMER") {
         // Destructure data from request
@@ -259,6 +254,23 @@ router.patch(
         checkShifts(res, shifts);
 
         // Get upcoming orders
+        const orders = await Order.find({
+          "customer._id": _id,
+          status: "PROCESSING",
+        })
+          .select("-_id company.shift")
+          .lean();
+
+        // Check if there are active orders on a shift
+        const hasOrdersOnShift = orders
+          .map((order) => order.company.shift)
+          .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
+          .every((shift) => !shifts.includes(shift));
+
+        if (hasOrdersOnShift) {
+          res.status(400);
+          throw new Error("Can't remove a shift with active orders");
+        }
 
         try {
           // Get all the companies
