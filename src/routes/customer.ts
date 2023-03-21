@@ -262,11 +262,15 @@ router.patch(
           .lean();
 
         // Check if there are active orders on a shift
-        const hasOrdersOnShift = orders
-          .map((order) => order.company.shift)
-          .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
-          .every((shift) => !shifts.includes(shift));
+        const hasOrdersOnShift =
+          orders.length > 0 &&
+          orders
+            .map((order) => order.company.shift)
+            .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
+            .every((shift) => !shifts.includes(shift));
 
+        // Throw error if there is active
+        // orders on a shift that is not provided
         if (hasOrdersOnShift) {
           res.status(400);
           throw new Error("Can't remove a shift with active orders");
