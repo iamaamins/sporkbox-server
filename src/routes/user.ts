@@ -7,8 +7,8 @@ import { setCookie, deleteFields } from "../utils";
 import express, { Request, Response } from "express";
 import { IResetPasswordPayload } from "./../types/index.d";
 import {
-  passwordResetConfirmationTemplate,
   passwordResetTemplate,
+  passwordResetConfirmationTemplate,
 } from "../utils/emailTemplates";
 import { IForgotPasswordPayload, ILoginPayload } from "../types";
 

@@ -1,8 +1,6 @@
 import User from "../models/user";
-import { IUser, IUserCompany } from "../types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import company from "../models/company";
 
 export default async function handler(
   req: Request,

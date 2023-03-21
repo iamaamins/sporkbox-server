@@ -2,7 +2,13 @@ import bcrypt from "bcrypt";
 import User from "../models/user";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields, checkActions, checkShifts } from "../utils";
+import {
+  setCookie,
+  deleteFields,
+  checkActions,
+  checkShifts,
+  getUpcomingRestaurants,
+} from "../utils";
 import express, { NextFunction, Request, Response } from "express";
 import {
   ICustomerPayload,
@@ -251,6 +257,8 @@ router.patch(
 
         // Check provided shifts validity
         checkShifts(res, shifts);
+
+        // Get upcoming orders
 
         try {
           // Get all the companies
