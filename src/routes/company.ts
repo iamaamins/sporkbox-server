@@ -2,7 +2,7 @@ import User from "../models/user";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
-import { checkActions, deleteFields } from "../utils";
+import { checkActions, checkShifts, deleteFields } from "../utils";
 import { ICompanyPayload, IStatusChangePayload } from "../types";
 
 // Initialize router
@@ -44,6 +44,9 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         res.status(400);
         throw new Error("Please provide all the fields");
       }
+
+      // Check shift
+      checkShifts(res, [shift]);
 
       try {
         // Check if a company exists with the provided shift
