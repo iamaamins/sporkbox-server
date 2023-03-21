@@ -68,7 +68,7 @@ router.get(
             "schedules.date": {
               $gte: now,
             },
-          }).select("-__v -updatedAt -createdAt -address -items");
+          }).select("-__v -updatedAt -createdAt -address -items -logo");
 
           // Create scheduled restaurants, then flat and sort
           const scheduledRestaurants = response
@@ -150,7 +150,7 @@ router.post(
               returnDocument: "after",
             }
           )
-            .select("-__v -updatedAt -createdAt -address -items")
+            .select("-__v -updatedAt -createdAt -address -items -logo")
             .orFail();
 
           // Check if the restaurant is schedule
@@ -189,6 +189,12 @@ router.post(
               // Save the restaurant
               await updatedRestaurant.save();
 
+              // Get added schedule
+              const addedSchedule =
+                updatedRestaurant.schedules[
+                  updatedRestaurant.schedules.length - 1
+                ];
+
               // Destructure the restaurant object
               const { schedules, ...rest } = updatedRestaurant.toObject();
 
@@ -196,6 +202,7 @@ router.post(
               const scheduledRestaurant = {
                 ...rest,
                 ...schedule,
+                scheduleId: addedSchedule._id,
               };
 
               // Delete fields
