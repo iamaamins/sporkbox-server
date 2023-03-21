@@ -1,4 +1,5 @@
 import User from "../models/user";
+import Order from "../models/order";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
@@ -263,64 +264,83 @@ router.patch(
         checkActions(undefined, action, res);
 
         try {
-          // Find and update company status
-          const updatedCompany = await Company.findOneAndUpdate(
-            { _id: companyId },
-            {
-              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
-            },
-            { returnDocument: "after" }
-          )
-            .select("-__v -updatedAt")
-            .lean()
-            .orFail();
+          // Get the active orders of the company
+          const orders = await Order.find({
+            status: "PROCESSING",
+            "company._id": companyId,
+          })
+            .select("-_id company.shift")
+            .lean();
 
-          if (updatedCompany.status === "ARCHIVED") {
-            try {
-              // Remove the shift and the company status of users
-              await User.updateMany(
-                {
-                  "companies._id": updatedCompany._id,
-                },
-                {
-                  $pull: {
-                    shifts: updatedCompany.shift,
-                  },
-                  $set: {
-                    "companies.$.status": updatedCompany.status,
-                  },
-                }
-              );
+          // Throw error if there are active orders
+          if (orders.length > 0) {
+            res.status(404);
+            throw new Error("Can't archive a company with active orders");
+          }
 
-              // Send data with response
-              res.status(200).json(updatedCompany);
-            } catch (err) {
-              // If users aren't updated
-              throw err;
+          try {
+            // Find and update company status
+            const updatedCompany = await Company.findOneAndUpdate(
+              { _id: companyId },
+              {
+                status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+              },
+              { returnDocument: "after" }
+            )
+              .select("-__v -updatedAt")
+              .lean()
+              .orFail();
+
+            if (updatedCompany.status === "ARCHIVED") {
+              try {
+                // Remove the shift and the company status of users
+                await User.updateMany(
+                  {
+                    "companies._id": updatedCompany._id,
+                  },
+                  {
+                    $pull: {
+                      shifts: updatedCompany.shift,
+                    },
+                    $set: {
+                      "companies.$.status": updatedCompany.status,
+                    },
+                  }
+                );
+
+                // Send data with response
+                res.status(200).json(updatedCompany);
+              } catch (err) {
+                // If users aren't updated
+                throw err;
+              }
+            } else if (updatedCompany.status === "ACTIVE") {
+              // Add the shift and the company from all users
+
+              try {
+                // Remove the shift and the company from all users
+                await User.updateMany(
+                  { "companies.code": updatedCompany.code },
+                  {
+                    $push: {
+                      shifts: updatedCompany.shift,
+                    },
+                  }
+                );
+
+                // Send data with response
+                res.status(200).json(updatedCompany);
+              } catch (err) {
+                // If users aren't updated
+                throw err;
+              }
             }
-          } else if (updatedCompany.status === "ACTIVE") {
-            // Add the shift and the company from all users
-
-            try {
-              // Remove the shift and the company from all users
-              await User.updateMany(
-                { "companies.code": updatedCompany.code },
-                {
-                  $push: {
-                    shifts: updatedCompany.shift,
-                  },
-                }
-              );
-
-              // Send data with response
-              res.status(200).json(updatedCompany);
-            } catch (err) {
-              // If users aren't updated
-              throw err;
-            }
+          } catch (err) {
+            // If company status isn't changed successfully
+            throw err;
           }
         } catch (err) {
-          // If company status isn't changed successfully
+          // If orders aren't fetched successfully
           throw err;
         }
       } else {

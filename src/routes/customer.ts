@@ -253,82 +253,88 @@ router.patch(
         // Check provided shifts validity
         checkShifts(res, shifts);
 
-        // Get upcoming orders
-        const orders = await Order.find({
-          "customer._id": _id,
-          status: "PROCESSING",
-        })
-          .select("-_id company.shift")
-          .lean();
-
-        // Check if required shifts are provided
-        const areRequiredShiftsProvided =
-          orders.length > 0 &&
-          orders
-            .map((order) => order.company.shift)
-            .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
-            .every((shift) => shifts.includes(shift));
-
-        // Throw error if required shifts aren't provided
-        if (!areRequiredShiftsProvided) {
-          res.status(400);
-          throw new Error("Can't remove a shift with active orders");
-        }
-
         try {
-          // Get all the companies
-          const response = await Company.find({
-            code: companyCode,
+          // Get upcoming orders
+          const orders = await Order.find({
+            "customer._id": _id,
+            status: "PROCESSING",
           })
-            .select("-__v -updatedAt -createdAt -website")
-            .lean()
-            .orFail();
+            .select("-_id company.shift")
+            .lean();
 
-          // Get active companies
-          const activeCompanies = response.filter(
-            (company) => company.status === "ACTIVE"
-          );
+          // Check if required shifts are provided
+          const areRequiredShiftsProvided =
+            orders.length > 0 &&
+            orders
+              .map((order) => order.company.shift)
+              .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
+              .every((shift) => shifts.includes(shift));
 
-          // If provided shift doesn't exist in active companies
-          if (
-            !activeCompanies.some((activeCompany) =>
-              shifts.includes(activeCompany.shift)
-            )
-          ) {
-            res.status(404);
-            throw new Error("Please provide valid shifts");
+          // Throw error if required shifts aren't provided
+          if (!areRequiredShiftsProvided) {
+            res.status(400);
+            throw new Error("Can't remove a shift with active orders");
           }
 
-          // Change active company status
-          // to archive if the shift of the company
-          // doesn't match with one of the provided shifts
-          const updatedCompanies = activeCompanies.map((company) =>
-            shifts.includes(company.shift)
-              ? company
-              : { ...company, status: "ARCHIVED" }
-          );
-
-          // Get inactive companies
-          const archivedCompanies = response.filter(
-            (company) => company.status !== "ACTIVE"
-          );
-
-          // Create all companies
-          const companies = [...archivedCompanies, ...updatedCompanies];
-
           try {
-            // Update the customer
-            await User.findByIdAndUpdate(
-              { _id: customerId },
-              { $set: { companies: companies } }
-            ).orFail();
+            // Get all the companies
+            const response = await Company.find({
+              code: companyCode,
+            })
+              .select("-__v -updatedAt -createdAt -website")
+              .lean()
+              .orFail();
 
-            // Send the companies
-            res.status(201).json(companies);
+            // Get active companies
+            const activeCompanies = response.filter(
+              (company) => company.status === "ACTIVE"
+            );
+
+            // If provided shift doesn't exist in active companies
+            if (
+              !activeCompanies.some((activeCompany) =>
+                shifts.includes(activeCompany.shift)
+              )
+            ) {
+              res.status(404);
+              throw new Error("Please provide valid shifts");
+            }
+
+            // Change active company status
+            // to archive if the shift of the company
+            // doesn't match with one of the provided shifts
+            const updatedCompanies = activeCompanies.map((company) =>
+              shifts.includes(company.shift)
+                ? company
+                : { ...company, status: "ARCHIVED" }
+            );
+
+            // Get inactive companies
+            const archivedCompanies = response.filter(
+              (company) => company.status !== "ACTIVE"
+            );
+
+            // Create all companies
+            const companies = [...archivedCompanies, ...updatedCompanies];
+
+            try {
+              // Update the customer
+              await User.findByIdAndUpdate(
+                { _id: customerId },
+                { $set: { companies: companies } }
+              ).orFail();
+
+              // Send the companies
+              res.status(201).json(companies);
+            } catch (err) {
+              throw err;
+            }
           } catch (err) {
+            // If companies aren't fetched successfully
             throw err;
           }
         } catch (err) {
+          // If orders aren't fetched successfully
           throw err;
         }
       } else {
