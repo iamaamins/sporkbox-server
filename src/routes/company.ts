@@ -264,18 +264,22 @@ router.patch(
         checkActions(undefined, action, res);
 
         try {
-          // Get the active orders of the company
-          const orders = await Order.find({
-            status: "PROCESSING",
-            "company._id": companyId,
-          })
-            .select("-_id company.shift")
-            .lean();
+          if (action === "Archive") {
+            // Get the active orders of the company
+            const orders = await Order.find({
+              status: "PROCESSING",
+              "company._id": companyId,
+            })
+              .select("_id")
+              .lean();
 
-          // Throw error if there are active orders
-          if (orders.length > 0) {
-            res.status(404);
-            throw new Error("Can't archive a company with active orders");
+            console.log(orders);
+
+            // Throw error if there are active orders
+            if (orders.length > 0) {
+              res.status(404);
+              throw new Error("Can't archive a company with active orders");
+            }
           }
 
           try {
