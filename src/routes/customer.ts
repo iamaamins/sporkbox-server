@@ -263,12 +263,10 @@ router.patch(
             .lean();
 
           // Check if required shifts are provided
-          const areRequiredShiftsProvided =
-            orders.length > 0 &&
-            orders
-              .map((order) => order.company.shift)
-              .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
-              .every((shift) => shifts.includes(shift));
+          const areRequiredShiftsProvided = orders
+            .map((order) => order.company.shift)
+            .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
+            .every((shift) => shifts.includes(shift));
 
           // Throw error if required shifts aren't provided
           if (!areRequiredShiftsProvided) {
