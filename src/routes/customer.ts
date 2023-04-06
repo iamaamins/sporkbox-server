@@ -1,9 +1,8 @@
 import bcrypt from "bcrypt";
 import User from "../models/user";
-import Order from "../models/order";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
-import { setCookie, deleteFields, checkActions, checkShifts } from "../utils";
+import { setCookie, deleteFields, checkActions, checkShift } from "../utils";
 import express, { NextFunction, Request, Response } from "express";
 import {
   ICustomerPayload,
@@ -237,43 +236,23 @@ router.patch(
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
-      const { _id, role, companies } = req.user;
+      const { role } = req.user;
 
       if (role === "CUSTOMER") {
         // Destructure data from request
         const { customerId, companyCode } = req.params;
-        const { shifts }: IShiftChangePayload = req.body;
+        const { shift }: IShiftChangePayload = req.body;
 
         // If no shift is provided
-        if (shifts.length === 0) {
+        if (!shift || typeof shift !== "string") {
           res.status(400);
-          throw new Error("Please provide at least one shift");
+          throw new Error("Please provide a shift");
         }
 
         // Check provided shifts validity
-        checkShifts(res, shifts);
+        checkShift(res, shift);
 
         try {
-          // Get upcoming orders
-          const orders = await Order.find({
-            "customer._id": _id,
-            status: "PROCESSING",
-          })
-            .select("-_id company.shift")
-            .lean();
-
-          // Check if required shifts are provided
-          const areRequiredShiftsProvided = orders
-            .map((order) => order.company.shift)
-            .filter((shift, index, shifts) => shifts.indexOf(shift) === index)
-            .every((shift) => shifts.includes(shift));
-
-          // Throw error if required shifts aren't provided
-          if (!areRequiredShiftsProvided) {
-            res.status(400);
-            throw new Error("Can't remove a shift with active orders");
-          }
-
           try {
             // Get all the companies
             const response = await Company.find({
@@ -290,19 +269,19 @@ router.patch(
 
             // If provided shift doesn't exist in active companies
             if (
-              !activeCompanies.some((activeCompany) =>
-                shifts.includes(activeCompany.shift)
+              !activeCompanies.some(
+                (activeCompany) => activeCompany.shift === shift
               )
             ) {
               res.status(404);
-              throw new Error("Please provide valid shifts");
+              throw new Error("Please provide a valid shift");
             }
 
             // Change active company status
             // to archive if the shift of the company
             // doesn't match with one of the provided shifts
             const updatedCompanies = activeCompanies.map((company) =>
-              shifts.includes(company.shift)
+              company.shift === shift
                 ? company
                 : { ...company, status: "ARCHIVED" }
             );

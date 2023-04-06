@@ -3,7 +3,7 @@ import Order from "../models/order";
 import Company from "../models/company";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
-import { checkActions, checkShifts, deleteFields } from "../utils";
+import { checkActions, checkShift, deleteFields } from "../utils";
 import { ICompanyPayload, IStatusChangePayload } from "../types";
 
 // Initialize router
@@ -47,7 +47,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
       }
 
       // Check shift
-      checkShifts(res, [shift]);
+      checkShift(res, shift);
 
       try {
         // Check if a company exists with the provided shift

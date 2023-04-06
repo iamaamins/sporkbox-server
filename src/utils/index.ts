@@ -124,10 +124,8 @@ export function checkActions(
 }
 
 // Check shifts function
-export function checkShifts(res: Response, shifts: string[]) {
-  if (
-    !shifts.every((shift) => ["day", "night"].includes(shift.toLowerCase()))
-  ) {
+export function checkShift(res: Response, shift: string) {
+  if (!["day", "night"].includes(shift)) {
     res.status(400);
     throw new Error("Please provide a valid shift");
   }

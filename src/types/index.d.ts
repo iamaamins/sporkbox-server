@@ -330,5 +330,5 @@ export interface IStripePayableItems {
 }
 
 export interface IShiftChangePayload {
-  shifts: string[];
+  shift: string;
 }
