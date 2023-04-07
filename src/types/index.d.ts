@@ -99,6 +99,7 @@ export interface ISchedulesSchema {
     shift: string;
   };
   status: string;
+  createdAt: string;
 }
 
 export interface IRestaurantSchema {

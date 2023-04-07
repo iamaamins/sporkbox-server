@@ -97,6 +97,7 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
               _id: schedule.company._id,
               shift: schedule.company.shift,
             },
+            scheduledAt: schedule.createdAt,
           };
         })
       )

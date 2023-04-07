@@ -246,7 +246,7 @@ router.patch(
         // If no shift is provided
         if (!shift || typeof shift !== "string") {
           res.status(400);
-          throw new Error("Please provide a shift");
+          throw new Error("Please provide a valid shift");
         }
 
         // Check provided shifts validity

@@ -40,33 +40,36 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
       },
     },
     schedules: [
-      new Schema({
-        date: {
-          type: Date,
-          required: [true, "Please provide a date"],
-        },
-        company: {
-          _id: {
-            type: Schema.Types.ObjectId,
-            required: [true, "Please provide a company id"],
+      new Schema(
+        {
+          date: {
+            type: Date,
+            required: [true, "Please provide a date"],
           },
-          name: {
+          company: {
+            _id: {
+              type: Schema.Types.ObjectId,
+              required: [true, "Please provide a company id"],
+            },
+            name: {
+              type: String,
+              trim: true,
+              required: [true, "Please provide a company name"],
+            },
+            shift: {
+              type: String,
+              trim: true,
+              required: [true, "Please provide a shift"],
+            },
+          },
+          status: {
             type: String,
-            trim: true,
-            required: [true, "Please provide a company name"],
-          },
-          shift: {
-            type: String,
-            trim: true,
-            required: [true, "Please provide a shift"],
+            enum: ["ACTIVE", "INACTIVE"],
+            required: [true, "Please provide a status"],
           },
         },
-        status: {
-          type: String,
-          enum: ["ACTIVE", "INACTIVE"],
-          required: [true, "Please provide a status"],
-        },
-      }),
+        { timestamps: true }
+      ),
     ],
     items: [
       new Schema({
