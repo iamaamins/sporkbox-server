@@ -56,59 +56,64 @@ export const now = Date.now();
 
 // Get upcoming restaurant
 export async function getUpcomingRestaurants(companies: IUserCompany[]) {
-  // Get company ids
-  const companyIds = companies
-    .filter((company) => company.status === "ACTIVE")
-    .map((company) => company._id.toString());
+  // Get the active company
+  const activeCompany = companies.find(
+    (company) => company.status === "ACTIVE"
+  );
 
-  try {
-    // Get the scheduled restaurants
-    const response = await Restaurant.find({
-      schedules: {
-        $elemMatch: {
-          date: { $gte: now },
-          status: "ACTIVE",
-          "company._id": { $in: companyIds },
+  if (activeCompany) {
+    try {
+      // Get the scheduled restaurants
+      const response = await Restaurant.find({
+        schedules: {
+          $elemMatch: {
+            date: { $gte: now },
+            status: "ACTIVE",
+            "company._id": activeCompany._id,
+          },
         },
-      },
-    }).select("-__v -updatedAt -createdAt -address");
+      }).select("-__v -updatedAt -createdAt -address");
 
-    // Create upcoming week restaurants, then flat and sort
-    const upcomingRestaurants = response
-      .map((upcomingWeekRestaurant) => ({
-        ...upcomingWeekRestaurant.toObject(),
-        schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) =>
-            schedule.status === "ACTIVE" &&
-            convertDateToMS(schedule.date) >= now &&
-            companyIds.includes(schedule.company._id.toString())
-        ),
-      }))
-      .map((upcomingWeekRestaurant) =>
-        upcomingWeekRestaurant.schedules.map((schedule) => {
-          // Destructure scheduled restaurant
-          const { schedules, ...rest } = upcomingWeekRestaurant;
+      // Create upcoming week restaurants, then flat and sort
+      const upcomingRestaurants = response
+        .map((upcomingWeekRestaurant) => ({
+          ...upcomingWeekRestaurant.toObject(),
+          schedules: upcomingWeekRestaurant.schedules.filter(
+            (schedule) =>
+              schedule.status === "ACTIVE" &&
+              convertDateToMS(schedule.date) >= now &&
+              activeCompany._id.toString() === schedule.company._id.toString()
+          ),
+        }))
+        .map((upcomingWeekRestaurant) =>
+          upcomingWeekRestaurant.schedules.map((schedule) => {
+            // Destructure scheduled restaurant
+            const { schedules, ...rest } = upcomingWeekRestaurant;
 
-          // Create new restaurant object
-          return {
-            ...rest,
-            date: schedule.date,
-            company: {
-              _id: schedule.company._id,
-              shift: schedule.company.shift,
-            },
-            scheduledAt: schedule.createdAt,
-          };
-        })
-      )
-      .flat(2)
-      .sort(sortByDate);
+            // Create new restaurant object
+            return {
+              ...rest,
+              date: schedule.date,
+              company: {
+                _id: schedule.company._id,
+                shift: schedule.company.shift,
+              },
+              scheduledAt: schedule.createdAt,
+            };
+          })
+        )
+        .flat(2)
+        .sort(sortByDate);
 
-    // Return the scheduled restaurants with response
-    return upcomingRestaurants;
-  } catch (err) {
-    // If scheduled restaurants aren't fetched successfully
-    throw err;
+      // Return the scheduled restaurants with response
+      return upcomingRestaurants;
+    } catch (err) {
+      // If scheduled restaurants aren't fetched successfully
+      throw err;
+    }
+  } else {
+    // If no active company is found
+    throw new Error("No enrolled shift found");
   }
 }
 
