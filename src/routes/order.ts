@@ -266,7 +266,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
         const customerUpcomingOrders = await Order.find({
           "customer._id": _id,
           status: {
-            $ne: "PENDING",
+            $nin: ["PENDING", "ARCHIVED"],
           },
           "delivery.date": {
             $gte: Math.min(
