@@ -8,11 +8,11 @@ export function orderDeliveryTemplate(order: IOrder) {
     html: `
         <p>
         Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} has been delivered! Please be sure to take the meal that is labeled with your name.
-        
-        Enjoy! 😋
-
-        - The Spork Bytes Team
         </p>
+
+        <p>Enjoy! 😋 </p>
+
+        <p>- The Spork Bytes Team</p>
         `,
   };
 }
