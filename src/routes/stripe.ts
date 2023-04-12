@@ -18,7 +18,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   );
 
   // Check if the company is sporkbox
-  const isSporkbox = parsedMetadataDetails.company === "sporkbox";
+  const isSporkBox = parsedMetadataDetails.company === "sporkbox";
 
   // Get pending order id
   const pendingOrderId = parsedMetadataDetails.pendingOrderId;
@@ -35,7 +35,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
     );
 
     // Handle the event
-    if (event.type === "checkout.session.completed" && isSporkbox) {
+    if (event.type === "checkout.session.completed" && isSporkBox) {
       // Get the total paid amount
       const session = event.data.object as Stripe.Checkout.Session;
 
@@ -63,7 +63,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         // If order status update fails
         throw err;
       }
-    } else if (event.type === "checkout.session.expired" && isSporkbox) {
+    } else if (event.type === "checkout.session.expired" && isSporkBox) {
       try {
         // Delete pending order
         await Order.deleteMany({ pendingOrderId, status: "PENDING" });
