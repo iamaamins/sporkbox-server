@@ -47,10 +47,7 @@ export interface IOrderSchema {
     name: string;
     shift: string;
   };
-  payment: {
-    intent: string;
-    amount: number;
-  };
+
   delivery: {
     date: Date;
     address: {
@@ -62,6 +59,10 @@ export interface IOrderSchema {
     };
   };
   status: string;
+  payment: {
+    intent: string;
+    amount: number;
+  };
   hasReviewed: boolean;
   createdAt: Date;
   pendingOrderId?: string;
