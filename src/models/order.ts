@@ -24,6 +24,10 @@ const orderSchema = new Schema<IOrderSchema>(
         required: [true, "Please provide customer email"],
       },
     },
+    payment: {
+      intent: String,
+      amount: Number,
+    },
     restaurant: {
       _id: {
         type: Schema.Types.ObjectId,

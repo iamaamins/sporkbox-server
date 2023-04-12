@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import Order from "../models/order";
 import { stripe } from "../config/stripe";
 import authUser from "../middleware/authUser";
@@ -35,6 +36,9 @@ router.post("/webhook", async (req: Request, res: Response) => {
 
     // Handle the event
     if (event.type === "checkout.session.completed" && isSporkbox) {
+      // Get the total paid amount
+      const session = event.data.object as Stripe.Checkout.Session;
+
       try {
         // Update order status
         await Order.updateMany(
@@ -42,6 +46,10 @@ router.post("/webhook", async (req: Request, res: Response) => {
           {
             $set: {
               status: "PROCESSING",
+              payment: {
+                intent: session.payment_intent,
+                amount: (session.amount_total as number) / 100,
+              },
             },
             $unset: {
               pendingOrderId,

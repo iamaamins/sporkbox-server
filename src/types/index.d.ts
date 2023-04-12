@@ -47,6 +47,10 @@ export interface IOrderSchema {
     name: string;
     shift: string;
   };
+  payment: {
+    intent: string;
+    amount: number;
+  };
   delivery: {
     date: Date;
     address: {
