@@ -105,10 +105,14 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
       res.status(200).json("Password reset details sent to your email");
     } catch (err) {
       // If email send fails
+      console.log(err);
+
       throw err;
     }
   } catch (err) {
     // If no user is found
+    console.log(err);
+
     throw err;
   }
 });
@@ -165,26 +169,38 @@ router.patch(
                 res.status(201).json("Password reset successful");
               } catch (err) {
                 // If email isn't sent
+                console.log(err);
+
                 throw err;
               }
             } catch (err) {
               // If user isn't updated
+              console.log(err);
+
               throw err;
             }
           } catch (err) {
             // If password isn't hashed
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If failed to create salt
+          console.log(err);
+
           throw err;
         }
       } catch (err) {
         // If token in invalid or expired
+        console.log(err);
+
         throw err;
       }
     } catch (err) {
       // If user isn't found
+      console.log(err);
+
       throw err;
     }
   }

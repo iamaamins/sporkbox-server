@@ -85,18 +85,26 @@ router.post(
             res.status(201).json(customer);
           } catch (err) {
             // If user isn't created
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If password hash isn't created
+          console.log(err);
+
           throw err;
         }
       } catch (err) {
         // If salt isn't created
+        console.log(err);
+
         throw err;
       }
     } catch (err) {
       // If company doesn't exist
+      console.log(err);
+
       throw err;
     }
   }
@@ -119,6 +127,8 @@ router.get("", authUser, async (req: Request, res: Response) => {
         res.status(200).json(customers);
       } catch (err) {
         // If customers aren't fetched successfully
+        console.log(err);
+
         throw err;
       }
     } else {
@@ -167,6 +177,8 @@ router.patch(
           res.status(200).json(updatedCustomer);
         } catch (err) {
           // If customer isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -218,6 +230,8 @@ router.patch(
           res.status(201).json(updatedCustomer);
         } catch (err) {
           // If customer isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -304,14 +318,21 @@ router.patch(
               // Send the companies
               res.status(201).json(companies);
             } catch (err) {
+              // If user isn't updated successfully
+              console.log(err);
+
               throw err;
             }
           } catch (err) {
             // If companies aren't fetched successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {

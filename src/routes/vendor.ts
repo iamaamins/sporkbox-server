@@ -128,27 +128,39 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
                 }
               } catch (err) {
                 // If failed to populate restaurant
+                console.log(err);
+
                 throw err;
               }
             } catch (err) {
               // If vendor isn't created
+              console.log(err);
+
               throw err;
             }
           } catch (err) {
             // If password hashing isn't  successful
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If salt isn't created
+          console.log(err);
+
           throw err;
         }
       }
     } catch (err) {
       // If restaurant isn't created
+      console.log(err);
+
       throw err;
     }
   } catch (err) {
     // If vendor isn't found
+    console.log(err);
+
     throw err;
   }
 });
@@ -275,27 +287,39 @@ router.post(
                       }
                     } catch (err) {
                       // If restaurant isn't populated
+                      console.log(err);
+
                       throw err;
                     }
                   } catch (err) {
                     // If vendor isn't created
+                    console.log(err);
+
                     throw err;
                   }
                 } catch (err) {
                   // If password hashing isn't successful
+                  console.log(err);
+
                   throw err;
                 }
               } catch (err) {
                 // If slat isn't created
+                console.log(err);
+
                 throw err;
               }
             }
           } catch (err) {
             // If restaurant isn't created
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If vendor isn't found
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -330,6 +354,8 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
         res.status(200).json(vendors);
       } catch (err) {
         // If vendors aren't fetched successfully
+        console.log(err);
+
         throw err;
       }
     } else {
@@ -453,10 +479,14 @@ router.patch(
             res.status(201).json(updatedVendorAndRestaurant);
           } catch (err) {
             // If restaurant isn't updated successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If vendor isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -511,6 +541,8 @@ router.patch(
           res.status(200).json(updatedVendor);
         } catch (err) {
           // If vendor isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {

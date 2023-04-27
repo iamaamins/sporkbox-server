@@ -49,6 +49,8 @@ router.get(
           res.status(200).json(customerUpcomingOrders);
         } catch (err) {
           // If upcoming orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -95,6 +97,8 @@ router.get(
           res.status(200).json(customerDeliveredOrders);
         } catch (err) {
           // If delivered orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -385,6 +389,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             res.status(200).json(session.url);
           } catch (err) {
             // If orders fails to create
+            console.log(err);
+
             throw err;
           }
         } else {
@@ -410,12 +416,15 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             res.status(201).json(ordersForCustomers);
           } catch (err) {
             // If orders fails to create
+            console.log(err);
+
             throw err;
           }
         }
       } catch (err) {
-        console.log(err);
         // If upcoming orders fails to fetch
+        console.log(err);
+
         throw err;
       }
     } else {
@@ -446,6 +455,8 @@ router.get(
           res.status(200).json(upcomingOrders);
         } catch (err) {
           // If upcoming orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -487,6 +498,8 @@ router.get(
           res.status(200).json(deliveredOrders);
         } catch (err) {
           // If delivered orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -523,6 +536,8 @@ router.get(
           res.status(200).json(customerDeliveredOrders);
         } catch (err) {
           // If orders aren't found
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -577,14 +592,20 @@ router.patch(
               res.status(200).json("Delivery email sent");
             } catch (err) {
               // If emails aren't sent
+              console.log(err);
+
               throw err;
             }
           } catch (err) {
             // If orders aren't fetched
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If order status isn't updated
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -630,10 +651,14 @@ router.patch(
             res.status(201).json(updatedOrder);
           } catch (err) {
             // If email isn't sent
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If order status isn't updated
+          console.log(err);
+
           throw err;
         }
       } else {

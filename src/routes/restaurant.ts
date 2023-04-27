@@ -98,6 +98,8 @@ router.get(
           res.status(200).json(scheduledRestaurants);
         } catch (err) {
           // If scheduled restaurants aren't found successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -212,14 +214,20 @@ router.post(
               res.status(201).json(scheduledRestaurant);
             } catch (err) {
               // If restaurant isn't saved successfully
+              console.log(err);
+
               throw err;
             }
           } catch (err) {
             // If company isn't found successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If past schedules aren't remove successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -291,6 +299,8 @@ router.patch(
           res.status(201).json(updatedSchedules);
         } catch (err) {
           // If schedule status isn't changed successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -379,19 +389,27 @@ router.patch(
                     .json("Schedule and orders removed successfully");
                 } catch (err) {
                   // If orders status aren't changed
+                  console.log(err);
+
                   throw err;
                 }
               } catch (err) {
                 // If emails aren't sent
+                console.log(err);
+
                 throw err;
               }
             } catch (err) {
               // If orders aren't fetched
+              console.log(err);
+
               throw err;
             }
           }
         } catch (err) {
           // If past schedules aren't removed
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -489,6 +507,8 @@ router.post(
           res.status(201).json(updatedRestaurant);
         } catch (err) {
           // If item isn't added successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -633,6 +653,8 @@ router.patch(
           }
         } catch (err) {
           // If item isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -688,6 +710,8 @@ router.patch(
           res.status(200).json(updatedRestaurant);
         } catch (err) {
           // If item status isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -754,10 +778,14 @@ router.post(
             res.status(201).json(order);
           } catch (err) {
             // If review isn't added successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If order isn't found
+          console.log(err);
+
           throw err;
         }
       } else {

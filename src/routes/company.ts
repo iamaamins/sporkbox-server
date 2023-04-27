@@ -55,6 +55,8 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
 
         // Throw error if a company with the same shift exists
         if (companyExist) {
+          console.log("A company with a same shift already exists");
+
           res.status(400);
           throw new Error("A company with a same shift already exists");
         }
@@ -101,14 +103,21 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
             // Send the company with response
             res.status(200).json(company);
           } catch (err) {
+            // If users aren't updated successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If company isn't created successfully
+          console.log(err);
+
           throw err;
         }
       } catch (err) {
         // If company isn't fetched successfully
+        console.log(err);
+
         throw err;
       }
     } else {
@@ -136,6 +145,8 @@ router.get("/", authUser, async (req: Request, res: Response) => {
         res.status(201).json(companies);
       } catch (err) {
         // If companies aren't fetched successfully
+        console.log(err);
+
         throw err;
       }
     } else {
@@ -225,10 +236,14 @@ router.patch(
             res.status(201).json(updatedCompany);
           } catch (err) {
             // If users aren't updated successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If company isn't updated successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -314,6 +329,8 @@ router.patch(
                 res.status(200).json(updatedCompany);
               } catch (err) {
                 // If users aren't updated
+                console.log(err);
+
                 throw err;
               }
             } else if (updatedCompany.status === "ACTIVE") {
@@ -334,15 +351,21 @@ router.patch(
                 res.status(200).json(updatedCompany);
               } catch (err) {
                 // If users aren't updated
+                console.log(err);
+
                 throw err;
               }
             }
           } catch (err) {
             // If company status isn't changed successfully
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If orders aren't fetched successfully
+          console.log(err);
+
           throw err;
         }
       } else {

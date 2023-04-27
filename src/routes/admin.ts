@@ -52,14 +52,20 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
             res.status(201).json(admin);
           } catch (err) {
             // If admin isn't created
+            console.log(err);
+
             throw err;
           }
         } catch (err) {
           // If password hash isn't created
+          console.log(err);
+
           throw err;
         }
       } catch (err) {
         // If salt isn't created
+        console.log(err);
+
         throw err;
       }
     } else {

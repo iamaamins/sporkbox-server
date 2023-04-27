@@ -47,6 +47,8 @@ export async function stripeCheckout(
     return session;
   } catch (err) {
     // If session fails to create
+    console.log(err);
+
     throw err;
   }
 }

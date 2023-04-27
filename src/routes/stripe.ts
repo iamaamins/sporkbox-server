@@ -61,6 +61,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
         res.status(201).json("Orders status updated");
       } catch (err) {
         // If order status update fails
+        console.log(err);
+
         throw err;
       }
     } else if (event.type === "checkout.session.expired" && isSporkBox) {
@@ -72,6 +74,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
         res.status(201).json("Orders deleted");
       } catch (err) {
         // If orders aren't deleted
+        console.log(err);
+
         throw err;
       }
     }
@@ -103,6 +107,8 @@ router.get(
           res.status(200).json(response.amount_total);
         } catch (err) {
           // If session retrieval fails
+          console.log(err);
+
           throw err;
         }
       } else {

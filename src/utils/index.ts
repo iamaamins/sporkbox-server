@@ -109,6 +109,8 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
       return upcomingRestaurants;
     } catch (err) {
       // If scheduled restaurants aren't fetched successfully
+      console.log(err);
+
       throw err;
     }
   } else {

@@ -46,10 +46,14 @@ export default async function handler(
       }
     } catch (err) {
       // If user isn't found
+      console.log(err);
+
       throw err;
     }
   } catch (err) {
     // If token is invalid or expired
+    console.log(err);
+
     throw err;
   }
 }

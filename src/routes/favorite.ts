@@ -65,6 +65,8 @@ router.post(
               res.status(201).json(favorite);
             } catch (err) {
               // If item isn't added to favorite
+              console.log(err);
+
               throw err;
             }
           } else {
@@ -74,6 +76,8 @@ router.post(
           }
         } catch (err) {
           // If restaurant isn't found
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -115,6 +119,8 @@ router.delete(
           res.status(200).json({ message: "Favorite removed" });
         } catch (err) {
           // If favorite isn't removed successfully
+          console.log(err);
+
           throw err;
         }
       } else {
@@ -173,6 +179,8 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
         res.status(200).json(favorites);
       } catch (err) {
         // If favorites aren't fetched
+        console.log(err);
+
         throw err;
       }
     } else {
