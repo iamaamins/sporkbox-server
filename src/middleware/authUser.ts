@@ -10,6 +10,9 @@ export default async function handler(
   // Return not authorized in there
   // is no cookie in the headers
   if (!req.cookies) {
+    // Log error
+    console.log("Not authorized");
+
     res.status(401);
     throw new Error("Not authorized");
   }
@@ -19,6 +22,9 @@ export default async function handler(
 
   // Return not authorized in there is no token
   if (!token) {
+    // Log error
+    console.log("Not authorized");
+
     res.status(401);
     throw new Error("Not authorized");
   }

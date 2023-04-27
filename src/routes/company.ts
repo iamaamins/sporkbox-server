@@ -42,6 +42,9 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         !shiftBudget ||
         !addressLine1
       ) {
+        // Log error
+        console.log("Please provide all the fields");
+
         res.status(400);
         throw new Error("Please provide all the fields");
       }
@@ -55,6 +58,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
 
         // Throw error if a company with the same shift exists
         if (companyExist) {
+          // Log error
           console.log("A company with a same shift already exists");
 
           res.status(400);
@@ -122,6 +126,8 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }
@@ -151,6 +157,8 @@ router.get("/", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }
@@ -191,6 +199,9 @@ router.patch(
           !shiftBudget ||
           !addressLine1
         ) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -248,6 +259,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -271,6 +284,9 @@ router.patch(
 
         // If all the fields aren't provided
         if (!companyId || !action) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -290,6 +306,9 @@ router.patch(
 
             // Throw error if there are active orders
             if (orders.length > 0) {
+              // Log error
+              console.log("Can't archive a company with active orders");
+
               res.status(404);
               throw new Error("Can't archive a company with active orders");
             }
@@ -370,6 +389,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }

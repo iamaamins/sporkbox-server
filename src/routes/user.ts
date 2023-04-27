@@ -22,6 +22,9 @@ router.post("/login", async (req: Request, res: Response) => {
 
   // If a value isn't provided
   if (!email || !password) {
+    // Log error
+    console.log("Please provide all the fields");
+
     res.status(400);
     throw new Error("Please fill all the fields");
   }
@@ -43,11 +46,15 @@ router.post("/login", async (req: Request, res: Response) => {
       res.status(200).json(user);
     } else {
       // If user isn't found
+      console.log("Invalid credentials");
+
       res.status(400);
       throw new Error("Invalid credentials");
     }
   } catch (err) {
     // If user isn't found
+    console.log("Invalid credentials");
+
     res.status(400);
     throw new Error("Invalid credentials");
   }
@@ -80,6 +87,9 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 
   // If no email is provided
   if (!email) {
+    // Log error
+    console.log("Please provide a valid email");
+
     res.status(400);
     throw new Error("Please provide a valid email");
   }
@@ -127,6 +137,9 @@ router.patch(
 
     // If all the fields aren't provided
     if (!password || !userId || !token) {
+      // Log error
+      console.log("Please provide all the fields");
+
       res.status(400);
       throw new Error("Please provide all the fields");
     }

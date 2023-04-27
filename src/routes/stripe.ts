@@ -113,6 +113,8 @@ router.get(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }

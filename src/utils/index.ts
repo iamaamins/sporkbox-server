@@ -114,6 +114,9 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
       throw err;
     }
   } else {
+    // Log error
+    console.log("No enrolled shift found");
+
     // If no active company is found
     throw new Error("No enrolled shift found");
   }
@@ -126,6 +129,9 @@ export function checkActions(
   res: Response
 ) {
   if (!actions.includes(action)) {
+    // Log error
+    console.log("Please provide correct action");
+
     res.status(400);
     throw new Error("Please provide correct action");
   }
@@ -134,6 +140,9 @@ export function checkActions(
 // Check shifts function
 export function checkShift(res: Response, shift: string) {
   if (!["day", "night"].includes(shift)) {
+    // Log error
+    console.log("Please provide a valid shift");
+
     res.status(400);
     throw new Error("Please provide a valid shift");
   }
@@ -158,6 +167,8 @@ export async function resizeImage(
       .toBuffer();
   } catch (err) {
     // If image resize fails
+    console.log("Failed to resize image");
+
     res.status(500);
     throw new Error("Failed to resize image");
   }

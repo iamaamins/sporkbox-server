@@ -22,6 +22,9 @@ router.post(
 
         // If all the fields aren't provided
         if (!restaurantId || !itemId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -71,6 +74,8 @@ router.post(
             }
           } else {
             // If no item is found
+            console.log("No item found");
+
             res.status(400);
             throw new Error("No item found");
           }
@@ -82,6 +87,8 @@ router.post(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -105,6 +112,9 @@ router.delete(
 
         // If all the fields aren't provided
         if (!favoriteId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -125,6 +135,8 @@ router.delete(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -185,6 +197,8 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't customer
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }

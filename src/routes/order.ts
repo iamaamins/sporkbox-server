@@ -55,6 +55,8 @@ router.get(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -77,6 +79,9 @@ router.get(
 
         // If all the fields aren't provided
         if (!limit) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -103,6 +108,8 @@ router.get(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -132,6 +139,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             orderPayload.deliveryDate
         )
       ) {
+        // Log error
+        console.log("Please provide valid orders data");
+
         res.status(401);
         throw new Error("Please provide valid orders data");
       }
@@ -156,6 +166,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
 
       // If items are not valid
       if (!itemsAreValid) {
+        // Log error
+        console.log("Orders are not valid");
+
         res.status(400);
         throw new Error("Orders are not valid");
       }
@@ -239,11 +252,16 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             };
           } else {
             // If item isn't found
+            // Log error
+            console.log("Item is not found");
+
             res.status(400);
             throw new Error("Item is not found");
           }
         } else {
           // If restaurant isn't found
+          console.log("Restaurant or company is not found");
+
           res.status(400);
           throw new Error("Restaurant or company is not found");
         }
@@ -429,6 +447,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't customer
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }
@@ -461,6 +481,8 @@ router.get(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -483,6 +505,9 @@ router.get(
 
         // If all the fields aren't provided
         if (!limit) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -504,6 +529,8 @@ router.get(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -542,6 +569,8 @@ router.get(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -564,6 +593,9 @@ router.patch(
 
         // If order ids aren't provides
         if (!orderIds) {
+          // Log error
+          console.log("Please provide order ids");
+
           res.status(400);
           throw new Error("Please provide order ids");
         }
@@ -610,6 +642,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -663,6 +697,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }

@@ -39,12 +39,18 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     !addressLine1 ||
     !restaurantName
   ) {
+    // Log error
+    console.log("Please fill all the fields");
+
     res.status(400);
     throw new Error("Please fill all the fields");
   }
 
   // If no logo is provided
   if (!req.file) {
+    // Log error
+    console.log("Please provide a logo");
+
     res.status(400);
     throw new Error("Please provide a logo");
   }
@@ -55,6 +61,9 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
 
     // Throw error if vendor already exists
     if (vendorExists) {
+      // Log error
+      console.log("Vendor already exists");
+
       res.status(400);
       throw new Error("Vendor already exists");
     }
@@ -202,12 +211,18 @@ router.post(
           !addressLine1 ||
           !restaurantName
         ) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please fill all the fields");
         }
 
         // If a logo isn't provided
         if (!req.file) {
+          // Log error
+          console.log("Please provide a logo");
+
           res.status(400);
           throw new Error("Please provide a logo");
         }
@@ -218,6 +233,9 @@ router.post(
 
           // Throw error if vendor already exists
           if (vendorExists) {
+            // Log error
+            console.log("Vendor already exists");
+
             res.status(400);
             throw new Error("Vendor already exists");
           }
@@ -324,6 +342,8 @@ router.post(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -360,6 +380,8 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }
@@ -404,6 +426,9 @@ router.patch(
           !addressLine1 ||
           !restaurantName
         ) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please fill all the fields");
         }
@@ -491,6 +516,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -514,6 +541,9 @@ router.patch(
 
         // If action or restaurant id aren't provided
         if (!vendorId || !action) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -547,6 +577,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }

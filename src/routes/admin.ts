@@ -19,6 +19,9 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
 
       // If all the fields aren't provided
       if (!firstName || !lastName || !email || !password) {
+        // Log error
+        console.log("Please provide all the fields");
+
         res.status(400);
         throw new Error("Please provide all the fields");
       }
@@ -70,6 +73,8 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }

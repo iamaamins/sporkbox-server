@@ -29,6 +29,9 @@ router.post(
 
     // If a value isn't provided
     if (!firstName || !lastName || !email || !password) {
+      // Log error
+      console.log("Please provide all the fields");
+
       res.status(400);
       throw new Error("Please provide all the fields");
     }
@@ -133,6 +136,8 @@ router.get("", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
+      console.log("Not authorized");
+
       res.status(403);
       throw new Error("Not authorized");
     }
@@ -155,6 +160,9 @@ router.patch(
 
         // If all the fields aren't provided
         if (!customerId || !firstName || !lastName || !email) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -183,6 +191,8 @@ router.patch(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -206,6 +216,9 @@ router.patch(
 
         // If all the fields aren't provided
         if (!customerId || !action) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -236,6 +249,8 @@ router.patch(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -259,6 +274,9 @@ router.patch(
 
         // If no shift is provided
         if (!shift || typeof shift !== "string") {
+          // Log error
+          console.log("Please provide a valid shift");
+
           res.status(400);
           throw new Error("Please provide a valid shift");
         }
@@ -287,6 +305,9 @@ router.patch(
                 (activeCompany) => activeCompany.shift === shift
               )
             ) {
+              // Log error
+              console.log("Please provide a valid shift");
+
               res.status(404);
               throw new Error("Please provide a valid shift");
             }
@@ -337,6 +358,8 @@ router.patch(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }

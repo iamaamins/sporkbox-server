@@ -45,6 +45,8 @@ router.get(
         res.status(200).json(upcomingRestaurants);
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -104,6 +106,8 @@ router.get(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -127,12 +131,18 @@ router.post(
 
         // If full data isn't provided
         if (!date || !companyId || !restaurantId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please fill all the fields");
         }
 
         // If provided date is a past date
         if (convertDateToMS(date) < now) {
+          // Log error
+          console.log("Cant' schedule on the provided date");
+
           res.status(400);
           throw new Error("Cant' schedule on the provided date");
         }
@@ -165,6 +175,9 @@ router.post(
 
           // If the restaurant is already scheduled
           if (isScheduled) {
+            // Log error
+            console.log("Already scheduled on the provided date");
+
             res.status(401);
             throw new Error("Already scheduled on the provided date");
           }
@@ -232,6 +245,8 @@ router.post(
         }
       } else {
         // If role isn't admin
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -255,6 +270,9 @@ router.patch(
 
         // If all the fields aren't provide
         if (!action || !restaurantId || !scheduleId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -305,6 +323,8 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -327,6 +347,9 @@ router.patch(
 
         // If all the fields aren't provide
         if (!restaurantId || !scheduleId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -414,6 +437,8 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -445,6 +470,9 @@ router.post(
 
         // If all the fields aren't provided
         if (!restaurantId || !name || !tags || !price || !description) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -454,6 +482,9 @@ router.post(
           addableIngredients &&
           !isCorrectAddableIngredientsFormat(addableIngredients)
         ) {
+          // Log error
+          console.log("Invalid addable ingredients format");
+
           res.status(400);
           throw new Error("Invalid addable ingredients format");
         }
@@ -513,6 +544,8 @@ router.post(
         }
       } else {
         // If role isn't admin or vendor
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -552,6 +585,9 @@ router.patch(
           !description ||
           !restaurantId
         ) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -561,6 +597,9 @@ router.patch(
           addableIngredients &&
           !isCorrectAddableIngredientsFormat(addableIngredients)
         ) {
+          // Log error
+          console.log("Invalid addable ingredients format");
+
           res.status(400);
           throw new Error("Invalid addable ingredients format");
         }
@@ -659,6 +698,8 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -682,6 +723,9 @@ router.patch(
 
         // If all the fields aren't provided
         if (!action || !restaurantId || !itemId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -716,6 +760,8 @@ router.patch(
         }
       } else {
         // If role isn't admin or vendor
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
@@ -739,6 +785,9 @@ router.post(
 
         // If rating or comment isn't provided
         if (!restaurantId || !itemId || !rating || !comment || !orderId) {
+          // Log error
+          console.log("Please provide all the fields");
+
           res.status(400);
           throw new Error("Please provide all the fields");
         }
@@ -790,6 +839,8 @@ router.post(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
         res.status(403);
         throw new Error("Not authorized");
       }
