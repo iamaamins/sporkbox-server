@@ -65,7 +65,7 @@ export function orderReminderTemplate(user: IUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
-    subject: `Sporkbox Password Reset`,
+    subject: `Have you placed your order for lunch next week?`,
     html: `
         <p>Hey there!</p>
 
