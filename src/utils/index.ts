@@ -2,7 +2,9 @@ import sharp from "sharp";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
+import User from "../models/user";
 import { Response } from "express";
+import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant, IUserCompany } from "../types";
 
@@ -203,3 +205,22 @@ export const formatAddableIngredients = (addableIngredients: string) =>
   splitAddableIngredients(addableIngredients)
     .map((ingredient) => ingredient.join(" - "))
     .join(", ");
+
+// Get future date
+export function getFutureDate(dayToAdd: number) {
+  // Today
+  const today = new Date();
+
+  // Sunday's date of current week
+  const sunday = today.getUTCDate() - today.getUTCDay();
+
+  // Get future date in MS
+  const futureDate = today.setUTCDate(sunday + dayToAdd);
+
+  // Return future date without hours in MS
+  return new Date(futureDate).setUTCHours(0, 0, 0, 0);
+}
+
+// Get dates in MS
+const nextWeekMonday = getFutureDate(8);
+const followingWeekSunday = getFutureDate(14);
