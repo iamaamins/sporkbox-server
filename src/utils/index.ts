@@ -76,12 +76,14 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
             "company._id": activeCompany._id,
           },
         },
-      }).select("-__v -updatedAt -createdAt -address");
+      })
+        .select("-__v -updatedAt -createdAt -address")
+        .lean();
 
       // Create upcoming week restaurants, then flat and sort
       const upcomingRestaurants = response
         .map((upcomingWeekRestaurant) => ({
-          ...upcomingWeekRestaurant.toObject(),
+          ...upcomingWeekRestaurant,
           schedules: upcomingWeekRestaurant.schedules.filter(
             (schedule) =>
               schedule.status === "ACTIVE" &&
