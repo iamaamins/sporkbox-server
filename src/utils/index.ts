@@ -283,7 +283,7 @@ export async function sendOrderReminderEmails() {
       .lean();
 
     // Get users with no orders
-    const usersWithNoOrders = users.filter(
+    const usersWithNoOrder = users.filter(
       (user) =>
         orders.some(
           (order) => order.customer._id.toString() !== user._id.toString()
@@ -299,7 +299,7 @@ export async function sendOrderReminderEmails() {
 
     // Send reminder email
     await Promise.all(
-      usersWithNoOrders.map(
+      usersWithNoOrder.map(
         async (user) => await mail.send(orderReminderTemplate(user))
       )
     );
