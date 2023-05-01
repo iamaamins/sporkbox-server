@@ -1,14 +1,15 @@
 import sharp from "sharp";
 import crypto from "crypto";
+import cron from "node-cron";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import User from "../models/user";
 import { Response } from "express";
+import mail from "@sendgrid/mail";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
-import { ISortScheduledRestaurant, IUserCompany } from "../types";
-import mail from "@sendgrid/mail";
 import { orderReminderTemplate } from "./emailTemplates";
+import { ISortScheduledRestaurant, IUserCompany } from "../types";
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -306,3 +307,21 @@ export async function sendOrderReminderEmails() {
     throw err;
   }
 }
+
+// Send the reminder at Thursday 12 PM
+cron.schedule(
+  "0 0 12 * * Thu",
+  () => {
+    sendOrderReminderEmails();
+  },
+  { timezone: "America/Los_Angeles" }
+);
+
+// Send the reminder at Friday 8 AM
+cron.schedule(
+  "0 0 8 * * Fri",
+  () => {
+    sendOrderReminderEmails();
+  },
+  { timezone: "America/Los_Angeles" }
+);
