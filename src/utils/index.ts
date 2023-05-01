@@ -7,6 +7,8 @@ import { Response } from "express";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { ISortScheduledRestaurant, IUserCompany } from "../types";
+import mail from "@sendgrid/mail";
+import { orderReminderTemplate } from "./emailTemplates";
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -224,3 +226,81 @@ export function getFutureDate(dayToAdd: number) {
 // Get dates in MS
 const nextWeekMonday = getFutureDate(8);
 const followingWeekSunday = getFutureDate(14);
+
+// Remind to order
+export async function sendOrderReminderEmails() {
+  try {
+    // Get all active users
+    const users = await User.find({ status: "ACTIVE" })
+      .select("companies email")
+      .lean();
+
+    // Get all upcoming restaurants
+    const response = await Restaurant.find({
+      schedules: {
+        $elemMatch: {
+          status: "ACTIVE",
+          date: { $gte: now },
+        },
+      },
+    })
+      .select("schedules")
+      .lean();
+
+    // Create upcoming week restaurants, then flat and sort
+    const upcomingRestaurants = response
+      .map((upcomingWeekRestaurant) => ({
+        schedules: upcomingWeekRestaurant.schedules.filter(
+          (schedule) =>
+            schedule.status === "ACTIVE" &&
+            convertDateToMS(schedule.date) >= now
+        ),
+      }))
+      .map((upcomingWeekRestaurant) =>
+        upcomingWeekRestaurant.schedules.map((schedule) => {
+          // Destructure upcoming restaurant
+          const { schedules, ...rest } = upcomingWeekRestaurant;
+
+          // Create new restaurant object
+          return {
+            ...rest,
+            company: {
+              _id: schedule.company._id,
+            },
+          };
+        })
+      )
+      .flat(2);
+
+    // Get orders from next week Monday to following week Sunday
+    const orders = await Order.find({
+      "delivery.date": { $gte: nextWeekMonday, $lt: followingWeekSunday },
+    })
+      .select("customer")
+      .lean();
+
+    // Get users with no orders
+    const usersWithNoOrders = users.filter(
+      (user) =>
+        orders.some(
+          (order) => order.customer._id.toString() !== user._id.toString()
+        ) &&
+        upcomingRestaurants.some((upcomingRestaurant) =>
+          user.companies.some(
+            (company) =>
+              company._id.toString() ===
+              upcomingRestaurant.company._id.toString()
+          )
+        )
+    );
+
+    // Send reminder email
+    await Promise.all(
+      usersWithNoOrders.map(
+        async (user) => await mail.send(orderReminderTemplate(user))
+      )
+    );
+  } catch (err) {
+    throw err;
+  }
+}

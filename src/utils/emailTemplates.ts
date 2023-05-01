@@ -60,3 +60,28 @@ export function passwordResetConfirmationTemplate(user: IUser) {
         `,
   };
 }
+
+export function orderReminderTemplate(user: IUser) {
+  return {
+    to: user.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Sporkbox Password Reset`,
+    html: `
+        <p>Hey there!</p>
+
+        <p>
+          <strong>
+            Have you placed your order for lunch next week?
+          </strong>
+        </p>
+
+        <p>Make your meal selections at www.sporkbox.app</p>
+
+        <p>You must complete your selections by <strong>NOON Friday</strong> to lock in your order!</p>
+
+        <p>Thanks!</p>
+
+        <p>- The Spork Bytes Team</p>
+        `,
+  };
+}

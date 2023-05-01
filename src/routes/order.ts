@@ -15,11 +15,7 @@ import {
 } from "../utils/emailTemplates";
 import mail from "@sendgrid/mail";
 import { stripeCheckout } from "../config/stripe";
-import {
-  IOrdersPayload,
-  IOrdersStatusPayload,
-  IUserCompany,
-} from "./../types/index.d";
+import { IUserCompany, IOrdersPayload, IOrdersStatusPayload } from "../types";
 
 // Initialize router
 const router = express.Router();
