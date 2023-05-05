@@ -85,6 +85,9 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
       const upcomingRestaurants = response
         .map((upcomingWeekRestaurant) => ({
           ...upcomingWeekRestaurant,
+          items: upcomingWeekRestaurant.items.filter(
+            (item) => item.status === "ACTIVE"
+          ),
           schedules: upcomingWeekRestaurant.schedules.filter(
             (schedule) =>
               schedule.status === "ACTIVE" &&

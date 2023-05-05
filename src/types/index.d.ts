@@ -90,6 +90,7 @@ interface IItemSchema {
   tags: string;
   price: number;
   image: string;
+  status: string;
   description: string;
   addableIngredients?: string;
   removableIngredients?: string;
