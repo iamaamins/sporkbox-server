@@ -247,7 +247,8 @@ export interface IItemPayload {
   price: number;
   image?: string;
   description: string;
-  addableIngredients?: string;
+  optionalAddons?: string;
+  requiredAddons?: string;
   removableIngredients?: string;
 }
 

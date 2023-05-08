@@ -193,8 +193,8 @@ export const generateRandomString = () =>
   crypto.randomBytes(16).toString("hex");
 
 // Split and trim addable ingredients
-export const splitAddableIngredients = (addableIngredients: string) =>
-  addableIngredients
+export const splitAddons = (addons: string) =>
+  addons
     .split(",")
     .map((ingredient) => ingredient.trim())
     .map((ingredient) =>
@@ -202,15 +202,21 @@ export const splitAddableIngredients = (addableIngredients: string) =>
     );
 
 // Check addable ingredients format
-export const isCorrectAddableIngredientsFormat = (addableIngredients: string) =>
-  splitAddableIngredients(addableIngredients).every(
+export const isCorrectAddonsFormat = (optionalOrRequiredAddons: {
+  addons: string;
+  addable: number;
+}) => {
+  console.log(splitAddons(optionalOrRequiredAddons.addons));
+
+  return splitAddons(optionalOrRequiredAddons.addons).every(
     (ingredient) =>
       ingredient.length === 2 && ingredient[1] !== "" && +ingredient[1] >= 0
   );
+};
 
 // Format addable ingredients
-export const formatAddableIngredients = (addableIngredients: string) =>
-  splitAddableIngredients(addableIngredients)
+export const formatAddons = (addons: string) =>
+  splitAddons(addons)
     .map((ingredient) => ingredient.join(" - "))
     .join(", ");
 
