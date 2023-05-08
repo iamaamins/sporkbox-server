@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import crypto from "crypto";
-import cron from "node-cron";
+import cron from "cron";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import User from "../models/user";
@@ -307,24 +307,29 @@ export async function sendOrderReminderEmails() {
       )
     );
   } catch (err) {
-    throw err;
+    // Log error
+    console.log(err);
   }
 }
 
 // Send the reminder at Thursday 12 PM
-cron.schedule(
+new cron.CronJob(
   "0 0 12 * * Thu",
   () => {
     sendOrderReminderEmails();
   },
-  { timezone: "America/Los_Angeles" }
+  null,
+  true,
+  "America/Los_Angeles"
 );
 
 // Send the reminder at Friday 8 AM
-cron.schedule(
+new cron.CronJob(
   "0 0 8 * * Fri",
   () => {
     sendOrderReminderEmails();
   },
-  { timezone: "America/Los_Angeles" }
+  null,
+  true,
+  "America/Los_Angeles"
 );
