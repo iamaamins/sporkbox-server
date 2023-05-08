@@ -98,6 +98,26 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           enum: ["ARCHIVED", "ACTIVE"],
           required: [true, "Please provide a status"],
         },
+        optionalAddons: {
+          addons: {
+            type: String,
+            trim: true,
+            lowercase: true,
+          },
+          addable: {
+            type: Number,
+          },
+        },
+        requiredAddons: {
+          addons: {
+            type: String,
+            trim: true,
+            lowercase: true,
+          },
+          addable: {
+            type: Number,
+          },
+        },
         addableIngredients: {
           type: String,
           trim: true,

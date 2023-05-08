@@ -7,7 +7,9 @@
     "tsc": "tsc",
     "start": "node ./dist/app.js",
     "postinstall": "npm run tsc",
-    "dev": "nodemon --files ./src/app.ts"
+    "dev": "nodemon --files ./src/app.ts",
+    "heroku-postbuild": "npm run migrate-mongo up",
+    "render-postbuild": "npm run migrate-mongo up"
   },
   "author": "",
   "license": "ISC",
@@ -23,6 +25,7 @@
     "express": "^4.18.1",
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^9.0.0",
+    "migrate-mongo": "^10.0.0",
     "mongoose": "^6.6.1",
     "multer": "^1.4.5-lts.1",
     "sharp": "^0.31.3",

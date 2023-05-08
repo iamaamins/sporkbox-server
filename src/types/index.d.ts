@@ -92,6 +92,14 @@ interface IItemSchema {
   image: string;
   status: string;
   description: string;
+  optionalAddons?: {
+    addons: string;
+    addable: number;
+  };
+  requiredAddons?: {
+    addons: string;
+    addable: number;
+  };
   addableIngredients?: string;
   removableIngredients?: string;
   reviews: Types.DocumentArray<IReviewSchema>;
