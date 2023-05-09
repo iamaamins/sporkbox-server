@@ -10,14 +10,15 @@ import {
   deleteFields,
   checkActions,
   formatAddons,
+  splitAddons,
   convertDateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
-  splitAddons,
 } from "../utils";
 import { upload } from "../config/multer";
 import { deleteImage, uploadImage } from "../config/s3";
 import {
+  IAddons,
   IItemPayload,
   IReviewPayload,
   IStatusChangePayload,
@@ -609,21 +610,12 @@ router.patch(
         }
 
         // Initiate parsed addons
-        let parsedOptionalAddons;
-        let parsedRequiredAddons;
-
-        // Parsed stringified addons
-        if (optionalAddons) {
-          parsedOptionalAddons = JSON.parse(optionalAddons);
-        }
-
-        if (requiredAddons) {
-          parsedRequiredAddons = JSON.parse(requiredAddons);
-        }
+        const parsedOptionalAddons: IAddons = JSON.parse(optionalAddons);
+        const parsedRequiredAddons: IAddons = JSON.parse(requiredAddons);
 
         // Check optional addons format
         if (
-          parsedOptionalAddons &&
+          parsedOptionalAddons.addons &&
           !isCorrectAddonsFormat(parsedOptionalAddons)
         ) {
           // Log error
@@ -635,7 +627,7 @@ router.patch(
 
         // Check required addons format
         if (
-          parsedRequiredAddons &&
+          parsedRequiredAddons.addons &&
           !isCorrectAddonsFormat(parsedRequiredAddons)
         ) {
           // Log error
@@ -671,11 +663,11 @@ router.patch(
 
         // Formatted optional addons
         const formattedOptionalAddons =
-          parsedOptionalAddons && formatAddons(parsedOptionalAddons);
+          parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
 
-        // Formatted optional addons
+        // Formatted required addons
         const formattedRequiredAddons =
-          parsedRequiredAddons && formatAddons(parsedRequiredAddons);
+          parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
 
         try {
           if (!imageUrl) {
@@ -688,8 +680,10 @@ router.patch(
                   "items.$.tags": tags,
                   "items.$.price": price,
                   "items.$.description": description,
-                  "items.$.optionalAddons": formattedOptionalAddons,
-                  "items.$.requiredAddons": formattedRequiredAddons,
+                  "items.$.optionalAddons":
+                    formattedOptionalAddons || parsedOptionalAddons,
+                  "items.$.requiredAddons":
+                    formattedRequiredAddons || parsedRequiredAddons,
                   "items.$.removableIngredients": removableIngredients,
                 },
                 $unset: {
@@ -719,8 +713,10 @@ router.patch(
                   "items.$.price": price,
                   "items.$.image": imageUrl,
                   "items.$.description": description,
-                  "items.$.optionalAddons": formattedOptionalAddons,
-                  "items.$.requiredAddons": formattedRequiredAddons,
+                  "items.$.optionalAddons":
+                    formattedOptionalAddons || parsedOptionalAddons,
+                  "items.$.requiredAddons":
+                    formattedRequiredAddons || parsedRequiredAddons,
                   "items.$.removableIngredients": removableIngredients,
                 },
               },

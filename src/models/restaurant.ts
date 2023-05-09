@@ -118,11 +118,6 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             type: Number,
           },
         },
-        addableIngredients: {
-          type: String,
-          trim: true,
-          lowercase: true,
-        },
         removableIngredients: {
           type: String,
           trim: true,

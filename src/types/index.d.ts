@@ -246,9 +246,9 @@ export interface IItemPayload {
   price: number;
   image?: string;
   description: string;
-  optionalAddons?: string;
-  requiredAddons?: string;
-  removableIngredients?: string;
+  optionalAddons: string;
+  requiredAddons: string;
+  removableIngredients: string;
 }
 
 export interface IReviewPayload {
