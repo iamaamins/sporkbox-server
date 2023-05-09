@@ -10,7 +10,6 @@ import {
   deleteFields,
   checkActions,
   formatAddons,
-  splitAddons,
   convertDateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
