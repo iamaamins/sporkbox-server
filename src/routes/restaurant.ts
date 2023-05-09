@@ -13,6 +13,7 @@ import {
   convertDateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
+  splitAddons,
 } from "../utils";
 import { upload } from "../config/multer";
 import { deleteImage, uploadImage } from "../config/s3";
@@ -469,6 +470,15 @@ router.post(
           removableIngredients,
         }: IItemPayload = req.body;
 
+        // If required fields aren't provided
+        if (!restaurantId || !name || !tags || !price || !description) {
+          // Log error
+          console.log("Please provide all the fields");
+
+          res.status(400);
+          throw new Error("Please provide all the fields");
+        }
+
         // Initiate parsed addons
         let parsedOptionalAddons;
         let parsedRequiredAddons;
@@ -482,80 +492,71 @@ router.post(
           parsedRequiredAddons = JSON.parse(requiredAddons);
         }
 
-        // If all the fields aren't provided
-        if (!restaurantId || !name || !tags || !price || !description) {
-          // Log error
-          console.log("Please provide all the fields");
-
-          res.status(400);
-          throw new Error("Please provide all the fields");
-        }
-
         // Check addable ingredients format
         if (
           parsedOptionalAddons &&
           !isCorrectAddonsFormat(parsedOptionalAddons)
         ) {
           // Log error
-          console.log("Invalid addable ingredients format");
+          console.log("Invalid optional addons format");
 
           res.status(400);
-          throw new Error("Invalid addable ingredients format");
+          throw new Error("Invalid optional addons format");
         }
 
-        // Create image URL
-        let imageUrl;
+        // // Create image URL
+        // let imageUrl;
 
-        // If there is a file
-        if (req.file) {
-          // Destructure file data
-          const { buffer, mimetype } = req.file;
+        // // If there is a file
+        // if (req.file) {
+        //   // Destructure file data
+        //   const { buffer, mimetype } = req.file;
 
-          // Resize the image
-          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+        //   // Resize the image
+        //   const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
-          // Upload image and get the URL
-          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
-        }
+        //   // Upload image and get the URL
+        //   imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+        // }
 
-        // Formatted addable ingredients
-        const formattedOptionalAddons =
-          parsedOptionalAddons && formatAddons(parsedOptionalAddons);
+        // // Formatted addable ingredients
+        // const formattedOptionalAddons =
+        //   parsedOptionalAddons && formatAddons(parsedOptionalAddons);
 
-        try {
-          // Find the restaurant and add the item
-          const updatedRestaurant = await Restaurant.findOneAndUpdate(
-            { _id: restaurantId },
-            {
-              $push: {
-                items: {
-                  name,
-                  tags,
-                  price,
-                  description,
-                  image: imageUrl,
-                  status: "ACTIVE",
-                  removableIngredients,
-                  addableIngredients: formattedOptionalAddons,
-                },
-              },
-            },
-            {
-              returnDocument: "after",
-            }
-          )
-            .select("-__v -updatedAt")
-            .lean()
-            .orFail();
+        // try {
+        //   // Find the restaurant and add the item
+        //   const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        //     { _id: restaurantId },
+        //     {
+        //       $push: {
+        //         items: {
+        //           name,
+        //           tags,
+        //           price,
+        //           description,
+        //           image: imageUrl,
+        //           status: "ACTIVE",
+        //           removableIngredients,
+        //           addableIngredients: formattedOptionalAddons,
+        //         },
+        //       },
+        //     },
+        //     {
+        //       returnDocument: "after",
+        //     }
+        //   )
+        //     .select("-__v -updatedAt")
+        //     .lean()
+        //     .orFail();
 
-          // Return the updated restaurant
-          res.status(201).json(updatedRestaurant);
-        } catch (err) {
-          // If item isn't added successfully
-          console.log(err);
+        //   // Return the updated restaurant
+        //   res.status(201).json(updatedRestaurant);
+        // } catch (err) {
+        //   // If item isn't added successfully
+        //   console.log(err);
 
-          throw err;
-        }
+        //   throw err;
+        // }
       } else {
         // If role isn't admin or vendor
         console.log("Not authorized");
@@ -591,7 +592,7 @@ router.patch(
           removableIngredients,
         }: IItemPayload = req.body;
 
-        // If all the fields aren't provided
+        // If required fields aren't provided
         if (
           !name ||
           !tags ||
@@ -607,110 +608,141 @@ router.patch(
           throw new Error("Please provide all the fields");
         }
 
-        // Check addable ingredients format
-        if (
-          optionalAddons &&
-          !isCorrectAddonsFormat(JSON.parse(optionalAddons))
-        ) {
-          // Log error
-          console.log("Invalid addable ingredients format");
+        // Initiate parsed addons
+        let parsedOptionalAddons;
+        let parsedRequiredAddons;
 
-          res.status(400);
-          throw new Error("Invalid addable ingredients format");
+        // Parsed stringified addons
+        if (optionalAddons) {
+          parsedOptionalAddons = JSON.parse(optionalAddons);
         }
 
-        // // If a new file is provided and an image already exists
-        // if (req.file && image) {
-        //   // Create name
-        //   const name = image.split("/")[image.split("/").length - 1];
+        if (requiredAddons) {
+          parsedRequiredAddons = JSON.parse(requiredAddons);
+        }
 
-        //   // Delete image from s3
-        //   await deleteImage(res, name);
-        // }
+        // Check optional addons format
+        if (
+          parsedOptionalAddons &&
+          !isCorrectAddonsFormat(parsedOptionalAddons)
+        ) {
+          // Log error
+          console.log("Invalid optional addons format");
 
-        // // Create image URL
-        // let imageUrl = image;
+          res.status(400);
+          throw new Error("Invalid optional addons format");
+        }
 
-        // // If there is a file
-        // if (req.file) {
-        //   // Destructure file data
-        //   const { buffer, mimetype } = req.file;
+        // Check required addons format
+        if (
+          parsedRequiredAddons &&
+          !isCorrectAddonsFormat(parsedRequiredAddons)
+        ) {
+          // Log error
+          console.log("Invalid required addons format");
 
-        //   // Resize the image
-        //   const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+          res.status(400);
+          throw new Error("Invalid required addons format");
+        }
 
-        //   // Upload image and get the URL
-        //   imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
-        // }
+        // If a new file is provided and an image already exists
+        if (req.file && image) {
+          // Create name
+          const name = image.split("/")[image.split("/").length - 1];
 
-        // // Formatted addable ingredients
-        // const formattedAddableIngredients =
-        //   addableIngredients && formatAddons(addableIngredients);
+          // Delete image from s3
+          await deleteImage(res, name);
+        }
 
-        // try {
-        //   if (!imageUrl) {
-        //     // Update the item
-        //     const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        //       { _id: restaurantId, "items._id": itemId },
-        //       {
-        //         $set: {
-        //           "items.$.name": name,
-        //           "items.$.tags": tags,
-        //           "items.$.price": price,
-        //           "items.$.description": description,
-        //           "items.$.removableIngredients": removableIngredients,
-        //           "items.$.addableIngredients": formattedAddableIngredients,
-        //         },
-        //         $unset: {
-        //           "items.$.image": null,
-        //         },
-        //       },
-        //       {
-        //         returnDocument: "after",
-        //       }
-        //     )
-        //       .lean()
-        //       .orFail();
+        // Create image URL
+        let imageUrl = image;
 
-        //     // Delete fields
-        //     deleteFields(updatedRestaurant, ["createdAt"]);
+        // If there is a file
+        if (req.file) {
+          // Destructure file data
+          const { buffer, mimetype } = req.file;
 
-        //     // Return the updated restaurant with response
-        //     res.status(201).json(updatedRestaurant);
-        //   } else if (imageUrl) {
-        //     // Update the item
-        //     const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        //       { _id: restaurantId, "items._id": itemId },
-        //       {
-        //         $set: {
-        //           "items.$.name": name,
-        //           "items.$.tags": tags,
-        //           "items.$.price": price,
-        //           "items.$.image": imageUrl,
-        //           "items.$.description": description,
-        //           "items.$.removableIngredients": removableIngredients,
-        //           "items.$.addableIngredients": formattedAddableIngredients,
-        //         },
-        //       },
-        //       {
-        //         returnDocument: "after",
-        //       }
-        //     )
-        //       .lean()
-        //       .orFail();
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
-        //     // Delete fields
-        //     deleteFields(updatedRestaurant, ["createdAt"]);
+          // Upload image and get the URL
+          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+        }
 
-        //     // Return the updated restaurant with response
-        //     res.status(201).json(updatedRestaurant);
-        //   }
-        // } catch (err) {
-        //   // If item isn't updated successfully
-        //   console.log(err);
+        // Formatted optional addons
+        const formattedOptionalAddons =
+          parsedOptionalAddons && formatAddons(parsedOptionalAddons);
 
-        //   throw err;
-        // }
+        // Formatted optional addons
+        const formattedRequiredAddons =
+          parsedRequiredAddons && formatAddons(parsedRequiredAddons);
+
+        try {
+          if (!imageUrl) {
+            // Update the item
+            const updatedRestaurant = await Restaurant.findOneAndUpdate(
+              { _id: restaurantId, "items._id": itemId },
+              {
+                $set: {
+                  "items.$.name": name,
+                  "items.$.tags": tags,
+                  "items.$.price": price,
+                  "items.$.description": description,
+                  "items.$.optionalAddons": formattedOptionalAddons,
+                  "items.$.requiredAddons": formattedRequiredAddons,
+                  "items.$.removableIngredients": removableIngredients,
+                },
+                $unset: {
+                  "items.$.image": null,
+                },
+              },
+              {
+                returnDocument: "after",
+              }
+            )
+              .lean()
+              .orFail();
+
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+
+            // Return the updated restaurant with response
+            res.status(201).json(updatedRestaurant);
+          } else if (imageUrl) {
+            // Update the item
+            const updatedRestaurant = await Restaurant.findOneAndUpdate(
+              { _id: restaurantId, "items._id": itemId },
+              {
+                $set: {
+                  "items.$.name": name,
+                  "items.$.tags": tags,
+                  "items.$.price": price,
+                  "items.$.image": imageUrl,
+                  "items.$.description": description,
+                  "items.$.optionalAddons": formattedOptionalAddons,
+                  "items.$.requiredAddons": formattedRequiredAddons,
+                  "items.$.removableIngredients": removableIngredients,
+                },
+              },
+              {
+                returnDocument: "after",
+              }
+            )
+              .lean()
+              .orFail();
+
+            // Delete fields
+            deleteFields(updatedRestaurant, ["createdAt"]);
+
+            // Return the updated restaurant with response
+            res.status(201).json(updatedRestaurant);
+          }
+        } catch (err) {
+          // If item isn't updated successfully
+          console.log(err);
+
+          throw err;
+        }
       } else {
         // If role isn't admin or vendor
         console.log("Not authorized");

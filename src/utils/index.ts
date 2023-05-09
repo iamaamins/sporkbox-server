@@ -9,7 +9,7 @@ import mail from "@sendgrid/mail";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { orderReminderTemplate } from "./emailTemplates";
-import { ISortScheduledRestaurant, IUserCompany } from "../types";
+import { IAddons, ISortScheduledRestaurant, IUserCompany } from "../types";
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -202,23 +202,22 @@ export const splitAddons = (addons: string) =>
     );
 
 // Check addable ingredients format
-export const isCorrectAddonsFormat = (optionalOrRequiredAddons: {
-  addons: string;
-  addable: number;
-}) => {
-  console.log(splitAddons(optionalOrRequiredAddons.addons));
-
-  return splitAddons(optionalOrRequiredAddons.addons).every(
+export const isCorrectAddonsFormat = (parsedAddons: IAddons) =>
+  splitAddons(parsedAddons.addons).every(
     (ingredient) =>
-      ingredient.length === 2 && ingredient[1] !== "" && +ingredient[1] >= 0
+      ingredient.length === 2 &&
+      ingredient[1] !== "" &&
+      +ingredient[1] >= 0 &&
+      splitAddons(parsedAddons.addons).length >= parsedAddons.addable
   );
-};
 
 // Format addable ingredients
-export const formatAddons = (addons: string) =>
-  splitAddons(addons)
+export const formatAddons = (parsedAddons: IAddons) => ({
+  addons: splitAddons(parsedAddons.addons)
     .map((ingredient) => ingredient.join(" - "))
-    .join(", ");
+    .join(", "),
+  addable: parsedAddons.addable || splitAddons(parsedAddons.addons).length,
+});
 
 // Get future date
 export function getFutureDate(dayToAdd: number) {

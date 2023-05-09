@@ -85,6 +85,11 @@ interface IReviewSchema {
   comment: string;
 }
 
+export interface IAddons {
+  addons: string;
+  addable: number;
+}
+
 interface IItemSchema {
   name: string;
   tags: string;
@@ -92,14 +97,8 @@ interface IItemSchema {
   image: string;
   status: string;
   description: string;
-  optionalAddons?: {
-    addons: string;
-    addable: number;
-  };
-  requiredAddons?: {
-    addons: string;
-    addable: number;
-  };
+  optionalAddons?: IAddons;
+  requiredAddons?: IAddons;
   addableIngredients?: string;
   removableIngredients?: string;
   reviews: Types.DocumentArray<IReviewSchema>;

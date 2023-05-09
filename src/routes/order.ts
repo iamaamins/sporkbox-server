@@ -2,12 +2,12 @@ import Order from "../models/order";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
+  splitAddons,
   convertDateToMS,
   convertDateToText,
   formatNumberToUS,
   generateRandomString,
   getUpcomingRestaurants,
-  splitAddableIngredients,
 } from "../utils";
 import {
   orderArchiveTemplate,
@@ -197,7 +197,7 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             // Get total addon price
             const totalAddonPrice =
               (item.addableIngredients &&
-                splitAddableIngredients(item.addableIngredients)
+                splitAddons(item.addableIngredients)
                   .filter((ingredient) =>
                     addedIngredientNames?.includes(ingredient[0])
                   )
