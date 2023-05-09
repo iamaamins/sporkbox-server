@@ -131,7 +131,12 @@ const orderSchema = new Schema<IOrderSchema>(
         type: Number,
         required: [true, "Please provide a total price"],
       },
-      addedIngredients: {
+      optionalAddons: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      requiredAddons: {
         type: String,
         trim: true,
         lowercase: true,
