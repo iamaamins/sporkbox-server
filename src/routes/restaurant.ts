@@ -480,22 +480,13 @@ router.post(
           throw new Error("Please provide all the fields");
         }
 
-        // Initiate parsed addons
-        let parsedOptionalAddons;
-        let parsedRequiredAddons;
+        // Parse addons
+        const parsedOptionalAddons: IAddons = JSON.parse(optionalAddons);
+        const parsedRequiredAddons: IAddons = JSON.parse(requiredAddons);
 
-        // Parsed stringified addons
-        if (optionalAddons) {
-          parsedOptionalAddons = JSON.parse(optionalAddons);
-        }
-
-        if (requiredAddons) {
-          parsedRequiredAddons = JSON.parse(requiredAddons);
-        }
-
-        // Check addable ingredients format
+        // Check optional addons format
         if (
-          parsedOptionalAddons &&
+          parsedOptionalAddons.addons &&
           !isCorrectAddonsFormat(parsedOptionalAddons)
         ) {
           // Log error
@@ -505,59 +496,78 @@ router.post(
           throw new Error("Invalid optional addons format");
         }
 
-        // // Create image URL
-        // let imageUrl;
+        // Check required addons format
+        if (
+          parsedRequiredAddons.addons &&
+          !isCorrectAddonsFormat(parsedRequiredAddons)
+        ) {
+          // Log error
+          console.log("Invalid required addons format");
 
-        // // If there is a file
-        // if (req.file) {
-        //   // Destructure file data
-        //   const { buffer, mimetype } = req.file;
+          res.status(400);
+          throw new Error("Invalid required addons format");
+        }
 
-        //   // Resize the image
-        //   const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+        // Create image URL
+        let imageUrl;
 
-        //   // Upload image and get the URL
-        //   imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
-        // }
+        // If there is a file
+        if (req.file) {
+          // Destructure file data
+          const { buffer, mimetype } = req.file;
 
-        // // Formatted addable ingredients
-        // const formattedOptionalAddons =
-        //   parsedOptionalAddons && formatAddons(parsedOptionalAddons);
+          // Resize the image
+          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
 
-        // try {
-        //   // Find the restaurant and add the item
-        //   const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        //     { _id: restaurantId },
-        //     {
-        //       $push: {
-        //         items: {
-        //           name,
-        //           tags,
-        //           price,
-        //           description,
-        //           image: imageUrl,
-        //           status: "ACTIVE",
-        //           removableIngredients,
-        //           addableIngredients: formattedOptionalAddons,
-        //         },
-        //       },
-        //     },
-        //     {
-        //       returnDocument: "after",
-        //     }
-        //   )
-        //     .select("-__v -updatedAt")
-        //     .lean()
-        //     .orFail();
+          // Upload image and get the URL
+          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+        }
 
-        //   // Return the updated restaurant
-        //   res.status(201).json(updatedRestaurant);
-        // } catch (err) {
-        //   // If item isn't added successfully
-        //   console.log(err);
+        // Formatted optional addons
+        const formattedOptionalAddons =
+          parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
 
-        //   throw err;
-        // }
+        // Formatted required addons
+        const formattedRequiredAddons =
+          parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
+
+        try {
+          // Find the restaurant and add the item
+          const updatedRestaurant = await Restaurant.findOneAndUpdate(
+            { _id: restaurantId },
+            {
+              $push: {
+                items: {
+                  name,
+                  tags,
+                  price,
+                  description,
+                  image: imageUrl,
+                  status: "ACTIVE",
+                  removableIngredients,
+                  optionalAddons:
+                    formattedOptionalAddons || parsedOptionalAddons,
+                  requiredAddons:
+                    formattedRequiredAddons || parsedRequiredAddons,
+                },
+              },
+            },
+            {
+              returnDocument: "after",
+            }
+          )
+            .select("-__v -updatedAt")
+            .lean()
+            .orFail();
+
+          // Return the updated restaurant
+          res.status(201).json(updatedRestaurant);
+        } catch (err) {
+          // If item isn't added successfully
+          console.log(err);
+
+          throw err;
+        }
       } else {
         // If role isn't admin or vendor
         console.log("Not authorized");
@@ -609,7 +619,7 @@ router.patch(
           throw new Error("Please provide all the fields");
         }
 
-        // Initiate parsed addons
+        // Parse addons
         const parsedOptionalAddons: IAddons = JSON.parse(optionalAddons);
         const parsedRequiredAddons: IAddons = JSON.parse(requiredAddons);
 
