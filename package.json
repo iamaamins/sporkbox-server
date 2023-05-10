@@ -8,7 +8,8 @@
     "start": "node ./dist/app.js",
     "postinstall": "npm run tsc",
     "dev": "nodemon --files ./src/app.ts",
-    "heroku-postbuild": "npm run migrate-mongo up"
+    "heroku-postbuild": "npm run migrate-mongo up",
+    "migrate-mongo": "migrate-mongo"
   },
   "author": "",
   "license": "ISC",
