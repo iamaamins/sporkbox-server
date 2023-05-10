@@ -199,12 +199,12 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
 
           // Get optional addons
           const optionalAddons = orderPayload.optionalAddons?.map(
-            (addedIngredient) => addedIngredient.split("-")[0].trim()
+            (optionalAddon) => optionalAddon.split("-")[0].trim()
           );
 
           // Get required addons
           const requiredAddons = orderPayload.requiredAddons?.map(
-            (addedIngredient) => addedIngredient.split("-")[0].trim()
+            (requiredAddon) => requiredAddon.split("-")[0].trim()
           );
 
           if (item) {
