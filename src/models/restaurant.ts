@@ -126,6 +126,7 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: String,
           trim: true,
           lowercase: true,
+          required: [true, "Please provide removable ingredients"],
         },
         reviews: [
           new Schema({

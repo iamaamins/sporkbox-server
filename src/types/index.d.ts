@@ -100,7 +100,7 @@ interface IItemSchema {
   description: string;
   optionalAddons: IAddons;
   requiredAddons: IAddons;
-  removableIngredients?: string;
+  removableIngredients: string;
   reviews: Types.DocumentArray<IReviewSchema>;
 }
 
@@ -176,9 +176,9 @@ export interface IOrdersPayload {
     companyId: string;
     restaurantId: string;
     deliveryDate: number;
-    optionalAddons?: string[];
-    requiredAddons?: string[];
-    removedIngredients?: string;
+    optionalAddons: string[];
+    requiredAddons: string[];
+    removedIngredients: string;
   }[];
 }
 

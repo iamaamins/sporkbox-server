@@ -145,8 +145,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
       // Get upcoming week restaurants
       const upcomingRestaurants = await getUpcomingRestaurants(companies);
 
-      // Check if the provided items are valid
-      const itemsAreValid = ordersPayload.every((orderPayload) =>
+      // Check if the provided order items are valid
+      const orderItemsAreValid = ordersPayload.every((orderPayload) =>
         upcomingRestaurants.some(
           (upcomingRestaurant) =>
             upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
@@ -157,20 +157,51 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             upcomingRestaurant.items.some(
               (item) =>
                 item._id?.toString() === orderPayload.itemId &&
-                (item.requiredAddons.addons
-                  ? item.requiredAddons.addable ===
-                    orderPayload.requiredAddons?.length
-                  : true) &&
-                (item.optionalAddons.addons
+                (orderPayload.optionalAddons.length > 0
                   ? item.optionalAddons.addable >=
-                    (orderPayload.optionalAddons?.length || 0)
+                      orderPayload.optionalAddons.length &&
+                    orderPayload.optionalAddons.every((optionalAddon) =>
+                      item.optionalAddons.addons
+                        .split(",")
+                        .some(
+                          (itemOptionalAddon) =>
+                            itemOptionalAddon.split("-")[0].trim() ===
+                            optionalAddon.split("-")[0].trim().toLowerCase()
+                        )
+                    )
+                  : true) &&
+                (orderPayload.requiredAddons.length > 0
+                  ? item.requiredAddons.addable ===
+                      orderPayload.requiredAddons.length &&
+                    orderPayload.requiredAddons.every((requiredAddon) =>
+                      item.requiredAddons.addons
+                        .split(",")
+                        .some(
+                          (itemRequiredAddon) =>
+                            itemRequiredAddon.split("-")[0].trim() ===
+                            requiredAddon.split("-")[0].trim().toLowerCase()
+                        )
+                    )
+                  : true) &&
+                (orderPayload.removedIngredients
+                  ? orderPayload.removedIngredients
+                      .split(",")
+                      .every((removedIngredient) =>
+                        item.removableIngredients
+                          .split(",")
+                          .some(
+                            (itemRemovableIngredient) =>
+                              itemRemovableIngredient.trim() ===
+                              removedIngredient.trim().toLowerCase()
+                          )
+                      )
                   : true)
             )
         )
       );
 
       // If items are not valid
-      if (!itemsAreValid) {
+      if (!orderItemsAreValid) {
         // Log error
         console.log("Orders are not valid");
 
