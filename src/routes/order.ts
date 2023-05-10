@@ -160,26 +160,32 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                 (orderPayload.optionalAddons.length > 0
                   ? item.optionalAddons.addable >=
                       orderPayload.optionalAddons.length &&
-                    orderPayload.optionalAddons.every((optionalAddon) =>
+                    orderPayload.optionalAddons.every((orderOptionalAddon) =>
                       item.optionalAddons.addons
                         .split(",")
                         .some(
                           (itemOptionalAddon) =>
                             itemOptionalAddon.split("-")[0].trim() ===
-                            optionalAddon.split("-")[0].trim().toLowerCase()
+                            orderOptionalAddon
+                              .split("-")[0]
+                              .trim()
+                              .toLowerCase()
                         )
                     )
                   : true) &&
                 (orderPayload.requiredAddons.length > 0
                   ? item.requiredAddons.addable ===
                       orderPayload.requiredAddons.length &&
-                    orderPayload.requiredAddons.every((requiredAddon) =>
+                    orderPayload.requiredAddons.every((orderRequiredAddon) =>
                       item.requiredAddons.addons
                         .split(",")
                         .some(
                           (itemRequiredAddon) =>
                             itemRequiredAddon.split("-")[0].trim() ===
-                            requiredAddon.split("-")[0].trim().toLowerCase()
+                            orderRequiredAddon
+                              .split("-")[0]
+                              .trim()
+                              .toLowerCase()
                         )
                     )
                   : true) &&
