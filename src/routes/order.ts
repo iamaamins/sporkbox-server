@@ -188,21 +188,34 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             (item) => item._id?.toString() === orderPayload.itemId
           );
 
-          // Get added ingredients names
-          const addedIngredientNames = orderPayload.addedIngredients?.map(
+          // Get optional addons
+          const optionalAddons = orderPayload.optionalAddons?.map(
+            (addedIngredient) => addedIngredient.split("-")[0].trim()
+          );
+
+          // Get required addons
+          const requiredAddons = orderPayload.requiredAddons?.map(
             (addedIngredient) => addedIngredient.split("-")[0].trim()
           );
 
           if (item) {
-            // Get total addon price
-            const totalAddonPrice =
-              (item.addableIngredients &&
-                splitAddons(item.addableIngredients)
-                  .filter((ingredient) =>
-                    addedIngredientNames?.includes(ingredient[0])
-                  )
-                  .reduce((acc, curr) => acc + +curr[1], 0)) ||
-              0;
+            // Get total optional addons price
+            const optionalAddonsPrice =
+              item.optionalAddons &&
+              splitAddons(item.optionalAddons.addons)
+                .filter((addon) => optionalAddons?.includes(addon[0]))
+                .reduce((acc, curr) => acc + +curr[1], 0);
+
+            // Get total optional addons price
+            const requiredAddonsPrice =
+              item.requiredAddons &&
+              splitAddons(item.requiredAddons.addons)
+                .filter((addon) => requiredAddons?.includes(addon[0]))
+                .reduce((acc, curr) => acc + +curr[1], 0);
+
+            // Get total addons price
+            const totalAddonsPrice =
+              (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
 
             // Create and return individual order
             return {
@@ -239,11 +252,12 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                 description: item.description,
                 quantity: orderPayload.quantity,
                 image: item.image || restaurant.logo,
-                total: formatNumberToUS(
-                  item.price * orderPayload.quantity + totalAddonPrice
-                ),
-                addedIngredients: addedIngredientNames?.join(", "),
+                optionalAddons: optionalAddons?.join(", "),
+                requiredAddons: requiredAddons?.join(", "),
                 removedIngredients: orderPayload.removedIngredients,
+                total: formatNumberToUS(
+                  item.price * orderPayload.quantity + totalAddonsPrice
+                ),
               },
             };
           } else {

@@ -177,7 +177,8 @@ export interface IOrdersPayload {
     companyId: string;
     restaurantId: string;
     deliveryDate: number;
-    addedIngredients?: string[];
+    optionalAddons?: string[];
+    requiredAddons?: string[];
     removedIngredients?: string;
   }[];
 }
