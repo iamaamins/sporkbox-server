@@ -1,34 +1,39 @@
 module.exports = {
   async up(db) {
-    await db.collection("restaurants").updateMany({}, [
-      {
-        $set: {
-          items: {
-            $map: {
-              input: "$items",
-              in: {
-                $mergeObjects: [
-                  "$$this",
-                  {
-                    optionalAddons: {
-                      addable: 0,
-                      addons: "$$this.addableIngredients",
+    try {
+      await db.collection("restaurants").updateMany({}, [
+        {
+          $set: {
+            items: {
+              $map: {
+                input: "$items",
+                in: {
+                  $mergeObjects: [
+                    "$$this",
+                    {
+                      optionalAddons: {
+                        addable: 0,
+                        addons: "$$this.addableIngredients",
+                      },
+                      requiredAddons: {
+                        addable: 0,
+                        addons: "",
+                      },
                     },
-                    requiredAddons: {
-                      addable: 0,
-                      addons: "",
-                    },
-                  },
-                ],
+                  ],
+                },
               },
             },
           },
         },
-      },
-      {
-        $unset: "items.addableIngredients",
-      },
-    ]);
+        {
+          $unset: "items.addableIngredients",
+        },
+      ]);
+    } catch (err) {
+      // Log error
+      console.log(err);
+    }
   },
 
   async down(db) {},
