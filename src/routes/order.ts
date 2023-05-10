@@ -155,7 +155,16 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             convertDateToMS(upcomingRestaurant.date) ===
               orderPayload.deliveryDate &&
             upcomingRestaurant.items.some(
-              (item) => item._id?.toString() === orderPayload.itemId
+              (item) =>
+                item._id?.toString() === orderPayload.itemId &&
+                (item.requiredAddons.addons
+                  ? item.requiredAddons.addable ===
+                    orderPayload.requiredAddons?.length
+                  : true) &&
+                (item.optionalAddons.addons
+                  ? item.optionalAddons.addable >=
+                    (orderPayload.optionalAddons?.length || 0)
+                  : true)
             )
         )
       );

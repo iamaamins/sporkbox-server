@@ -103,9 +103,11 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             type: String,
             trim: true,
             lowercase: true,
+            required: [true, "Please provide optional addons"],
           },
           addable: {
             type: Number,
+            required: [true, "Please provide optional addable"],
           },
         },
         requiredAddons: {
@@ -113,9 +115,11 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             type: String,
             trim: true,
             lowercase: true,
+            required: [true, "Please provide required addons"],
           },
           addable: {
             type: Number,
+            required: [true, "Please provide required addable"],
           },
         },
         removableIngredients: {
