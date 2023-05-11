@@ -471,7 +471,15 @@ router.post(
         }: IItemPayload = req.body;
 
         // If required fields aren't provided
-        if (!restaurantId || !name || !tags || !price || !description) {
+        if (
+          !name ||
+          !tags ||
+          !price ||
+          !description ||
+          !restaurantId ||
+          !optionalAddons ||
+          !requiredAddons
+        ) {
           // Log error
           console.log("Please provide all the fields");
 
@@ -609,7 +617,9 @@ router.patch(
           !price ||
           !itemId ||
           !description ||
-          !restaurantId
+          !restaurantId ||
+          !optionalAddons ||
+          !requiredAddons
         ) {
           // Log error
           console.log("Please provide all the fields");

@@ -132,7 +132,9 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
             orderPayload.quantity &&
             orderPayload.companyId &&
             orderPayload.restaurantId &&
-            orderPayload.deliveryDate
+            orderPayload.deliveryDate &&
+            orderPayload.optionalAddons &&
+            orderPayload.requiredAddons
         )
       ) {
         // Log error
