@@ -40,6 +40,4 @@ module.exports = {
       console.log(err);
     }
   },
-
-  async down(db) {},
 };
