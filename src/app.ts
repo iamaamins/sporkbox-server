@@ -1,5 +1,6 @@
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
 import express from "express";
 import "express-async-errors";
 import User from "./routes/user";
@@ -7,6 +8,7 @@ import mail from "@sendgrid/mail";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Stripe from "./routes/stripe";
+const xssClean = require("xss-clean");
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
 import error from "./middleware/error";
@@ -15,6 +17,7 @@ import Customer from "./routes/customer";
 import Favorite from "./routes/favorite";
 import cookieParser from "cookie-parser";
 import Restaurant from "./routes/restaurant";
+import mongoSanitize from "express-mongo-sanitize";
 
 // Config
 dotenv.config();
@@ -42,6 +45,9 @@ app.use(
     origin: process.env.CLIENT_URL,
   })
 );
+app.use(helmet());
+app.use(xssClean());
+app.use(mongoSanitize());
 
 // Routes
 app.use("/users", User);
