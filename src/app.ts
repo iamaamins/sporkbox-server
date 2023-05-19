@@ -45,8 +45,8 @@ app.use(
     origin: process.env.CLIENT_URL,
   })
 );
-// app.use(helmet());
-app.use(xssClean());
+app.use(helmet());
+// app.use(xssClean());
 app.use(mongoSanitize());
 
 // Routes
