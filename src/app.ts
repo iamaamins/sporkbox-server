@@ -8,7 +8,6 @@ import mail from "@sendgrid/mail";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Stripe from "./routes/stripe";
-const xssClean = require("xss-clean");
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
 import error from "./middleware/error";
@@ -46,7 +45,6 @@ app.use(
   })
 );
 app.use(helmet());
-// app.use(xssClean());
 app.use(mongoSanitize());
 
 // Routes
