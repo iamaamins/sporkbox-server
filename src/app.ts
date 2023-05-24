@@ -8,6 +8,7 @@ import mail from "@sendgrid/mail";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Stripe from "./routes/stripe";
+const xssClean = require("xss-clean");
 import Vendor from "./routes/vendor";
 import Company from "./routes/company";
 import error from "./middleware/error";
@@ -17,6 +18,7 @@ import Favorite from "./routes/favorite";
 import cookieParser from "cookie-parser";
 import Restaurant from "./routes/restaurant";
 import mongoSanitize from "express-mongo-sanitize";
+import { unless } from "./utils";
 
 // Config
 dotenv.config();
@@ -34,9 +36,11 @@ mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 const app = express();
 
 // Middleware - Put raw middleware before json
-app.use("/stripe/webhook", express.raw({ type: "application/json" }));
-app.use(express.json());
 app.use(cookieParser());
+app.use(helmet());
+app.use(mongoSanitize());
+app.use(unless("/stripe/webhook", xssClean()));
+app.use(unless("/stripe/webhook", express.json()));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
@@ -44,8 +48,7 @@ app.use(
     origin: process.env.CLIENT_URL,
   })
 );
-app.use(helmet());
-app.use(mongoSanitize());
+app.use("/stripe/webhook", express.raw({ type: "application/json" }));
 
 // Routes
 app.use("/users", User);

@@ -4,11 +4,11 @@ import cron from "cron";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import User from "../models/user";
-import { Response } from "express";
 import mail from "@sendgrid/mail";
 import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { orderReminderTemplate } from "./emailTemplates";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import { IAddons, ISortScheduledRestaurant, IUserCompany } from "../types";
 
 // Generate token and set cookie to header
@@ -338,3 +338,14 @@ new cron.CronJob(
   true,
   "America/Los_Angeles"
 );
+
+// Skip middleware for specific routes/paths
+export function unless(path: string, middleware: RequestHandler) {
+  return function (req: Request, res: Response, next: NextFunction) {
+    if (path === req.path) {
+      return next();
+    } else {
+      return middleware(req, res, next);
+    }
+  };
+}
