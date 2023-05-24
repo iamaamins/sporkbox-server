@@ -35,9 +35,9 @@ mail.setApiKey(process.env.SENDGRID_API_KEY as string);
 // App
 const app = express();
 
-// Middleware - Put raw middleware before json
-app.use(cookieParser());
+// Middleware
 app.use(helmet());
+app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(unless("/stripe/webhook", xssClean()));
 app.use(unless("/stripe/webhook", express.json()));
