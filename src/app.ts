@@ -5,6 +5,7 @@ import express from "express";
 import "express-async-errors";
 import User from "./routes/user";
 import mail from "@sendgrid/mail";
+import { unless } from "./utils";
 import Admin from "./routes/admin";
 import Order from "./routes/order";
 import Stripe from "./routes/stripe";
@@ -18,7 +19,6 @@ import Favorite from "./routes/favorite";
 import cookieParser from "cookie-parser";
 import Restaurant from "./routes/restaurant";
 import mongoSanitize from "express-mongo-sanitize";
-import { unless } from "./utils";
 
 // Config
 dotenv.config();
