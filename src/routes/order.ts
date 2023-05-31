@@ -197,8 +197,8 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                       item.removableIngredients
                         .split(",")
                         .some(
-                          (itemRemovableIngredient) =>
-                            itemRemovableIngredient.trim() ===
+                          (removableIngredient) =>
+                            removableIngredient.trim() ===
                             removedIngredient.trim().toLowerCase()
                         )
                     )
