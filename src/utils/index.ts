@@ -349,3 +349,7 @@ export function unless(path: string, middleware: RequestHandler) {
     }
   };
 }
+
+// Sort addons
+export const sortIngredients = (a: string, b: string) =>
+  a.toLowerCase().localeCompare(b.toLowerCase());

@@ -178,7 +178,7 @@ export interface IOrdersPayload {
     deliveryDate: number;
     optionalAddons: string[];
     requiredAddons: string[];
-    removedIngredients: string;
+    removedIngredients: string[];
   }[];
 }
 

@@ -3,6 +3,7 @@ import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import {
   splitAddons,
+  sortIngredients,
   convertDateToMS,
   convertDateToText,
   formatNumberToUS,
@@ -191,18 +192,16 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                         )
                     )
                   : true) &&
-                (orderPayload.removedIngredients
-                  ? orderPayload.removedIngredients
-                      .split(",")
-                      .every((removedIngredient) =>
-                        item.removableIngredients
-                          .split(",")
-                          .some(
-                            (itemRemovableIngredient) =>
-                              itemRemovableIngredient.trim() ===
-                              removedIngredient.trim().toLowerCase()
-                          )
-                      )
+                (orderPayload.removedIngredients.length > 0
+                  ? orderPayload.removedIngredients.every((removedIngredient) =>
+                      item.removableIngredients
+                        .split(",")
+                        .some(
+                          (itemRemovableIngredient) =>
+                            itemRemovableIngredient.trim() ===
+                            removedIngredient.trim().toLowerCase()
+                        )
+                    )
                   : true)
             )
         )
@@ -300,9 +299,11 @@ router.post("/create-orders", authUser, async (req: Request, res: Response) => {
                 description: item.description,
                 quantity: orderPayload.quantity,
                 image: item.image || restaurant.logo,
-                optionalAddons: optionalAddons?.join(", "),
-                requiredAddons: requiredAddons?.join(", "),
-                removedIngredients: orderPayload.removedIngredients,
+                optionalAddons: optionalAddons.sort(sortIngredients).join(", "),
+                requiredAddons: requiredAddons.sort(sortIngredients).join(", "),
+                removedIngredients: orderPayload.removedIngredients
+                  .sort(sortIngredients)
+                  .join(", "),
                 total: formatNumberToUS(
                   item.price * orderPayload.quantity + totalAddonsPrice
                 ),
