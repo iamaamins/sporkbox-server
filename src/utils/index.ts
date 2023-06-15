@@ -241,8 +241,8 @@ const followingWeekSunday = getFutureDate(14);
 // Remind to order
 export async function sendOrderReminderEmails() {
   try {
-    // Get all active users
-    const users = await User.find({ status: "ACTIVE" })
+    // Get all active customers
+    const customers = await User.find({ role: "CUSTOMER", status: "ACTIVE" })
       .select("companies email")
       .lean();
 
@@ -284,20 +284,23 @@ export async function sendOrderReminderEmails() {
       .flat(2);
 
     // Get orders from next week Monday to following week Sunday
-    const orders = await Order.find({
+    const upcomingOrders = await Order.find({
       "delivery.date": { $gte: nextWeekMonday, $lt: followingWeekSunday },
     })
       .select("customer")
       .lean();
 
-    // Get users with no orders
-    const usersWithNoOrder = users.filter(
-      (user) =>
-        orders.some(
-          (order) => order.customer._id.toString() !== user._id.toString()
+    // Get customers with no upcomingO
+    const customersWithNoOrder = customers.filter(
+      (customer) =>
+        // Return customer with no upcoming orders
+        !upcomingOrders.some(
+          (upcomingOrder) =>
+            upcomingOrder.customer._id.toString() === customer._id.toString()
         ) &&
+        // Return customer who has restaurants scheduled to order
         upcomingRestaurants.some((upcomingRestaurant) =>
-          user.companies.some(
+          customer.companies.some(
             (company) =>
               company._id.toString() ===
               upcomingRestaurant.company._id.toString()
@@ -307,9 +310,14 @@ export async function sendOrderReminderEmails() {
 
     // Send reminder email
     await Promise.all(
-      usersWithNoOrder.map(
-        async (user) => await mail.send(orderReminderTemplate(user))
+      customersWithNoOrder.map(
+        async (customer) => await mail.send(orderReminderTemplate(customer))
       )
+    );
+
+    // Log confirmation
+    console.log(
+      `Order reminder sent to ${customersWithNoOrder.length} customers`
     );
   } catch (err) {
     // Log error
