@@ -87,6 +87,10 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
           type: Number,
           required: [true, "Please provide item price"],
         },
+        index: {
+          type: Number,
+          required: [true, "Please provide item index"],
+        },
         image: String,
         description: {
           type: String,

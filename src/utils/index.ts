@@ -9,7 +9,7 @@ import Order from "../models/order";
 import Restaurant from "../models/restaurant";
 import { orderReminderTemplate } from "./emailTemplates";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { IAddons, ISortScheduledRestaurant, IUserCompany } from "../types";
+import { IAddons, IUserCompany, ISortScheduledRestaurant } from "../types";
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -85,9 +85,9 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
       const upcomingRestaurants = response
         .map((upcomingWeekRestaurant) => ({
           ...upcomingWeekRestaurant,
-          items: upcomingWeekRestaurant.items.filter(
-            (item) => item.status === "ACTIVE"
-          ),
+          items: upcomingWeekRestaurant.items
+            .filter((item) => item.status === "ACTIVE")
+            .sort((a, b) => a.index - b.index),
           schedules: upcomingWeekRestaurant.schedules.filter(
             (schedule) =>
               schedule.status === "ACTIVE" &&

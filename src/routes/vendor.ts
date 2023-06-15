@@ -5,7 +5,11 @@ import Restaurant from "../models/restaurant";
 import authUser from "../middleware/authUser";
 import express, { Request, Response } from "express";
 import { deleteImage, uploadImage } from "../config/s3";
-import { IVendorPayload, IVendorStatusPayload } from "../types";
+import {
+  IVendorPayload,
+  IRestaurantSchema,
+  IVendorStatusPayload,
+} from "../types";
 import { setCookie, deleteFields, checkActions, resizeImage } from "../utils";
 
 // Initialize router
@@ -366,9 +370,17 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
         // Fetch 20 latest vendors with restaurant data
         const vendors = await User.find({ role: "VENDOR" })
           .limit(+limit)
-          .select("-__v -password -createdAt -updatedAt")
+          .select("-__v -password -shifts -companies -createdAt -updatedAt")
           .sort({ createdAt: -1 })
-          .populate("restaurant", "-__v -updatedAt");
+          .populate<{ restaurant: IRestaurantSchema }>(
+            "restaurant",
+            "-__v -updatedAt"
+          );
+
+        // Sort restaurant items
+        vendors.forEach((vendor) =>
+          vendor.restaurant.items.sort((a, b) => a.index - b.index)
+        );
 
         // Return the vendors
         res.status(200).json(vendors);

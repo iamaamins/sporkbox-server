@@ -93,6 +93,7 @@ export interface IAddons {
 
 interface IItemSchema {
   name: string;
+  index: number;
   tags: string;
   price: number;
   image: string;
@@ -155,6 +156,7 @@ export interface ISortScheduledRestaurant {
 interface IRestaurantItem {
   _id: Types.ObjectId;
   name: string;
+  index: number;
   tags: string;
   price: number;
   image: string;
@@ -244,7 +246,8 @@ export interface IScheduleRestaurantPayload {
 export interface IItemPayload {
   name: string;
   tags: string;
-  price: number;
+  price: string;
+  index: string;
   image?: string;
   description: string;
   optionalAddons: string;
@@ -347,4 +350,11 @@ export interface IStripePayableItems {
 
 export interface IShiftChangePayload {
   shift: string;
+}
+
+export interface IItemsIndexPayload {
+  reorderedItems: {
+    _id: string;
+    index: number;
+  }[];
 }

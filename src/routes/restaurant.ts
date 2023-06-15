@@ -20,6 +20,7 @@ import {
   IAddons,
   IItemPayload,
   IReviewPayload,
+  IItemsIndexPayload,
   IStatusChangePayload,
   IScheduleRestaurantPayload,
 } from "../types";
@@ -464,6 +465,7 @@ router.post(
           name,
           tags,
           price,
+          index,
           description,
           optionalAddons,
           requiredAddons,
@@ -475,6 +477,7 @@ router.post(
           !name ||
           !tags ||
           !price ||
+          !index ||
           !description ||
           !restaurantId ||
           !optionalAddons ||
@@ -548,6 +551,7 @@ router.post(
                   name,
                   tags,
                   price,
+                  index,
                   description,
                   image: imageUrl,
                   status: "ACTIVE",
@@ -901,6 +905,48 @@ router.post(
         }
       } else {
         // If role isn't customer
+        console.log("Not authorized");
+
+        res.status(403);
+        throw new Error("Not authorized");
+      }
+    }
+  }
+);
+
+// Update items index
+router.patch(
+  "/:restaurantId/update-items-index",
+  authUser,
+  async (req: Request, res: Response) => {
+    if (req.user) {
+      // Destructure data from req
+      const { role } = req.user;
+
+      if (role === "ADMIN") {
+        // Destructure data from req
+        const { restaurantId } = req.params;
+        const { reorderedItems }: IItemsIndexPayload = req.body;
+
+        try {
+          // Update items index
+          reorderedItems.forEach(async (item) => {
+            await Restaurant.updateOne(
+              { _id: restaurantId, "items._id": item._id },
+              { $set: { "items.$.index": item.index } }
+            );
+          });
+
+          // Send response
+          res.status(200).json("Items order updated");
+        } catch (err) {
+          // If items index aren't updated
+          console.log(err);
+
+          throw err;
+        }
+      } else {
+        // If role isn't admin
         console.log("Not authorized");
 
         res.status(403);
