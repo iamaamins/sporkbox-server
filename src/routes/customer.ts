@@ -66,7 +66,7 @@ router.post(
 
           try {
             // Create customer and populate the company
-            const customer = await User.create({
+            const response = await User.create({
               firstName,
               lastName,
               email,
@@ -76,6 +76,9 @@ router.post(
               password: hashedPassword,
               companies: archivedCompanies,
             });
+
+            // Convert BSON to object
+            const customer = response.toObject();
 
             // Generate jwt token and set
             // cookie to the response header
