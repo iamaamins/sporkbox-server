@@ -325,7 +325,7 @@ export async function sendOrderReminderEmails() {
   }
 }
 
-// Send the reminder at Thursday 12 PM
+// Send the reminder at Thursday 2 PM
 new cron.CronJob(
   '0 0 14 * * Thu',
   () => {
