@@ -182,6 +182,7 @@ export interface IOrdersPayload {
     requiredAddons: string[];
     removedIngredients: string[];
   }[];
+  discountCodeId: string;
 }
 
 export interface IUserCompany {
