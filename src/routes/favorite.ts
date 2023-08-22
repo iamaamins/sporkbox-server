@@ -1,32 +1,32 @@
-import Restaurant from "../models/restaurant";
-import Favorite from "../models/favorite";
-import authUser from "../middleware/authUser";
-import express, { Request, Response } from "express";
-import { IFavoritePayload, IFavoriteRestaurant } from "../types";
+import Restaurant from '../models/restaurant';
+import Favorite from '../models/favorite';
+import authUser from '../middleware/authUser';
+import express, { Request, Response } from 'express';
+import { IFavoritePayload, IFavoriteRestaurant } from '../types';
 
 // Initialize router
 const router = express.Router();
 
 // Add a favorite
 router.post(
-  "/add-to-favorite",
+  '/add-to-favorite',
   authUser,
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
       const { role, _id } = req.user;
 
-      if (role === "CUSTOMER") {
+      if (role === 'CUSTOMER') {
         // Destructure data from req
         const { restaurantId, itemId }: IFavoritePayload = req.body;
 
         // If all the fields aren't provided
         if (!restaurantId || !itemId) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         try {
@@ -74,10 +74,10 @@ router.post(
             }
           } else {
             // If no item is found
-            console.log("No item found");
+            console.log('No item found');
 
             res.status(400);
-            throw new Error("No item found");
+            throw new Error('No item found');
           }
         } catch (err) {
           // If restaurant isn't found
@@ -87,10 +87,10 @@ router.post(
         }
       } else {
         // If role isn't customer
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
@@ -98,7 +98,7 @@ router.post(
 
 // Remove a favorite
 router.delete(
-  "/:favoriteId/remove-from-favorite",
+  '/:favoriteId/remove-from-favorite',
   authUser,
   async (req: Request, res: Response) => {
     // Check if there is an user
@@ -106,17 +106,17 @@ router.delete(
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "CUSTOMER") {
+      if (role === 'CUSTOMER') {
         // Destructure data from req
         const { favoriteId } = req.params;
 
         // If all the fields aren't provided
         if (!favoriteId) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         try {
@@ -126,7 +126,7 @@ router.delete(
           });
 
           // Send data with response
-          res.status(200).json({ message: "Favorite removed" });
+          res.status(200).json({ message: 'Favorite removed' });
         } catch (err) {
           // If favorite isn't removed successfully
           console.log(err);
@@ -135,32 +135,32 @@ router.delete(
         }
       } else {
         // If role isn't customer
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
 );
 
 // Get all favorite
-router.get("/me", authUser, async (req: Request, res: Response) => {
+router.get('/me', authUser, async (req: Request, res: Response) => {
   if (req.user) {
     // Destructure data from req
     const { role, _id } = req.user;
 
-    if (role === "CUSTOMER") {
+    if (role === 'CUSTOMER') {
       try {
         // Find the favorites
         const response = await Favorite.find({
           customer: _id,
         })
           .populate<{ restaurant: IFavoriteRestaurant }>(
-            "restaurant",
-            "_id name logo items"
+            'restaurant',
+            '_id name logo items'
           )
-          .select("-__v");
+          .select('-__v');
 
         // Create favorites
         const favorites = response.map((favorite) => {
@@ -197,10 +197,10 @@ router.get("/me", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't customer
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });

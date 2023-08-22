@@ -1,13 +1,7 @@
 import { Schema, model } from 'mongoose';
+import { DiscountCodeSchema } from '../types';
 
-type DiscountCode = {
-  code: string;
-  value: number;
-  totalRedeem: number;
-  redeemability: 'once' | 'unlimited';
-};
-
-const discountCodeSchema = new Schema<DiscountCode>(
+const discountCodeSchema = new Schema<DiscountCodeSchema>(
   {
     code: {
       type: String,
@@ -27,6 +21,7 @@ const discountCodeSchema = new Schema<DiscountCode>(
     },
     totalRedeem: {
       type: Number,
+      default: 0,
     },
   },
   {

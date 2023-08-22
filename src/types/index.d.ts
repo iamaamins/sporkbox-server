@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types } from 'mongoose';
 
 declare global {
   namespace Express {
@@ -358,3 +358,10 @@ export interface IItemsIndexPayload {
     index: number;
   }[];
 }
+
+export type DiscountCodeSchema = {
+  code: string;
+  value: number;
+  totalRedeem: number;
+  redeemability: 'once' | 'unlimited';
+};
