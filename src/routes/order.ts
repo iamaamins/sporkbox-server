@@ -385,7 +385,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           .lean();
 
         // Get shift, budget left, date and company id
-        const budgetAndCompanyDetails = upcomingDatesAndCompanies.map(
+        const stipendAndCompanyDetails = upcomingDatesAndCompanies.map(
           (upcomingDateAndCompany) => {
             // Find the orders those match the date
             const upcomingOrdersOnDate = allUpcomingOrders.filter(
@@ -414,7 +414,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
               return {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
-                budgetLeft:
+                stipendLeft:
                   upcomingOrdersTotalOnDate >= company.shiftBudget
                     ? 0
                     : formatNumberToUS(
@@ -427,14 +427,14 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
               return {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
-                budgetLeft: company.shiftBudget + discountAmount,
+                stipendLeft: company.shiftBudget + discountAmount,
               };
             }
           }
         );
 
         // Create payable items
-        const payableItems = budgetAndCompanyDetails
+        const payableItems = stipendAndCompanyDetails
           .map((budgetAndCompanyDetail) => {
             return {
               date: `${convertDateToText(
@@ -451,7 +451,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 )
                 .map((order) => order.item.name),
               amount:
-                budgetAndCompanyDetail.budgetLeft -
+                budgetAndCompanyDetail.stipendLeft -
                 (orders
                   .filter(
                     (order) =>
