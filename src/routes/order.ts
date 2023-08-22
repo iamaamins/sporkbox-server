@@ -344,7 +344,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
 
       try {
         // Initial discount value
-        let discountValue = 0;
+        let discountAmount = 0;
 
         if (discountCodeId) {
           // Get the discount details
@@ -362,7 +362,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
             (redeemability === 'once' && discountCode.totalRedeem < 1)
           ) {
             // Update variable
-            discountValue = discountCode.value;
+            discountAmount = discountCode.value;
           }
         }
 
@@ -402,9 +402,6 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 company._id.toString() === upcomingDateAndCompany.companyId
             ) as IUserCompany;
 
-            // Total budget
-            const totalBudget = company.shiftBudget + discountValue;
-
             // If upcoming orders are found on the date
             if (upcomingOrdersOnDate.length > 0) {
               // Calculate the upcoming orders total
@@ -418,9 +415,11 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
                 budgetLeft:
-                  upcomingOrdersTotalOnDate >= totalBudget
+                  upcomingOrdersTotalOnDate >= company.shiftBudget
                     ? 0
-                    : formatNumberToUS(totalBudget - upcomingOrdersTotalOnDate),
+                    : formatNumberToUS(
+                        company.shiftBudget - upcomingOrdersTotalOnDate
+                      ),
               };
             } else {
               // If no upcoming orders are found with the
@@ -428,7 +427,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
               return {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
-                budgetLeft: totalBudget,
+                budgetLeft: company.shiftBudget + discountAmount,
               };
             }
           }
@@ -453,14 +452,15 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 .map((order) => order.item.name),
               amount:
                 budgetAndCompanyDetail.budgetLeft -
-                orders
+                (orders
                   .filter(
                     (order) =>
                       order.delivery.date === budgetAndCompanyDetail.date &&
                       order.company._id.toString() ===
                         budgetAndCompanyDetail.companyId
                   )
-                  .reduce((acc, curr) => acc + curr.item.total, 0),
+                  .reduce((acc, curr) => acc + curr.item.total, 0) -
+                  discountAmount),
             };
           })
           .filter((payableItem) => payableItem.amount < 0);
