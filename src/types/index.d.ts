@@ -141,12 +141,12 @@ export interface IUserSchema {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
   password: string;
   status: string;
   shifts: string[];
   companies: IUserCompany[];
   restaurant: Types.ObjectId;
+  role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 
 export interface ISortScheduledRestaurant {
@@ -205,10 +205,10 @@ interface IUser {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
   status: string;
   shifts?: string[];
   companies?: IUserCompany[];
+  role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 
 export interface ICompanyPayload {

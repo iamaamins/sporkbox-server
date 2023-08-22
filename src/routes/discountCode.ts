@@ -61,4 +61,36 @@ router.post('/add', authUser, async (req, res) => {
   }
 });
 
+// Get all discount codes
+router.get('/', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
+      try {
+        // Query database
+        const discountCodes = await DiscountCode.find()
+          .select('-__v -createdAt -updatedAt')
+          .lean()
+          .orFail();
+
+        // Send response
+        res.status(200).json(discountCodes);
+      } catch (err) {
+        // Log error
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+  }
+});
+
 export default router;
