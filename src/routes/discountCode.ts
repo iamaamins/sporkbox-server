@@ -126,4 +126,41 @@ router.delete('/delete/:id', authUser, async (req, res) => {
   }
 });
 
+// Apply discount code
+router.post('/apply/:code', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data
+    const { role } = req.user;
+
+    if (role === 'CUSTOMER') {
+      // Destructure data
+      const { code } = req.params;
+
+      try {
+        // Query database
+        const discountCode = await DiscountCode.findOne({ code })
+          .select('code value')
+          .lean()
+          .orFail();
+
+        console.log(discountCode);
+
+        // Send response
+        res.status(200).json(discountCode);
+      } catch (err) {
+        // Log error
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+  }
+});
+
 export default router;
