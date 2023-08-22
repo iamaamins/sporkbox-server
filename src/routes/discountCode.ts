@@ -52,7 +52,7 @@ router.post('/add', authUser, async (req, res) => {
         throw err;
       }
     } else {
-      // If role isn't customer
+      // If role isn't admin
       console.log('Not authorized');
 
       res.status(403);
@@ -72,8 +72,7 @@ router.get('/', authUser, async (req, res) => {
         // Query database
         const discountCodes = await DiscountCode.find()
           .select('-__v -createdAt -updatedAt')
-          .lean()
-          .orFail();
+          .lean();
 
         // Send response
         res.status(200).json(discountCodes);
@@ -84,7 +83,41 @@ router.get('/', authUser, async (req, res) => {
         throw err;
       }
     } else {
-      // If role isn't customer
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+  }
+});
+
+// Delete a discount code
+router.delete('/delete/:id', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
+      // Destructure data
+      const { id } = req.params;
+
+      try {
+        // Delete document
+        const deletedCode = await DiscountCode.findByIdAndDelete(id)
+          .lean()
+          .orFail();
+
+        // Send response
+        res.status(200).json(deletedCode._id);
+      } catch (err) {
+        // Log error
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't Admin
       console.log('Not authorized');
 
       res.status(403);
