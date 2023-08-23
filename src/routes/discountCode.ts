@@ -139,7 +139,7 @@ router.post('/apply/:code', authUser, async (req, res) => {
       try {
         // Query database
         const discountCode = await DiscountCode.findOne({ code })
-          .select('-__v -createdAt -updatedAt')
+          .select('code redeemability value')
           .lean()
           .orFail();
 
@@ -151,8 +151,11 @@ router.post('/apply/:code', authUser, async (req, res) => {
           redeemability === 'unlimited' ||
           (redeemability === 'once' && discountCode.totalRedeem < 1)
         ) {
+          // Destructure discount code
+          const { redeemability, ...rest } = discountCode;
+
           // Send response
-          res.status(200).json(discountCode);
+          res.status(200).json(rest);
         } else {
           // Log error
           console.log('Invalid discount code');
