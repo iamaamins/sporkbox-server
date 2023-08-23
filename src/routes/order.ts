@@ -327,6 +327,11 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
         }
       });
 
+      // Get number of order days
+      const orderDays = orders
+        .map((order) => order.delivery.date)
+        .filter((date, index, dates) => dates.indexOf(date) === index).length;
+
       // Unique upcoming dates and companies
       const upcomingDatesAndCompanies = upcomingRestaurants
         .map((upcomingRestaurant) => ({
@@ -413,13 +418,19 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 0
               );
 
+              // Get the discount amount for each day
+              const singleDayDiscount = discountAmount / orderDays;
+
+              // Get total stipend
+              const totalStipend = company.shiftBudget + singleDayDiscount;
+
               // Return the date and company budget - upcoming orders total
               return {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
                 stipendLeft:
                   upcomingOrdersTotalOnDate >= company.shiftBudget
-                    ? discountAmount
+                    ? singleDayDiscount
                     : formatNumberToUS(
                         totalStipend - upcomingOrdersTotalOnDate
                       ),
@@ -466,6 +477,10 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
             };
           })
           .filter((payableItem) => payableItem.amount < 0);
+
+        console.log(payableOrders);
+
+        res.end();
 
         if (payableOrders.length > 0) {
           // Create random pending Id
