@@ -402,6 +402,9 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 company._id.toString() === upcomingDateAndCompany.companyId
             ) as IUserCompany;
 
+            // Stipend with discount
+            const totalStipend = company.shiftBudget + discountAmount;
+
             // If upcoming orders are found on the date
             if (upcomingOrdersOnDate.length > 0) {
               // Calculate the upcoming orders total
@@ -416,9 +419,9 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 shift: company.shift,
                 stipendLeft:
                   upcomingOrdersTotalOnDate >= company.shiftBudget
-                    ? 0
+                    ? discountAmount
                     : formatNumberToUS(
-                        company.shiftBudget - upcomingOrdersTotalOnDate
+                        totalStipend - upcomingOrdersTotalOnDate
                       ),
               };
             } else {
@@ -427,7 +430,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
               return {
                 ...upcomingDateAndCompany,
                 shift: company.shift,
-                stipendLeft: company.shiftBudget + discountAmount,
+                stipendLeft: totalStipend,
               };
             }
           }
@@ -452,15 +455,14 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
                 .map((order) => order.item.name),
               amount:
                 budgetAndCompanyDetail.stipendLeft -
-                (orders
+                orders
                   .filter(
                     (order) =>
                       order.delivery.date === budgetAndCompanyDetail.date &&
                       order.company._id.toString() ===
                         budgetAndCompanyDetail.companyId
                   )
-                  .reduce((acc, curr) => acc + curr.item.total, 0) -
-                  discountAmount),
+                  .reduce((acc, curr) => acc + curr.item.total, 0),
             };
           })
           .filter((payableItem) => payableItem.amount < 0);
