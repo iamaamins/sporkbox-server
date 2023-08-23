@@ -433,8 +433,8 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           }
         );
 
-        // Create payable items
-        const payableItems = stipendAndCompanyDetails
+        // Create payable orders
+        const payableOrders = stipendAndCompanyDetails
           .map((budgetAndCompanyDetail) => {
             return {
               date: `${convertDateToText(
@@ -465,7 +465,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           })
           .filter((payableItem) => payableItem.amount < 0);
 
-        if (payableItems.length > 0) {
+        if (payableOrders.length > 0) {
           // Create random pending Id
           const pendingOrderId = generateRandomString();
 
@@ -473,7 +473,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           const session = await stripeCheckout(
             email,
             pendingOrderId,
-            payableItems
+            payableOrders
           );
 
           // Create pending orders

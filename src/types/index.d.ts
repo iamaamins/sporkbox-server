@@ -343,7 +343,7 @@ export interface IForgotPasswordPayload {
   email: string;
 }
 
-export interface IStripePayableItems {
+export interface IStripePayableOrders {
   date: string;
   items: string[];
   amount: number;
