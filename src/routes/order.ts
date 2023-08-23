@@ -291,9 +291,9 @@ router.post('/create-orders', authUser, async (req, res) => {
               },
               status: 'PROCESSING',
               item: {
+                _id: orderPayload.itemId,
                 name: item.name,
                 tags: item.tags,
-                _id: orderPayload.itemId,
                 description: item.description,
                 quantity: orderPayload.quantity,
                 image: item.image || restaurant.logo,

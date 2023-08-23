@@ -1,11 +1,11 @@
 import { Schema, model } from 'mongoose';
 import {
+  Address,
   OrderItem,
   OrderCompany,
   OrderCustomer,
   OrderRestaurant,
 } from '../types';
-import { Address } from 'cluster';
 
 interface OrderSchema {
   customer: OrderCustomer;
@@ -150,11 +150,11 @@ const orderSchema = new Schema<OrderSchema>(
       },
       quantity: {
         type: Number,
-        required: [true, 'Please provide item quantity'],
+        required: true,
       },
       total: {
         type: Number,
-        required: [true, 'Please provide a total price'],
+        required: true,
       },
       optionalAddons: {
         type: String,
