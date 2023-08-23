@@ -9,7 +9,7 @@ import Order from '../models/order';
 import Restaurant from '../models/restaurant';
 import { orderReminderTemplate } from './emailTemplates';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { IAddons, IUserCompany, IItemSchema, IOrdersPayload } from '../types';
+import { Addons, UserCompany, ItemSchema, OrdersPayload } from '../types';
 
 // Types
 interface SortScheduledRestaurant {
@@ -65,7 +65,7 @@ export const sortByDate = (
 export const now = Date.now();
 
 // Get upcoming restaurant
-export async function getUpcomingRestaurants(companies: IUserCompany[]) {
+export async function getUpcomingRestaurants(companies: UserCompany[]) {
   // Get the active company
   const activeCompany = companies.find(
     (company) => company.status === 'ACTIVE'
@@ -209,7 +209,7 @@ export const splitAddons = (addons: string) =>
     );
 
 // Check addable ingredients format
-export const isCorrectAddonsFormat = (parsedAddons: IAddons) =>
+export const isCorrectAddonsFormat = (parsedAddons: Addons) =>
   splitAddons(parsedAddons.addons).every(
     (ingredient) =>
       ingredient.length === 2 &&
@@ -219,7 +219,7 @@ export const isCorrectAddonsFormat = (parsedAddons: IAddons) =>
   );
 
 // Format addable ingredients
-export const formatAddons = (parsedAddons: IAddons) => ({
+export const formatAddons = (parsedAddons: Addons) => ({
   addons: splitAddons(parsedAddons.addons)
     .map((ingredient) => ingredient.join(' - '))
     .join(', '),
@@ -369,7 +369,7 @@ export function unless(path: string, middleware: RequestHandler) {
 export const sortIngredients = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase());
 
-interface IItem extends IItemSchema {
+interface IItem extends ItemSchema {
   _id: Types.ObjectId;
 }
 
@@ -385,7 +385,7 @@ type UpcomingRestaurants = {
 };
 
 // export function checkOrdersValidity(
-//   orders: IOrdersPayload['items'],
+//   orders: OrdersPayload['items'],
 //   upcomingRestaurants: UpcomingRestaurants[]
 // ) {
 //   return orders.every((item) =>

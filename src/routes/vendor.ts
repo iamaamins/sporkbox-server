@@ -5,7 +5,7 @@ import Restaurant from '../models/restaurant';
 import authUser from '../middleware/authUser';
 import express, { Request, Response } from 'express';
 import { deleteImage, uploadImage } from '../config/s3';
-import { Address, GenericUser, IRestaurantSchema } from '../types';
+import { Address, GenericUser, RestaurantSchema } from '../types';
 import { setCookie, deleteFields, checkActions, resizeImage } from '../utils';
 
 // Types
@@ -379,7 +379,7 @@ router.get('/:limit', authUser, async (req: Request, res: Response) => {
           .limit(+limit)
           .select('-__v -password -shifts -companies -createdAt -updatedAt')
           .sort({ createdAt: -1 })
-          .populate<{ restaurant: IRestaurantSchema }>(
+          .populate<{ restaurant: RestaurantSchema }>(
             'restaurant',
             '-__v -updatedAt'
           );

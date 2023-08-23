@@ -55,14 +55,14 @@ export interface OrderItem extends GenericItem {
   removedIngredients?: string;
 }
 
-export interface IItemSchema extends GenericItem {
+export interface ItemSchema extends GenericItem {
   index: number;
   price: number;
   status: string;
-  optionalAddons: IAddons;
-  requiredAddons: IAddons;
+  optionalAddons: Addons;
+  requiredAddons: Addons;
   removableIngredients: string;
-  reviews: Types.DocumentArray<IReviewSchema>;
+  reviews: Types.DocumentArray<ReviewSchema>;
 }
 
 export interface OrderCompany {
@@ -81,30 +81,30 @@ export interface OrderForEmail {
   };
 }
 
-interface IReviewSchema {
+interface ReviewSchema {
   customer: Types.ObjectId;
   rating: number;
   comment: string;
 }
 
-export interface IAddons {
+export interface Addons {
   addons: string;
   addable: number;
 }
 
-export interface ISchedulesSchema {
+interface SchedulesSchema {
   date: Date;
   status: string;
   createdAt: string;
   company: OrderCompany;
 }
 
-export interface IRestaurantSchema {
+export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
-  items: Types.DocumentArray<IItemSchema>;
-  schedules: Types.DocumentArray<ISchedulesSchema>;
+  items: Types.DocumentArray<ItemSchema>;
+  schedules: Types.DocumentArray<SchedulesSchema>;
 }
 
 export interface UserSchema extends GenericUser {
@@ -113,7 +113,7 @@ export interface UserSchema extends GenericUser {
   password: string;
   status: string;
   shifts: string[];
-  companies: IUserCompany[];
+  companies: UserCompany[];
   restaurant: Types.ObjectId;
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
@@ -122,17 +122,10 @@ interface FavRestaurantItem extends GenericItem {
   _id: Types.ObjectId;
   index: number;
   price: number;
-  reviews: IReviewSchema[];
+  reviews: ReviewSchema[];
 }
 
-export interface IFavoriteRestaurant {
-  _id: Types.ObjectId;
-  name: string;
-  logo: string;
-  items: FavRestaurantItem[];
-}
-
-export interface IOrdersPayload {
+export interface OrdersPayload {
   items: {
     itemId: string;
     quantity: number;
@@ -146,7 +139,7 @@ export interface IOrdersPayload {
   discountCodeId: string;
 }
 
-export interface IUserCompany extends CompanyDetails {
+export interface UserCompany extends CompanyDetails {
   _id: Types.ObjectId;
   address: Address;
   status: 'ACTIVE' | 'ARCHIVED';

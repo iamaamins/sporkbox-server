@@ -17,7 +17,7 @@ import {
 import mail from '@sendgrid/mail';
 import { stripeCheckout } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
-import { IUserCompany, IOrdersPayload } from '../types';
+import { UserCompany, OrdersPayload } from '../types';
 
 // Types
 interface OrdersStatusPayload {
@@ -120,7 +120,7 @@ router.post('/create-orders', authUser, async (req, res) => {
 
     if (role === 'CUSTOMER' && companies && companies.length > 0) {
       // Get data from req user and body
-      const { items, discountCodeId }: IOrdersPayload = req.body;
+      const { items, discountCodeId }: OrdersPayload = req.body;
 
       // If required data aren't provided
       if (
@@ -402,7 +402,7 @@ router.post('/create-orders', authUser, async (req, res) => {
             const company = companies.find(
               (company) =>
                 company._id.toString() === upcomingDateAndCompany.companyId
-            ) as IUserCompany;
+            ) as UserCompany;
 
             // Stipend with discount
             const totalStipend = company.shiftBudget + discountAmount;

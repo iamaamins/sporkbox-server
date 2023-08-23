@@ -2,12 +2,20 @@ import { Router } from 'express';
 import Restaurant from '../models/restaurant';
 import Favorite from '../models/favorite';
 import authUser from '../middleware/authUser';
-import { IFavoriteRestaurant } from '../types';
+import { Types } from 'mongoose';
+import { FavRestaurantItem } from '../types';
 
 // Types
 interface FavoritePayload {
   itemId: string;
   restaurantId: string;
+}
+
+export interface FavoriteRestaurant {
+  _id: Types.ObjectId;
+  name: string;
+  logo: string;
+  items: FavRestaurantItem[];
 }
 
 // Initialize router
@@ -158,7 +166,7 @@ router.get('/me', authUser, async (req, res) => {
         const response = await Favorite.find({
           customer: _id,
         })
-          .populate<{ restaurant: IFavoriteRestaurant }>(
+          .populate<{ restaurant: FavoriteRestaurant }>(
             'restaurant',
             '_id name logo items'
           )

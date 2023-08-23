@@ -16,7 +16,7 @@ import {
 } from '../utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
-import { IAddons, StatusChangePayload, GenericItem } from '../types';
+import { Addons, StatusChangePayload, GenericItem } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancelTemplate } from '../utils/emailTemplates';
 
@@ -496,8 +496,8 @@ router.post('/:restaurantId/add-item', authUser, upload, async (req, res) => {
       }
 
       // Parse addons
-      const parsedOptionalAddons: IAddons = JSON.parse(optionalAddons);
-      const parsedRequiredAddons: IAddons = JSON.parse(requiredAddons);
+      const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
+      const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
 
       // Check optional addons format
       if (
@@ -635,8 +635,8 @@ router.patch(
         }
 
         // Parse addons
-        const parsedOptionalAddons: IAddons = JSON.parse(optionalAddons);
-        const parsedRequiredAddons: IAddons = JSON.parse(requiredAddons);
+        const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
+        const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
 
         // Check optional addons format
         if (

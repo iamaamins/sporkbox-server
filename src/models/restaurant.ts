@@ -1,38 +1,38 @@
-import { Schema, model } from "mongoose";
-import { IRestaurantSchema } from "../types";
+import { Schema, model } from 'mongoose';
+import { RestaurantSchema } from '../types';
 
-const restaurantSchema = new Schema<IRestaurantSchema>(
+const restaurantSchema = new Schema<RestaurantSchema>(
   {
     name: {
       type: String,
       trim: true,
-      required: [true, "Please provide a name"],
+      required: [true, 'Please provide a name'],
     },
     logo: {
       type: String,
       trim: true,
-      required: [true, "Please provide a logo"],
+      required: [true, 'Please provide a logo'],
     },
     address: {
       city: {
         type: String,
         trim: true,
-        required: [true, "Please provide a city"],
+        required: [true, 'Please provide a city'],
       },
       state: {
         type: String,
         trim: true,
-        required: [true, "Please provide a state"],
+        required: [true, 'Please provide a state'],
       },
       zip: {
         type: String,
         trim: true,
-        required: [true, "Please provide a zip code"],
+        required: [true, 'Please provide a zip code'],
       },
       addressLine1: {
         type: String,
         trim: true,
-        required: [true, "Please provide address line 1"],
+        required: [true, 'Please provide address line 1'],
       },
       addressLine2: {
         type: String,
@@ -44,28 +44,28 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
         {
           date: {
             type: Date,
-            required: [true, "Please provide a date"],
+            required: [true, 'Please provide a date'],
           },
           company: {
             _id: {
               type: Schema.Types.ObjectId,
-              required: [true, "Please provide a company id"],
+              required: [true, 'Please provide a company id'],
             },
             name: {
               type: String,
               trim: true,
-              required: [true, "Please provide a company name"],
+              required: [true, 'Please provide a company name'],
             },
             shift: {
               type: String,
               trim: true,
-              required: [true, "Please provide a shift"],
+              required: [true, 'Please provide a shift'],
             },
           },
           status: {
             type: String,
-            enum: ["ACTIVE", "INACTIVE"],
-            required: [true, "Please provide a status"],
+            enum: ['ACTIVE', 'INACTIVE'],
+            required: [true, 'Please provide a status'],
           },
         },
         { timestamps: true }
@@ -76,42 +76,42 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
         name: {
           type: String,
           trim: true,
-          required: [true, "Please provide item name"],
+          required: [true, 'Please provide item name'],
         },
         tags: {
           type: String,
           trim: true,
-          required: [true, "Please provide item tags"],
+          required: [true, 'Please provide item tags'],
         },
         price: {
           type: Number,
-          required: [true, "Please provide item price"],
+          required: [true, 'Please provide item price'],
         },
         index: {
           type: Number,
-          required: [true, "Please provide item index"],
+          required: [true, 'Please provide item index'],
         },
         image: String,
         description: {
           type: String,
           trim: true,
-          required: [true, "Please provide item description"],
+          required: [true, 'Please provide item description'],
         },
         status: {
           type: String,
-          enum: ["ARCHIVED", "ACTIVE"],
-          required: [true, "Please provide a status"],
+          enum: ['ARCHIVED', 'ACTIVE'],
+          required: [true, 'Please provide a status'],
         },
         optionalAddons: {
           addons: {
             type: String,
             trim: true,
             lowercase: true,
-            required: [true, "Please provide optional addons"],
+            required: [true, 'Please provide optional addons'],
           },
           addable: {
             type: Number,
-            required: [true, "Please provide optional addable"],
+            required: [true, 'Please provide optional addable'],
           },
         },
         requiredAddons: {
@@ -119,34 +119,34 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
             type: String,
             trim: true,
             lowercase: true,
-            required: [true, "Please provide required addons"],
+            required: [true, 'Please provide required addons'],
           },
           addable: {
             type: Number,
-            required: [true, "Please provide required addable"],
+            required: [true, 'Please provide required addable'],
           },
         },
         removableIngredients: {
           type: String,
           trim: true,
           lowercase: true,
-          required: [true, "Please provide removable ingredients"],
+          required: [true, 'Please provide removable ingredients'],
         },
         reviews: [
           new Schema({
             customer: {
               type: Schema.Types.ObjectId,
-              ref: "User",
-              required: [true, "Please provide a customer"],
+              ref: 'User',
+              required: [true, 'Please provide a customer'],
             },
             rating: {
               type: Number,
-              required: [true, "Please provide a rating"],
+              required: [true, 'Please provide a rating'],
             },
             comment: {
               type: String,
               trim: true,
-              required: [true, "Please provide a rating"],
+              required: [true, 'Please provide a rating'],
             },
           }),
         ],
@@ -158,4 +158,4 @@ const restaurantSchema = new Schema<IRestaurantSchema>(
   }
 );
 
-export default model("Restaurant", restaurantSchema);
+export default model('Restaurant', restaurantSchema);
