@@ -1,29 +1,29 @@
-import bcrypt from "bcrypt";
-import User from "../models/user";
-import { deleteFields } from "../utils";
-import authUser from "../middleware/authUser";
-import express, { Request, Response } from "express";
+import bcrypt from 'bcrypt';
+import User from '../models/user';
+import { Router } from 'express';
+import { deleteFields } from '../utils';
+import authUser from '../middleware/authUser';
 
 // Initialize router
-const router = express.Router();
+const router = Router();
 
 // Add admin
-router.post("/add-admin", authUser, async (req: Request, res: Response) => {
+router.post('/add-admin', authUser, async (req, res) => {
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    if (role === "ADMIN") {
+    if (role === 'ADMIN') {
       // Destructure data from req
       const { firstName, lastName, email, password } = req.body;
 
       // If all the fields aren't provided
       if (!firstName || !lastName || !email || !password) {
         // Log error
-        console.log("Please provide all the fields");
+        console.log('Please provide all the fields');
 
         res.status(400);
-        throw new Error("Please provide all the fields");
+        throw new Error('Please provide all the fields');
       }
 
       try {
@@ -40,8 +40,8 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
               firstName,
               lastName,
               email,
-              status: "ACTIVE",
-              role: "ADMIN",
+              status: 'ACTIVE',
+              role: 'ADMIN',
               password: hashedPassword,
             });
 
@@ -49,7 +49,7 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
             const admin = response.toObject();
 
             // Delete fields
-            deleteFields(admin, ["createdAt", "password"]);
+            deleteFields(admin, ['createdAt', 'password']);
 
             // Send the data with response
             res.status(201).json(admin);
@@ -73,10 +73,10 @@ router.post("/add-admin", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });

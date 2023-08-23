@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
 import User from '../models/user';
+import { Router } from 'express';
 import { upload } from './../config/multer';
 import Restaurant from '../models/restaurant';
 import authUser from '../middleware/authUser';
-import express, { Request, Response } from 'express';
 import { deleteImage, uploadImage } from '../config/s3';
 import { Address, GenericUser, RestaurantSchema } from '../types';
 import { setCookie, deleteFields, checkActions, resizeImage } from '../utils';
@@ -20,10 +20,10 @@ interface VendorStatusPayload {
 }
 
 // Initialize router
-const router = express.Router();
+const router = Router();
 
 // Register a vendor and a restaurant
-router.post('/register-vendor', upload, async (req: Request, res: Response) => {
+router.post('/register-vendor', upload, async (req, res) => {
   // Destructure data from req
   const {
     zip,
@@ -186,184 +186,179 @@ router.post('/register-vendor', upload, async (req: Request, res: Response) => {
 });
 
 // Add a vendor and a restaurant
-router.post(
-  '/add-vendor',
-  authUser,
-  upload,
-  async (req: Request, res: Response) => {
-    if (req.user) {
+router.post('/add-vendor', authUser, upload, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
       // Destructure data from req
-      const { role } = req.user;
+      const {
+        zip,
+        city,
+        state,
+        email,
+        password,
+        lastName,
+        firstName,
+        addressLine1,
+        addressLine2,
+        restaurantName,
+      }: VendorPayload = req.body;
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const {
-          zip,
-          city,
-          state,
-          email,
-          password,
-          lastName,
-          firstName,
-          addressLine1,
-          addressLine2,
-          restaurantName,
-        }: VendorPayload = req.body;
+      // If a value isn't provided
+      if (
+        !zip ||
+        !city ||
+        !state ||
+        !email ||
+        !lastName ||
+        !password ||
+        !firstName ||
+        !addressLine1 ||
+        !restaurantName
+      ) {
+        // Log error
+        console.log('Please provide all the fields');
 
-        // If a value isn't provided
-        if (
-          !zip ||
-          !city ||
-          !state ||
-          !email ||
-          !lastName ||
-          !password ||
-          !firstName ||
-          !addressLine1 ||
-          !restaurantName
-        ) {
+        res.status(400);
+        throw new Error('Please fill all the fields');
+      }
+
+      // If a logo isn't provided
+      if (!req.file) {
+        // Log error
+        console.log('Please provide a logo');
+
+        res.status(400);
+        throw new Error('Please provide a logo');
+      }
+
+      try {
+        // Check if vendor exists
+        const vendorExists = await User.findOne({ email }).lean();
+
+        // Throw error if vendor already exists
+        if (vendorExists) {
           // Log error
-          console.log('Please provide all the fields');
+          console.log('Vendor already exists');
 
           res.status(400);
-          throw new Error('Please fill all the fields');
+          throw new Error('Vendor already exists');
         }
 
-        // If a logo isn't provided
-        if (!req.file) {
-          // Log error
-          console.log('Please provide a logo');
+        // Destructure file data
+        const { buffer, mimetype } = req.file;
 
-          res.status(400);
-          throw new Error('Please provide a logo');
-        }
+        // Resize the logo
+        const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+
+        // Upload logo and get the URL
+        const logoURL = await uploadImage(res, modifiedBuffer, mimetype);
 
         try {
-          // Check if vendor exists
-          const vendorExists = await User.findOne({ email }).lean();
+          // Create the restaurant
+          const restaurant = await Restaurant.create({
+            name: restaurantName,
+            logo: logoURL,
+            address: {
+              city,
+              state,
+              zip,
+              addressLine1,
+              addressLine2,
+            },
+          });
 
-          // Throw error if vendor already exists
-          if (vendorExists) {
-            // Log error
-            console.log('Vendor already exists');
+          // If restaurant is created successfully
+          if (restaurant) {
+            try {
+              // Create salt
+              const salt = await bcrypt.genSalt(10);
 
-            res.status(400);
-            throw new Error('Vendor already exists');
-          }
-
-          // Destructure file data
-          const { buffer, mimetype } = req.file;
-
-          // Resize the logo
-          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
-
-          // Upload logo and get the URL
-          const logoURL = await uploadImage(res, modifiedBuffer, mimetype);
-
-          try {
-            // Create the restaurant
-            const restaurant = await Restaurant.create({
-              name: restaurantName,
-              logo: logoURL,
-              address: {
-                city,
-                state,
-                zip,
-                addressLine1,
-                addressLine2,
-              },
-            });
-
-            // If restaurant is created successfully
-            if (restaurant) {
               try {
-                // Create salt
-                const salt = await bcrypt.genSalt(10);
+                // Hash password
+                const hashedPassword = await bcrypt.hash(password, salt);
 
                 try {
-                  // Hash password
-                  const hashedPassword = await bcrypt.hash(password, salt);
+                  // Create vendor and populate the restaurant
+                  const response = await User.create({
+                    firstName,
+                    lastName,
+                    email,
+                    role: 'VENDOR',
+                    status: 'ARCHIVED',
+                    password: hashedPassword,
+                    restaurant: restaurant.id,
+                  });
 
                   try {
-                    // Create vendor and populate the restaurant
-                    const response = await User.create({
-                      firstName,
-                      lastName,
-                      email,
-                      role: 'VENDOR',
-                      status: 'ARCHIVED',
-                      password: hashedPassword,
-                      restaurant: restaurant.id,
-                    });
+                    // Populate restaurant
+                    const vendorWithRestaurant = await response.populate(
+                      'restaurant',
+                      '-__v -updatedAt'
+                    );
 
-                    try {
-                      // Populate restaurant
-                      const vendorWithRestaurant = await response.populate(
-                        'restaurant',
-                        '-__v -updatedAt'
-                      );
+                    // If vendor is created successfully
+                    if (vendorWithRestaurant) {
+                      // Convert document to object
+                      const vendor = vendorWithRestaurant.toObject();
 
-                      // If vendor is created successfully
-                      if (vendorWithRestaurant) {
-                        // Convert document to object
-                        const vendor = vendorWithRestaurant.toObject();
+                      // Delete fields
+                      deleteFields(vendor, ['createdAt', 'password']);
 
-                        // Delete fields
-                        deleteFields(vendor, ['createdAt', 'password']);
-
-                        // Return the vendor
-                        res.status(200).json(vendor);
-                      }
-                    } catch (err) {
-                      // If restaurant isn't populated
-                      console.log(err);
-
-                      throw err;
+                      // Return the vendor
+                      res.status(200).json(vendor);
                     }
                   } catch (err) {
-                    // If vendor isn't created
+                    // If restaurant isn't populated
                     console.log(err);
 
                     throw err;
                   }
                 } catch (err) {
-                  // If password hashing isn't successful
+                  // If vendor isn't created
                   console.log(err);
 
                   throw err;
                 }
               } catch (err) {
-                // If slat isn't created
+                // If password hashing isn't successful
                 console.log(err);
 
                 throw err;
               }
-            }
-          } catch (err) {
-            // If restaurant isn't created
-            console.log(err);
+            } catch (err) {
+              // If slat isn't created
+              console.log(err);
 
-            throw err;
+              throw err;
+            }
           }
         } catch (err) {
-          // If vendor isn't found
+          // If restaurant isn't created
           console.log(err);
 
           throw err;
         }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
+      } catch (err) {
+        // If vendor isn't found
+        console.log(err);
 
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Get all the vendors
-router.get('/:limit', authUser, async (req: Request, res: Response) => {
+router.get('/:limit', authUser, async (req, res) => {
   // Get the role from req
   const { limit } = req.params;
 
@@ -412,7 +407,7 @@ router.patch(
   '/:vendorId/update-vendor-details',
   authUser,
   upload,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
@@ -545,64 +540,60 @@ router.patch(
 );
 
 // Change vendor status
-router.patch(
-  '/:vendorId/change-vendor-status',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+router.patch('/:vendorId/change-vendor-status', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
 
-      if (role === 'ADMIN') {
-        // Get the role from req
-        const { vendorId } = req.params;
-        const { action }: VendorStatusPayload = req.body;
+    if (role === 'ADMIN') {
+      // Get the role from req
+      const { vendorId } = req.params;
+      const { action }: VendorStatusPayload = req.body;
 
-        // If action or restaurant id aren't provided
-        if (!vendorId || !action) {
-          // Log error
-          console.log('Please provide all the fields');
+      // If action or restaurant id aren't provided
+      if (!vendorId || !action) {
+        // Log error
+        console.log('Please provide all the fields');
 
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
-
-        // Check actions validity
-        checkActions(undefined, action, res);
-
-        try {
-          // Find the vendor and update the status
-          const updatedVendor = await User.findOneAndUpdate(
-            { _id: vendorId },
-            {
-              status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-            },
-            {
-              returnDocument: 'after',
-            }
-          )
-            .select('-__v -password -updatedAt')
-            .populate('restaurant', '-__v -updatedAt')
-            .lean()
-            .orFail();
-
-          // Return the updated restaurant
-          res.status(200).json(updatedVendor);
-        } catch (err) {
-          // If vendor isn't updated successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        res.status(400);
+        throw new Error('Please provide all the fields');
       }
+
+      // Check actions validity
+      checkActions(undefined, action, res);
+
+      try {
+        // Find the vendor and update the status
+        const updatedVendor = await User.findOneAndUpdate(
+          { _id: vendorId },
+          {
+            status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+          },
+          {
+            returnDocument: 'after',
+          }
+        )
+          .select('-__v -password -updatedAt')
+          .populate('restaurant', '-__v -updatedAt')
+          .lean()
+          .orFail();
+
+        // Return the updated restaurant
+        res.status(200).json(updatedVendor);
+      } catch (err) {
+        // If vendor isn't updated successfully
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 export default router;
