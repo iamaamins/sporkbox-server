@@ -1,21 +1,24 @@
-import User from "../models/user";
-import Order from "../models/order";
-import Company from "../models/company";
-import authUser from "../middleware/authUser";
-import express, { Request, Response } from "express";
-import { checkActions, checkShift, deleteFields } from "../utils";
-import { ICompanyPayload, IStatusChangePayload } from "../types";
+import User from '../models/user';
+import { Router } from 'express';
+import Order from '../models/order';
+import Company from '../models/company';
+import authUser from '../middleware/authUser';
+import { checkActions, checkShift, deleteFields } from '../utils';
+import { Address, CompanyDetails, StatusChangePayload } from '../types';
+
+// Types
+interface CompanyPayload extends CompanyDetails, Address {}
 
 // Initialize router
-const router = express.Router();
+const router = Router();
 
 // Add a company
-router.post("/add-company", authUser, async (req: Request, res: Response) => {
+router.post('/add-company', authUser, async (req, res) => {
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    if (role === "ADMIN") {
+    if (role === 'ADMIN') {
       // Destructure body data
       const {
         name,
@@ -28,7 +31,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         shiftBudget,
         addressLine1,
         addressLine2,
-      }: ICompanyPayload = req.body;
+      }: CompanyPayload = req.body;
 
       // If all the fields aren't provided
       if (
@@ -43,10 +46,10 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         !addressLine1
       ) {
         // Log error
-        console.log("Please provide all the fields");
+        console.log('Please provide all the fields');
 
         res.status(400);
-        throw new Error("Please provide all the fields");
+        throw new Error('Please provide all the fields');
       }
 
       // Check shift
@@ -59,10 +62,10 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
         // Throw error if a company with the same shift exists
         if (companyExist) {
           // Log error
-          console.log("A company with a same shift already exists");
+          console.log('A company with a same shift already exists');
 
           res.status(400);
-          throw new Error("A company with a same shift already exists");
+          throw new Error('A company with a same shift already exists');
         }
 
         try {
@@ -80,7 +83,7 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
               addressLine2,
             },
             shiftBudget,
-            status: "ACTIVE",
+            status: 'ACTIVE',
           });
 
           try {
@@ -95,11 +98,11 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
 
             // Add the new shift to all users
             await User.updateMany(
-              { "companies.code": code },
+              { 'companies.code': code },
               {
                 $push: {
                   shifts: company.shift,
-                  companies: { ...rest, status: "ARCHIVED" },
+                  companies: { ...rest, status: 'ARCHIVED' },
                 },
               }
             );
@@ -126,25 +129,25 @@ router.post("/add-company", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });
 
 // Get all companies
-router.get("/", authUser, async (req: Request, res: Response) => {
+router.get('/', authUser, async (req, res) => {
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    if (role === "ADMIN") {
+    if (role === 'ADMIN') {
       try {
         // Create a new company
         const companies = await Company.find()
-          .select("-__v -updatedAt")
+          .select('-__v -updatedAt')
           .sort({ createdAt: -1 });
 
         // Send the companies with response
@@ -157,24 +160,24 @@ router.get("/", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });
 
 // Update company details
 router.patch(
-  "/:companyId/update-company-details",
+  '/:companyId/update-company-details',
   authUser,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from req
         const { companyId } = req.params;
         const {
@@ -186,7 +189,7 @@ router.patch(
           shiftBudget,
           addressLine1,
           addressLine2,
-        }: ICompanyPayload = req.body;
+        }: CompanyPayload = req.body;
 
         // If all the fields aren't provided
         if (
@@ -200,10 +203,10 @@ router.patch(
           !addressLine1
         ) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         try {
@@ -222,7 +225,7 @@ router.patch(
               },
               shiftBudget,
             },
-            { returnDocument: "after" }
+            { returnDocument: 'after' }
           )
             .lean()
             .orFail();
@@ -230,12 +233,12 @@ router.patch(
           try {
             // Update all users's company
             await User.updateMany(
-              { "companies._id": companyId },
+              { 'companies._id': companyId },
               {
                 $set: {
-                  "companies.$.name": updatedCompany.name,
-                  "companies.$.address": updatedCompany.address,
-                  "companies.$.shiftBudget": updatedCompany.shiftBudget,
+                  'companies.$.name': updatedCompany.name,
+                  'companies.$.address': updatedCompany.address,
+                  'companies.$.shiftBudget': updatedCompany.shiftBudget,
                 },
               }
             );
@@ -259,10 +262,10 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
@@ -270,38 +273,38 @@ router.patch(
 
 // Change company status
 router.patch(
-  "/:companyId/change-company-status",
+  '/:companyId/change-company-status',
   authUser,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from req
         const { companyId } = req.params;
-        const { action }: IStatusChangePayload = req.body;
+        const { action }: StatusChangePayload = req.body;
 
         // If all the fields aren't provided
         if (!companyId || !action) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         // Check actions validity
         checkActions(undefined, action, res);
 
         try {
-          if (action === "Archive") {
+          if (action === 'Archive') {
             // Get the active orders of the company
             const orders = await Order.find({
-              status: "PROCESSING",
-              "company._id": companyId,
+              status: 'PROCESSING',
+              'company._id': companyId,
             })
-              .select("_id")
+              .select('_id')
               .lean();
 
             // Throw error if there are active orders
@@ -319,27 +322,27 @@ router.patch(
             const updatedCompany = await Company.findOneAndUpdate(
               { _id: companyId },
               {
-                status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+                status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
               },
-              { returnDocument: "after" }
+              { returnDocument: 'after' }
             )
-              .select("-__v -updatedAt")
+              .select('-__v -updatedAt')
               .lean()
               .orFail();
 
-            if (updatedCompany.status === "ARCHIVED") {
+            if (updatedCompany.status === 'ARCHIVED') {
               try {
                 // Remove the shift and the company status of users
                 await User.updateMany(
                   {
-                    "companies._id": updatedCompany._id,
+                    'companies._id': updatedCompany._id,
                   },
                   {
                     $pull: {
                       shifts: updatedCompany.shift,
                     },
                     $set: {
-                      "companies.$.status": updatedCompany.status,
+                      'companies.$.status': updatedCompany.status,
                     },
                   }
                 );
@@ -352,13 +355,13 @@ router.patch(
 
                 throw err;
               }
-            } else if (updatedCompany.status === "ACTIVE") {
+            } else if (updatedCompany.status === 'ACTIVE') {
               // Add the shift and the company from all users
 
               try {
                 // Remove the shift and the company from all users
                 await User.updateMany(
-                  { "companies.code": updatedCompany.code },
+                  { 'companies.code': updatedCompany.code },
                   {
                     $push: {
                       shifts: updatedCompany.shift,
@@ -389,10 +392,10 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }

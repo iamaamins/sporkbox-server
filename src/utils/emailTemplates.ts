@@ -1,6 +1,6 @@
-import { IOrder, IUser } from "../types";
+import { OrderForEmail, GenericUser } from '../types';
 
-export function orderDeliveryTemplate(order: IOrder) {
+export function orderDeliveryTemplate(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -17,7 +17,7 @@ export function orderDeliveryTemplate(order: IOrder) {
   };
 }
 
-export function orderArchiveTemplate(order: IOrder) {
+export function orderArchiveTemplate(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -28,7 +28,7 @@ export function orderArchiveTemplate(order: IOrder) {
   };
 }
 
-export function orderCancelTemplate(order: IOrder) {
+export function orderCancelTemplate(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -39,7 +39,7 @@ export function orderCancelTemplate(order: IOrder) {
   };
 }
 
-export function passwordResetTemplate(user: IUser, link: string) {
+export function passwordResetTemplate(user: GenericUser, link: string) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
@@ -50,7 +50,7 @@ export function passwordResetTemplate(user: IUser, link: string) {
   };
 }
 
-export function passwordResetConfirmationTemplate(user: IUser) {
+export function passwordResetConfirmationTemplate(user: GenericUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
@@ -61,7 +61,7 @@ export function passwordResetConfirmationTemplate(user: IUser) {
   };
 }
 
-export function orderReminderTemplate(user: IUser) {
+export function orderReminderTemplate(user: GenericUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,

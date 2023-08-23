@@ -1,22 +1,29 @@
-import bcrypt from "bcrypt";
-import User from "../models/user";
-import { upload } from "./../config/multer";
-import Restaurant from "../models/restaurant";
-import authUser from "../middleware/authUser";
-import express, { Request, Response } from "express";
-import { deleteImage, uploadImage } from "../config/s3";
-import {
-  IVendorPayload,
-  IRestaurantSchema,
-  IVendorStatusPayload,
-} from "../types";
-import { setCookie, deleteFields, checkActions, resizeImage } from "../utils";
+import bcrypt from 'bcrypt';
+import User from '../models/user';
+import { upload } from './../config/multer';
+import Restaurant from '../models/restaurant';
+import authUser from '../middleware/authUser';
+import express, { Request, Response } from 'express';
+import { deleteImage, uploadImage } from '../config/s3';
+import { Address, GenericUser, IRestaurantSchema } from '../types';
+import { setCookie, deleteFields, checkActions, resizeImage } from '../utils';
+
+// Types
+interface VendorPayload extends GenericUser, Address {
+  password?: string;
+  logo?: string;
+  restaurantName: string;
+}
+
+interface VendorStatusPayload {
+  action: string;
+}
 
 // Initialize router
 const router = express.Router();
 
 // Register a vendor and a restaurant
-router.post("/register-vendor", upload, async (req: Request, res: Response) => {
+router.post('/register-vendor', upload, async (req: Request, res: Response) => {
   // Destructure data from req
   const {
     zip,
@@ -29,7 +36,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     addressLine1,
     addressLine2,
     restaurantName,
-  }: IVendorPayload = req.body;
+  }: VendorPayload = req.body;
 
   // If a value isn't provided
   if (
@@ -44,19 +51,19 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     !restaurantName
   ) {
     // Log error
-    console.log("Please fill all the fields");
+    console.log('Please fill all the fields');
 
     res.status(400);
-    throw new Error("Please fill all the fields");
+    throw new Error('Please fill all the fields');
   }
 
   // If no logo is provided
   if (!req.file) {
     // Log error
-    console.log("Please provide a logo");
+    console.log('Please provide a logo');
 
     res.status(400);
-    throw new Error("Please provide a logo");
+    throw new Error('Please provide a logo');
   }
 
   try {
@@ -66,10 +73,10 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
     // Throw error if vendor already exists
     if (vendorExists) {
       // Log error
-      console.log("Vendor already exists");
+      console.log('Vendor already exists');
 
       res.status(400);
-      throw new Error("Vendor already exists");
+      throw new Error('Vendor already exists');
     }
 
     // Destructure file data
@@ -111,8 +118,8 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
                 firstName,
                 lastName,
                 email,
-                role: "VENDOR",
-                status: "ARCHIVED",
+                role: 'VENDOR',
+                status: 'ARCHIVED',
                 password: hashedPassword,
                 restaurant: restaurant.id,
               });
@@ -120,8 +127,8 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
               try {
                 // Populate restaurant
                 const vendorWithRestaurant = await response.populate(
-                  "restaurant",
-                  "-__v -createdAt -updatedAt"
+                  'restaurant',
+                  '-__v -createdAt -updatedAt'
                 );
 
                 // If vendor is created successfully
@@ -134,7 +141,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
                   setCookie(res, vendor._id);
 
                   // Delete fields
-                  deleteFields(vendor, ["createdAt", "password"]);
+                  deleteFields(vendor, ['createdAt', 'password']);
 
                   // Send the vendor with response
                   res.status(200).json(vendor);
@@ -180,7 +187,7 @@ router.post("/register-vendor", upload, async (req: Request, res: Response) => {
 
 // Add a vendor and a restaurant
 router.post(
-  "/add-vendor",
+  '/add-vendor',
   authUser,
   upload,
   async (req: Request, res: Response) => {
@@ -188,7 +195,7 @@ router.post(
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from req
         const {
           zip,
@@ -201,7 +208,7 @@ router.post(
           addressLine1,
           addressLine2,
           restaurantName,
-        }: IVendorPayload = req.body;
+        }: VendorPayload = req.body;
 
         // If a value isn't provided
         if (
@@ -216,19 +223,19 @@ router.post(
           !restaurantName
         ) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please fill all the fields");
+          throw new Error('Please fill all the fields');
         }
 
         // If a logo isn't provided
         if (!req.file) {
           // Log error
-          console.log("Please provide a logo");
+          console.log('Please provide a logo');
 
           res.status(400);
-          throw new Error("Please provide a logo");
+          throw new Error('Please provide a logo');
         }
 
         try {
@@ -238,10 +245,10 @@ router.post(
           // Throw error if vendor already exists
           if (vendorExists) {
             // Log error
-            console.log("Vendor already exists");
+            console.log('Vendor already exists');
 
             res.status(400);
-            throw new Error("Vendor already exists");
+            throw new Error('Vendor already exists');
           }
 
           // Destructure file data
@@ -283,8 +290,8 @@ router.post(
                       firstName,
                       lastName,
                       email,
-                      role: "VENDOR",
-                      status: "ARCHIVED",
+                      role: 'VENDOR',
+                      status: 'ARCHIVED',
                       password: hashedPassword,
                       restaurant: restaurant.id,
                     });
@@ -292,8 +299,8 @@ router.post(
                     try {
                       // Populate restaurant
                       const vendorWithRestaurant = await response.populate(
-                        "restaurant",
-                        "-__v -updatedAt"
+                        'restaurant',
+                        '-__v -updatedAt'
                       );
 
                       // If vendor is created successfully
@@ -302,7 +309,7 @@ router.post(
                         const vendor = vendorWithRestaurant.toObject();
 
                         // Delete fields
-                        deleteFields(vendor, ["createdAt", "password"]);
+                        deleteFields(vendor, ['createdAt', 'password']);
 
                         // Return the vendor
                         res.status(200).json(vendor);
@@ -346,17 +353,17 @@ router.post(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
 );
 
 // Get all the vendors
-router.get("/:limit", authUser, async (req: Request, res: Response) => {
+router.get('/:limit', authUser, async (req: Request, res: Response) => {
   // Get the role from req
   const { limit } = req.params;
 
@@ -365,16 +372,16 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
     // Destructure data from req
     const { role } = req.user;
 
-    if (role === "ADMIN") {
+    if (role === 'ADMIN') {
       try {
         // Fetch 20 latest vendors with restaurant data
-        const vendors = await User.find({ role: "VENDOR" })
+        const vendors = await User.find({ role: 'VENDOR' })
           .limit(+limit)
-          .select("-__v -password -shifts -companies -createdAt -updatedAt")
+          .select('-__v -password -shifts -companies -createdAt -updatedAt')
           .sort({ createdAt: -1 })
           .populate<{ restaurant: IRestaurantSchema }>(
-            "restaurant",
-            "-__v -updatedAt"
+            'restaurant',
+            '-__v -updatedAt'
           );
 
         // Sort restaurant items
@@ -392,17 +399,17 @@ router.get("/:limit", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });
 
 // Update a vendor
 router.patch(
-  "/:vendorId/update-vendor-details",
+  '/:vendorId/update-vendor-details',
   authUser,
   upload,
   async (req: Request, res: Response) => {
@@ -410,7 +417,7 @@ router.patch(
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from req
         const { vendorId } = req.params;
         const {
@@ -424,7 +431,7 @@ router.patch(
           addressLine1,
           addressLine2,
           restaurantName,
-        }: IVendorPayload = req.body;
+        }: VendorPayload = req.body;
 
         // If a value isn't provided
         if (
@@ -439,10 +446,10 @@ router.patch(
           !restaurantName
         ) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please fill all the fields");
+          throw new Error('Please fill all the fields');
         }
 
         // Create logo URL
@@ -451,7 +458,7 @@ router.patch(
         // If a new file is provided and an image already exists
         if (req.file && logo) {
           // Create name
-          const name = logo.split("/")[logo.split("/").length - 1];
+          const name = logo.split('/')[logo.split('/').length - 1];
 
           // Delete image from s3
           await deleteImage(res, name);
@@ -475,7 +482,7 @@ router.patch(
               lastName,
               firstName,
             },
-            { returnDocument: "after" }
+            { returnDocument: 'after' }
           )
             .lean()
             .orFail();
@@ -496,15 +503,15 @@ router.patch(
                 },
               },
               {
-                returnDocument: "after",
+                returnDocument: 'after',
               }
             )
               .lean()
               .orFail();
 
             // Delete fields
-            deleteFields(updatedRestaurant, ["createdAt"]);
-            deleteFields(updatedVendor, ["createdAt", "password"]);
+            deleteFields(updatedRestaurant, ['createdAt']);
+            deleteFields(updatedVendor, ['createdAt', 'password']);
 
             // Create updated vendor with restaurant
             const updatedVendorAndRestaurant = {
@@ -528,10 +535,10 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
@@ -539,25 +546,25 @@ router.patch(
 
 // Change vendor status
 router.patch(
-  "/:vendorId/change-vendor-status",
+  '/:vendorId/change-vendor-status',
   authUser,
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Get the role from req
         const { vendorId } = req.params;
-        const { action }: IVendorStatusPayload = req.body;
+        const { action }: VendorStatusPayload = req.body;
 
         // If action or restaurant id aren't provided
         if (!vendorId || !action) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         // Check actions validity
@@ -568,14 +575,14 @@ router.patch(
           const updatedVendor = await User.findOneAndUpdate(
             { _id: vendorId },
             {
-              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+              status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
             },
             {
-              returnDocument: "after",
+              returnDocument: 'after',
             }
           )
-            .select("-__v -password -updatedAt")
-            .populate("restaurant", "-__v -updatedAt")
+            .select('-__v -password -updatedAt')
+            .populate('restaurant', '-__v -updatedAt')
             .lean()
             .orFail();
 
@@ -589,10 +596,10 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }

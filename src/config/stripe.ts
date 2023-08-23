@@ -1,6 +1,12 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { IStripePayableOrders } from '../types';
+
+// Types
+interface StripePayableOrders {
+  date: string;
+  items: string[];
+  amount: number;
+}
 
 //Configure dot env
 dotenv.config();
@@ -15,7 +21,7 @@ export async function stripeCheckout(
   customerEmail: string,
   pendingOrderId: string,
   discountCodeId: string,
-  payableOrders: IStripePayableOrders[]
+  payableOrders: StripePayableOrders[]
 ) {
   try {
     // Create a session

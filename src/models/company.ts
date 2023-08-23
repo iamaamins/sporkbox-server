@@ -1,7 +1,14 @@
-import { Schema, model } from 'mongoose';
-import { ICompanySchema } from '../types';
+import { Schema, Types, model } from 'mongoose';
+import { Address, CompanyDetails } from '../types';
 
-const companySchema = new Schema<ICompanySchema>(
+interface CompanySchema extends CompanyDetails {
+  _id: Types.ObjectId;
+  createdAt: Date;
+  address: Address;
+  status: 'ACTIVE' | 'ARCHIVED';
+}
+
+const companySchema = new Schema<CompanySchema>(
   {
     name: {
       type: String,
@@ -59,7 +66,7 @@ const companySchema = new Schema<ICompanySchema>(
     },
     status: {
       type: String,
-      enum: ['ARCHIVED', 'ACTIVE'],
+      enum: ['ACTIVE', 'ARCHIVED'],
       required: [true, 'Please provide a status'],
     },
   },

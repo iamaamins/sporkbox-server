@@ -3,122 +3,120 @@ import User from '../models/user';
 import Company from '../models/company';
 import authUser from '../middleware/authUser';
 import { setCookie, deleteFields, checkActions, checkShift } from '../utils';
-import express, { NextFunction, Request, Response } from 'express';
-import {
-  ICompanySchema,
-  ICustomerPayload,
-  IEditCustomerPayload,
-  IShiftChangePayload,
-  IStatusChangePayload,
-} from '../types';
+import { Router } from 'express';
+import { GenericUser, StatusChangePayload } from '../types';
+
+// Types
+interface CustomerPayload extends GenericUser {
+  password: string;
+  companyCode: string;
+}
+
+interface EditCustomerPayload extends GenericUser {}
+
+interface ShiftChangePayload {
+  shift: string;
+}
 
 // Initialize router
-const router = express.Router();
+const router = Router();
 
 // Register customer
-router.post(
-  '/register-customer',
-  async (req: Request, res: Response, next: NextFunction) => {
-    // Destructure data from req
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      companyCode,
-    }: ICustomerPayload = req.body;
+router.post('/register-customer', async (req, res, next) => {
+  // Destructure data from req
+  const { firstName, lastName, email, password, companyCode }: CustomerPayload =
+    req.body;
 
-    // If a value isn't provided
-    if (!firstName || !lastName || !email || !password) {
-      // Log error
-      console.log('Please provide all the fields');
+  // If a value isn't provided
+  if (!firstName || !lastName || !email || !password) {
+    // Log error
+    console.log('Please provide all the fields');
 
-      res.status(400);
-      throw new Error('Please provide all the fields');
-    }
+    res.status(400);
+    throw new Error('Please provide all the fields');
+  }
+
+  try {
+    // Get the companies with provided code
+    const companies = await Company.find({
+      code: companyCode,
+    })
+      .select('-updatedAt -createdAt -website')
+      .lean()
+      .orFail();
+
+    // Change all companies status archived
+    const archivedCompanies = companies.map((company) => ({
+      ...company,
+      status: 'ARCHIVED',
+    }));
+
+    // Get shifts of the active companies
+    const shifts = companies
+      .filter((company) => company.status === 'ACTIVE')
+      .map((activeCompany) => activeCompany.shift);
 
     try {
-      // Get the companies with provided code
-      const companies = await Company.find({
-        code: companyCode,
-      })
-        .select('-updatedAt -createdAt -website')
-        .lean()
-        .orFail();
-
-      // Change all companies status archived
-      const archivedCompanies = companies.map((company) => ({
-        ...company,
-        status: 'ARCHIVED',
-      }));
-
-      // Get shifts of the active companies
-      const shifts = companies
-        .filter((company) => company.status === 'ACTIVE')
-        .map((activeCompany) => activeCompany.shift);
+      // Create salt
+      const salt = await bcrypt.genSalt(10);
 
       try {
-        // Create salt
-        const salt = await bcrypt.genSalt(10);
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         try {
-          // Hash password
-          const hashedPassword = await bcrypt.hash(password, salt);
+          // Create customer and populate the company
+          const response = await User.create({
+            firstName,
+            lastName,
+            email,
+            shifts,
+            status: 'ACTIVE',
+            role: 'CUSTOMER',
+            password: hashedPassword,
+            companies: archivedCompanies,
+          });
 
-          try {
-            // Create customer and populate the company
-            const response = await User.create({
-              firstName,
-              lastName,
-              email,
-              shifts,
-              status: 'ACTIVE',
-              role: 'CUSTOMER',
-              password: hashedPassword,
-              companies: archivedCompanies,
-            });
+          // Convert BSON to object
+          const customer = response.toObject();
 
-            // Convert BSON to object
-            const customer = response.toObject();
+          // Generate jwt token and set
+          // cookie to the response header
+          setCookie(res, customer._id);
 
-            // Generate jwt token and set
-            // cookie to the response header
-            setCookie(res, customer._id);
+          // Delete fields
+          deleteFields(customer, ['createdAt', 'password']);
 
-            // Delete fields
-            deleteFields(customer, ['createdAt', 'password']);
-
-            // Send the data with response
-            res.status(201).json(customer);
-          } catch (err) {
-            // If user isn't created
-            console.log(err);
-
-            throw err;
-          }
+          // Send the data with response
+          res.status(201).json(customer);
         } catch (err) {
-          // If password hash isn't created
+          // If user isn't created
           console.log(err);
 
           throw err;
         }
       } catch (err) {
-        // If salt isn't created
+        // If password hash isn't created
         console.log(err);
 
         throw err;
       }
     } catch (err) {
-      // If company doesn't exist
+      // If salt isn't created
       console.log(err);
 
       throw err;
     }
+  } catch (err) {
+    // If company doesn't exist
+    console.log(err);
+
+    throw err;
   }
-);
+});
 
 // Get all customers
-router.get('', authUser, async (req: Request, res: Response) => {
+router.get('', authUser, async (req, res) => {
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
@@ -152,7 +150,7 @@ router.get('', authUser, async (req: Request, res: Response) => {
 router.patch(
   '/:customerId/update-customer-details',
   authUser,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
@@ -160,7 +158,7 @@ router.patch(
       if (role === 'ADMIN') {
         // Destructure data from req
         const { customerId } = req.params;
-        const { firstName, lastName, email }: IEditCustomerPayload = req.body;
+        const { firstName, lastName, email }: EditCustomerPayload = req.body;
 
         // If all the fields aren't provided
         if (!customerId || !firstName || !lastName || !email) {
@@ -208,7 +206,7 @@ router.patch(
 router.patch(
   '/:customerId/change-customer-status',
   authUser,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
@@ -216,7 +214,7 @@ router.patch(
       if (role === 'ADMIN') {
         // Destructure data from request
         const { customerId } = req.params;
-        const { action }: IStatusChangePayload = req.body;
+        const { action }: StatusChangePayload = req.body;
 
         // If all the fields aren't provided
         if (!customerId || !action) {
@@ -266,7 +264,7 @@ router.patch(
 router.patch(
   '/:customerId/:companyCode/change-customer-shift',
   authUser,
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
@@ -274,7 +272,7 @@ router.patch(
       if (role === 'CUSTOMER') {
         // Destructure data from request
         const { customerId, companyCode } = req.params;
-        const { shift }: IShiftChangePayload = req.body;
+        const { shift }: ShiftChangePayload = req.body;
 
         // If no shift is provided
         if (!shift || typeof shift !== 'string') {

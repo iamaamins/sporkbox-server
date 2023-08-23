@@ -9,7 +9,12 @@ import Order from '../models/order';
 import Restaurant from '../models/restaurant';
 import { orderReminderTemplate } from './emailTemplates';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { IAddons, IUserCompany, ISortScheduledRestaurant } from '../types';
+import { IAddons, IUserCompany, IItemSchema, IOrdersPayload } from '../types';
+
+// Types
+interface SortScheduledRestaurant {
+  date: Date;
+}
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -52,8 +57,8 @@ export const convertDateToMS = (date: Date | string): number =>
 
 // Sort by date
 export const sortByDate = (
-  a: ISortScheduledRestaurant,
-  b: ISortScheduledRestaurant
+  a: SortScheduledRestaurant,
+  b: SortScheduledRestaurant
 ): number => convertDateToMS(a.date) - convertDateToMS(b.date);
 
 // Timestamp of current moment
@@ -114,6 +119,8 @@ export async function getUpcomingRestaurants(companies: IUserCompany[]) {
         )
         .flat(2)
         .sort(sortByDate);
+
+      console.log(upcomingRestaurants);
 
       // Return the scheduled restaurants with response
       return upcomingRestaurants;
@@ -300,7 +307,7 @@ export async function sendOrderReminderEmails() {
         ) &&
         // Return customer who has restaurants scheduled to order
         upcomingRestaurants.some((upcomingRestaurant) =>
-          customer.companies.some(
+          customer.companies?.some(
             (company) =>
               company._id.toString() ===
               upcomingRestaurant.company._id.toString()
@@ -361,3 +368,71 @@ export function unless(path: string, middleware: RequestHandler) {
 // Sort addons
 export const sortIngredients = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase());
+
+interface IItem extends IItemSchema {
+  _id: Types.ObjectId;
+}
+
+type UpcomingRestaurants = {
+  _id: Types.ObjectId;
+  items: IItem[];
+  date: string;
+  company: {
+    _id: string;
+    shift: string;
+  };
+  scheduledAt: string;
+};
+
+// export function checkOrdersValidity(
+//   orders: IOrdersPayload['items'],
+//   upcomingRestaurants: UpcomingRestaurants[]
+// ) {
+//   return orders.every((item) =>
+//     upcomingRestaurants.some(
+//       (upcomingRestaurant) =>
+//         upcomingRestaurant._id.toString() === item.restaurantId &&
+//         upcomingRestaurant.company._id.toString() === item.companyId &&
+//         convertDateToMS(upcomingRestaurant.date) === item.deliveryDate &&
+//         upcomingRestaurant.items.some(
+//           (item) =>
+//             item._id?.toString() === item.itemId &&
+//             (item.optionalAddons.length > 0
+//               ? item.optionalAddons.addable >= item.optionalAddons.length &&
+//                 item.optionalAddons.every((orderOptionalAddon) =>
+//                   item.optionalAddons.addons
+//                     .split(',')
+//                     .some(
+//                       (itemOptionalAddon) =>
+//                         itemOptionalAddon.split('-')[0].trim() ===
+//                         orderOptionalAddon.split('-')[0].trim().toLowerCase()
+//                     )
+//                 )
+//               : true) &&
+//             (item.requiredAddons.length > 0
+//               ? item.requiredAddons.addable === item.requiredAddons.length &&
+//                 item.requiredAddons.every((orderRequiredAddon) =>
+//                   item.requiredAddons.addons
+//                     .split(',')
+//                     .some(
+//                       (itemRequiredAddon) =>
+//                         itemRequiredAddon.split('-')[0].trim() ===
+//                         orderRequiredAddon.split('-')[0].trim().toLowerCase()
+//                     )
+//                 )
+//               : true) &&
+//             (item.removedIngredients.length > 0
+//               ? item.removedIngredients.every((removedIngredient) =>
+//                   item.removableIngredients
+//                     .split(',')
+//                     .some(
+//                       (removableIngredient) =>
+//                         removableIngredient.trim() ===
+//                         removedIngredient.trim().toLowerCase()
+//                     )
+//                 )
+//               : true)
+//         )
+//     )
+//   );
+// }

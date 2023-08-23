@@ -1,6 +1,6 @@
 import Order from '../models/order';
 import authUser from '../middleware/authUser';
-import express, { Request, Response } from 'express';
+import { Router } from 'express';
 import {
   splitAddons,
   sortIngredients,
@@ -17,140 +17,137 @@ import {
 import mail from '@sendgrid/mail';
 import { stripeCheckout } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
-import { IUserCompany, IOrdersPayload, IOrdersStatusPayload } from '../types';
+import { IUserCompany, IOrdersPayload } from '../types';
+
+// Types
+interface OrdersStatusPayload {
+  orderIds: string[];
+}
 
 // Initialize router
-const router = express.Router();
+const router = Router();
 
 // Get customer's all upcoming orders
-router.get(
-  '/me/upcoming-orders',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
-      // Destructure data from req
-      const { _id, role } = req.user;
+router.get('/me/upcoming-orders', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { _id, role } = req.user;
 
-      if (role === 'CUSTOMER') {
-        try {
-          // Find the upcoming orders of the customer
-          const allUpcomingOrders = await Order.find({
-            'customer._id': _id,
-            status: 'PROCESSING',
-          })
-            .sort({ 'delivery.date': 1 })
-            .select(
-              '-__v -updatedAt -customer -delivery.address -company.name -company._id'
-            );
+    if (role === 'CUSTOMER') {
+      try {
+        // Find the upcoming orders of the customer
+        const allUpcomingOrders = await Order.find({
+          'customer._id': _id,
+          status: 'PROCESSING',
+        })
+          .sort({ 'delivery.date': 1 })
+          .select(
+            '-__v -updatedAt -customer -delivery.address -company.name -company._id'
+          );
 
-          // Send the data with response
-          res.status(200).json(allUpcomingOrders);
-        } catch (err) {
-          // If upcoming orders aren't fetched successfully
-          console.log(err);
+        // Send the data with response
+        res.status(200).json(allUpcomingOrders);
+      } catch (err) {
+        // If upcoming orders aren't fetched successfully
+        console.log(err);
 
-          throw err;
-        }
-      } else {
-        // If role isn't customer
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Get customer's limited delivered orders
-router.get(
-  '/me/delivered-orders/:limit',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role, _id } = req.user;
+router.get('/me/delivered-orders/:limit', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role, _id } = req.user;
 
-      if (role === 'CUSTOMER') {
-        // Destructure req data
-        const { limit } = req.params;
+    if (role === 'CUSTOMER') {
+      // Destructure req data
+      const { limit } = req.params;
 
-        // If all the fields aren't provided
-        if (!limit) {
-          // Log error
-          console.log('Please provide all the fields');
+      // If all the fields aren't provided
+      if (!limit) {
+        // Log error
+        console.log('Please provide all the fields');
 
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
-
-        try {
-          // Find the delivered orders of the customer
-          const customerDeliveredOrders = await Order.find({
-            'customer._id': _id,
-            status: 'DELIVERED',
-          })
-            .limit(+limit)
-            .sort({ 'delivery.date': -1 })
-            .select(
-              '-__v -updatedAt -customer -delivery.address -company.name -company._id'
-            );
-
-          // Send the data with response
-          res.status(200).json(customerDeliveredOrders);
-        } catch (err) {
-          // If delivered orders aren't fetched successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't customer
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        res.status(400);
+        throw new Error('Please provide all the fields');
       }
+
+      try {
+        // Find the delivered orders of the customer
+        const customerDeliveredOrders = await Order.find({
+          'customer._id': _id,
+          status: 'DELIVERED',
+        })
+          .limit(+limit)
+          .sort({ 'delivery.date': -1 })
+          .select(
+            '-__v -updatedAt -customer -delivery.address -company.name -company._id'
+          );
+
+        // Send the data with response
+        res.status(200).json(customerDeliveredOrders);
+      } catch (err) {
+        // If delivered orders aren't fetched successfully
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Create orders
-router.post('/create-orders', authUser, async (req: Request, res: Response) => {
+router.post('/create-orders', authUser, async (req, res) => {
   if (req.user) {
     // Destructure data from req
     const { _id, firstName, lastName, email, role, companies } = req.user;
 
     if (role === 'CUSTOMER' && companies && companies.length > 0) {
       // Get data from req user and body
-      const { ordersPayload, discountCodeId }: IOrdersPayload = req.body;
+      const { items, discountCodeId }: IOrdersPayload = req.body;
 
       // If required data aren't provided
       if (
-        !ordersPayload ||
-        !ordersPayload.every(
-          (orderPayload) =>
-            orderPayload.itemId &&
-            orderPayload.quantity &&
-            orderPayload.companyId &&
-            orderPayload.restaurantId &&
-            orderPayload.deliveryDate &&
-            orderPayload.optionalAddons &&
-            orderPayload.requiredAddons
+        !items ||
+        !items.every(
+          (item) =>
+            item.itemId &&
+            item.quantity &&
+            item.companyId &&
+            item.restaurantId &&
+            item.deliveryDate &&
+            item.optionalAddons &&
+            item.requiredAddons
         )
       ) {
         // Log error
         console.log('Please provide valid orders data');
 
         res.status(401);
-        throw new Error('Please provide valid orders data');
+        throw new Error('Please prov ide valid orders data');
       }
 
       // Get upcoming week restaurants
       const upcomingRestaurants = await getUpcomingRestaurants(companies);
 
       // Check if the provided order items are valid
-      const orderItemsAreValid = ordersPayload.every((orderPayload) =>
+      const orderItemsAreValid = items.every((orderPayload) =>
         upcomingRestaurants.some(
           (upcomingRestaurant) =>
             upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
@@ -218,7 +215,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
       }
 
       // Create orders
-      const orders = ordersPayload.map((orderPayload) => {
+      const orders = items.map((orderPayload) => {
         // Find the restaurant
         const restaurant = upcomingRestaurants.find(
           (upcomingRestaurant) =>
@@ -565,254 +562,234 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
 });
 
 // Get all upcoming orders
-router.get(
-  '/all-upcoming-orders',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
-      // Get data from req user
-      const { role } = req.user;
+router.get('/all-upcoming-orders', authUser, async (req, res) => {
+  if (req.user) {
+    // Get data from req user
+    const { role } = req.user;
 
-      if (role === 'ADMIN') {
-        try {
-          // Find the upcoming orders
-          const upcomingOrders = await Order.find({ status: 'PROCESSING' })
-            .select('-__v -updatedAt')
-            .sort({ 'delivery.date': 1 });
+    if (role === 'ADMIN') {
+      try {
+        // Find the upcoming orders
+        const upcomingOrders = await Order.find({ status: 'PROCESSING' })
+          .select('-__v -updatedAt')
+          .sort({ 'delivery.date': 1 });
 
-          // Send the data with response
-          res.status(200).json(upcomingOrders);
-        } catch (err) {
-          // If upcoming orders aren't fetched successfully
-          console.log(err);
+        // Send the data with response
+        res.status(200).json(upcomingOrders);
+      } catch (err) {
+        // If upcoming orders aren't fetched successfully
+        console.log(err);
 
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Get limited delivered orders
-router.get(
-  '/all-delivered-orders/:limit',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
+router.get('/all-delivered-orders/:limit', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
       // Destructure data from req
-      const { role } = req.user;
+      const { limit } = req.params;
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { limit } = req.params;
+      // If all the fields aren't provided
+      if (!limit) {
+        // Log error
+        console.log('Please provide all the fields');
 
-        // If all the fields aren't provided
-        if (!limit) {
-          // Log error
-          console.log('Please provide all the fields');
-
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
-
-        try {
-          // Get delivered orders
-          const deliveredOrders = await Order.find({ status: 'DELIVERED' })
-            .limit(+limit)
-            .select('-__v -updatedAt')
-            .sort({ 'delivery.date': -1 });
-
-          // Send delivered orders with response
-          res.status(200).json(deliveredOrders);
-        } catch (err) {
-          // If delivered orders aren't fetched successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        res.status(400);
+        throw new Error('Please provide all the fields');
       }
+
+      try {
+        // Get delivered orders
+        const deliveredOrders = await Order.find({ status: 'DELIVERED' })
+          .limit(+limit)
+          .select('-__v -updatedAt')
+          .sort({ 'delivery.date': -1 });
+
+        // Send delivered orders with response
+        res.status(200).json(deliveredOrders);
+      } catch (err) {
+        // If delivered orders aren't fetched successfully
+        console.log(err);
+
+        throw err;
+      }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Get all delivered orders of a customer
-router.get(
-  '/:customerId/all-delivered-orders',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
+router.get('/:customerId/all-delivered-orders', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
       // Destructure data from req
-      const { role } = req.user;
+      const { customerId } = req.params;
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { customerId } = req.params;
+      try {
+        const customerDeliveredOrders = await Order.find({
+          'customer._id': customerId,
+          status: 'DELIVERED',
+        })
+          .sort({ 'delivery.date': -1 })
+          .select('-__v -updatedAt');
 
-        try {
-          const customerDeliveredOrders = await Order.find({
-            'customer._id': customerId,
-            status: 'DELIVERED',
-          })
-            .sort({ 'delivery.date': -1 })
-            .select('-__v -updatedAt');
+        // Send orders with response
+        res.status(200).json(customerDeliveredOrders);
+      } catch (err) {
+        // If orders aren't found
+        console.log(err);
 
-          // Send orders with response
-          res.status(200).json(customerDeliveredOrders);
-        } catch (err) {
-          // If orders aren't found
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Change bulk orders and send delivery email
-router.patch(
-  '/change-orders-status',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
+router.patch('/change-orders-status', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
       // Destructure data from req
-      const { role } = req.user;
+      const { orderIds }: OrdersStatusPayload = req.body;
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { orderIds }: IOrdersStatusPayload = req.body;
+      // If order ids aren't provides
+      if (!orderIds) {
+        // Log error
+        console.log('Please provide order ids');
 
-        // If order ids aren't provides
-        if (!orderIds) {
-          // Log error
-          console.log('Please provide order ids');
+        res.status(400);
+        throw new Error('Please provide order ids');
+      }
 
-          res.status(400);
-          throw new Error('Please provide order ids');
-        }
+      try {
+        // Update orders status
+        await Order.updateMany(
+          { _id: { $in: orderIds }, status: 'PROCESSING' },
+          { $set: { status: 'DELIVERED' } }
+        );
 
         try {
-          // Update orders status
-          await Order.updateMany(
-            { _id: { $in: orderIds }, status: 'PROCESSING' },
-            { $set: { status: 'DELIVERED' } }
-          );
+          // Find the orders
+          const orders = await Order.find({ _id: { $in: orderIds } });
 
           try {
-            // Find the orders
-            const orders = await Order.find({ _id: { $in: orderIds } });
+            // Send delivery email
+            await Promise.all(
+              orders.map(
+                async (order) =>
+                  await mail.send(orderDeliveryTemplate(order.toObject()))
+              )
+            );
 
-            try {
-              // Send delivery email
-              await Promise.all(
-                orders.map(
-                  async (order) =>
-                    await mail.send(orderDeliveryTemplate(order.toObject()))
-                )
-              );
-
-              // Send the update
-              res.status(200).json('Delivery email sent');
-            } catch (err) {
-              // If emails aren't sent
-              console.log(err);
-
-              throw err;
-            }
+            // Send the update
+            res.status(200).json('Delivery email sent');
           } catch (err) {
-            // If orders aren't fetched
+            // If emails aren't sent
             console.log(err);
 
             throw err;
           }
         } catch (err) {
-          // If order status isn't updated
+          // If orders aren't fetched
           console.log(err);
 
           throw err;
         }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
+      } catch (err) {
+        // If order status isn't updated
+        console.log(err);
 
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 // Change single order status
-router.patch(
-  '/:orderId/change-order-status',
-  authUser,
-  async (req: Request, res: Response) => {
-    if (req.user) {
+router.patch('/:orderId/change-order-status', authUser, async (req, res) => {
+  if (req.user) {
+    // Destructure data from req
+    const { role } = req.user;
+
+    if (role === 'ADMIN') {
       // Destructure data from req
-      const { role } = req.user;
+      const { orderId } = req.params;
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { orderId } = req.params;
+      try {
+        // Update order status
+        const updatedOrder = await Order.findOneAndUpdate(
+          { _id: orderId, status: 'PROCESSING' },
+          {
+            status: 'ARCHIVED',
+          },
+          { returnDocument: 'after' }
+        )
+          .select('-__v -updatedAt')
+          .orFail();
 
+        // If order is updated
         try {
-          // Update order status
-          const updatedOrder = await Order.findOneAndUpdate(
-            { _id: orderId, status: 'PROCESSING' },
-            {
-              status: 'ARCHIVED',
-            },
-            { returnDocument: 'after' }
-          )
-            .select('-__v -updatedAt')
-            .orFail();
+          // Send cancellation email
+          await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
 
-          // If order is updated
-          try {
-            // Send cancellation email
-            await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
-
-            // Send updated order with the response
-            res.status(201).json(updatedOrder);
-          } catch (err) {
-            // If email isn't sent
-            console.log(err);
-
-            throw err;
-          }
+          // Send updated order with the response
+          res.status(201).json(updatedOrder);
         } catch (err) {
-          // If order status isn't updated
+          // If email isn't sent
           console.log(err);
 
           throw err;
         }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
+      } catch (err) {
+        // If order status isn't updated
+        console.log(err);
 
-        res.status(403);
-        throw new Error('Not authorized');
+        throw err;
       }
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
     }
   }
-);
+});
 
 export default router;
