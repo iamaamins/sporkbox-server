@@ -384,7 +384,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           .select('delivery item company')
           .lean();
 
-        // Get shift, budget left, date and company id
+        // Get shift, stipend left, date and company id array
         const stipendAndCompanyDetails = upcomingDatesAndCompanies.map(
           (upcomingDateAndCompany) => {
             // Find the orders those match the date
@@ -517,14 +517,15 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
             }));
 
             // Update total redeem amount
-            await DiscountCode.updateOne(
-              { _id: discountCodeId },
-              {
-                $inc: {
-                  totalRedeem: 1,
-                },
-              }
-            );
+            discountCodeId &&
+              (await DiscountCode.updateOne(
+                { _id: discountCodeId },
+                {
+                  $inc: {
+                    totalRedeem: 1,
+                  },
+                }
+              ));
 
             // Send the data with response
             res.status(201).json(ordersForCustomers);

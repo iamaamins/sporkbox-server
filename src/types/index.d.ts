@@ -20,9 +20,9 @@ export interface ICompanySchema {
     addressLine2?: string;
   };
   code: string;
-  status: string;
   createdAt: Date;
   shiftBudget: number;
+  status: 'ACTIVE' | 'ARCHIVED';
 }
 
 export interface IFavoriteSchema {
@@ -197,8 +197,8 @@ export interface IUserCompany {
     addressLine1: string;
     addressLine2?: string;
   };
-  status: string;
   shiftBudget: number;
+  status: 'ACTIVE' | 'ARCHIVED';
 }
 
 interface IUser {

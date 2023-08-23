@@ -1,22 +1,23 @@
-import bcrypt from "bcrypt";
-import User from "../models/user";
-import Company from "../models/company";
-import authUser from "../middleware/authUser";
-import { setCookie, deleteFields, checkActions, checkShift } from "../utils";
-import express, { NextFunction, Request, Response } from "express";
+import bcrypt from 'bcrypt';
+import User from '../models/user';
+import Company from '../models/company';
+import authUser from '../middleware/authUser';
+import { setCookie, deleteFields, checkActions, checkShift } from '../utils';
+import express, { NextFunction, Request, Response } from 'express';
 import {
+  ICompanySchema,
   ICustomerPayload,
   IEditCustomerPayload,
   IShiftChangePayload,
   IStatusChangePayload,
-} from "../types";
+} from '../types';
 
 // Initialize router
 const router = express.Router();
 
 // Register customer
 router.post(
-  "/register-customer",
+  '/register-customer',
   async (req: Request, res: Response, next: NextFunction) => {
     // Destructure data from req
     const {
@@ -30,10 +31,10 @@ router.post(
     // If a value isn't provided
     if (!firstName || !lastName || !email || !password) {
       // Log error
-      console.log("Please provide all the fields");
+      console.log('Please provide all the fields');
 
       res.status(400);
-      throw new Error("Please provide all the fields");
+      throw new Error('Please provide all the fields');
     }
 
     try {
@@ -41,19 +42,19 @@ router.post(
       const companies = await Company.find({
         code: companyCode,
       })
-        .select("-updatedAt -createdAt -website")
+        .select('-updatedAt -createdAt -website')
         .lean()
         .orFail();
 
       // Change all companies status archived
       const archivedCompanies = companies.map((company) => ({
         ...company,
-        status: "ARCHIVED",
+        status: 'ARCHIVED',
       }));
 
       // Get shifts of the active companies
       const shifts = companies
-        .filter((company) => company.status === "ACTIVE")
+        .filter((company) => company.status === 'ACTIVE')
         .map((activeCompany) => activeCompany.shift);
 
       try {
@@ -71,8 +72,8 @@ router.post(
               lastName,
               email,
               shifts,
-              status: "ACTIVE",
-              role: "CUSTOMER",
+              status: 'ACTIVE',
+              role: 'CUSTOMER',
               password: hashedPassword,
               companies: archivedCompanies,
             });
@@ -85,7 +86,7 @@ router.post(
             setCookie(res, customer._id);
 
             // Delete fields
-            deleteFields(customer, ["createdAt", "password"]);
+            deleteFields(customer, ['createdAt', 'password']);
 
             // Send the data with response
             res.status(201).json(customer);
@@ -117,16 +118,16 @@ router.post(
 );
 
 // Get all customers
-router.get("", authUser, async (req: Request, res: Response) => {
+router.get('', authUser, async (req: Request, res: Response) => {
   if (req.user) {
     // Destructure data from req
     const { role } = req.user;
 
-    if (role === "ADMIN") {
+    if (role === 'ADMIN') {
       try {
         // Get all customers
-        const customers = await User.find({ role: "CUSTOMER" }).select(
-          "-__v -updatedAt -password -role"
+        const customers = await User.find({ role: 'CUSTOMER' }).select(
+          '-__v -updatedAt -password -role'
         );
 
         // Send the customers data with response
@@ -139,24 +140,24 @@ router.get("", authUser, async (req: Request, res: Response) => {
       }
     } else {
       // If role isn't admin
-      console.log("Not authorized");
+      console.log('Not authorized');
 
       res.status(403);
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
   }
 });
 
 // Edit customer details
 router.patch(
-  "/:customerId/update-customer-details",
+  '/:customerId/update-customer-details',
   authUser,
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from req
         const { customerId } = req.params;
         const { firstName, lastName, email }: IEditCustomerPayload = req.body;
@@ -164,10 +165,10 @@ router.patch(
         // If all the fields aren't provided
         if (!customerId || !firstName || !lastName || !email) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         try {
@@ -179,7 +180,7 @@ router.patch(
               lastName,
               email,
             },
-            { returnDocument: "after" }
+            { returnDocument: 'after' }
           )
             .lean()
             .orFail();
@@ -194,10 +195,10 @@ router.patch(
         }
       } else {
         // If role isn't admin
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
@@ -205,14 +206,14 @@ router.patch(
 
 // Change customer status
 router.patch(
-  "/:customerId/change-customer-status",
+  '/:customerId/change-customer-status',
   authUser,
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "ADMIN") {
+      if (role === 'ADMIN') {
         // Destructure data from request
         const { customerId } = req.params;
         const { action }: IStatusChangePayload = req.body;
@@ -220,10 +221,10 @@ router.patch(
         // If all the fields aren't provided
         if (!customerId || !action) {
           // Log error
-          console.log("Please provide all the fields");
+          console.log('Please provide all the fields');
 
           res.status(400);
-          throw new Error("Please provide all the fields");
+          throw new Error('Please provide all the fields');
         }
 
         // Check actions validity
@@ -234,11 +235,11 @@ router.patch(
           const updatedCustomer = await User.findOneAndUpdate(
             { _id: customerId },
             {
-              status: action === "Archive" ? "ARCHIVED" : "ACTIVE",
+              status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
             },
-            { returnDocument: "after" }
+            { returnDocument: 'after' }
           )
-            .select("-__v -password -updatedAt -role")
+            .select('-__v -password -updatedAt -role')
             .lean()
             .orFail();
 
@@ -252,10 +253,10 @@ router.patch(
         }
       } else {
         // If role isn't customer
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
@@ -263,25 +264,25 @@ router.patch(
 
 // Change customer shift
 router.patch(
-  "/:customerId/:companyCode/change-customer-shift",
+  '/:customerId/:companyCode/change-customer-shift',
   authUser,
   async (req: Request, res: Response) => {
     if (req.user) {
       // Destructure data from req
       const { role } = req.user;
 
-      if (role === "CUSTOMER") {
+      if (role === 'CUSTOMER') {
         // Destructure data from request
         const { customerId, companyCode } = req.params;
         const { shift }: IShiftChangePayload = req.body;
 
         // If no shift is provided
-        if (!shift || typeof shift !== "string") {
+        if (!shift || typeof shift !== 'string') {
           // Log error
-          console.log("Please provide a valid shift");
+          console.log('Please provide a valid shift');
 
           res.status(400);
-          throw new Error("Please provide a valid shift");
+          throw new Error('Please provide a valid shift');
         }
 
         // Check provided shifts validity
@@ -293,13 +294,13 @@ router.patch(
             const response = await Company.find({
               code: companyCode,
             })
-              .select("-__v -updatedAt -createdAt -website")
+              .select('-__v -updatedAt -createdAt -website')
               .lean()
               .orFail();
 
             // Get active companies
             const activeCompanies = response.filter(
-              (company) => company.status === "ACTIVE"
+              (company) => company.status === 'ACTIVE'
             );
 
             // If provided shift doesn't exist in active companies
@@ -309,10 +310,10 @@ router.patch(
               )
             ) {
               // Log error
-              console.log("Please provide a valid shift");
+              console.log('Please provide a valid shift');
 
               res.status(404);
-              throw new Error("Please provide a valid shift");
+              throw new Error('Please provide a valid shift');
             }
 
             // Change active company status
@@ -321,12 +322,12 @@ router.patch(
             const updatedCompanies = activeCompanies.map((company) =>
               company.shift === shift
                 ? company
-                : { ...company, status: "ARCHIVED" }
+                : { ...company, status: 'ARCHIVED' }
             );
 
             // Get inactive companies
             const archivedCompanies = response.filter(
-              (company) => company.status !== "ACTIVE"
+              (company) => company.status !== 'ACTIVE'
             );
 
             // Create all companies
@@ -361,10 +362,10 @@ router.patch(
         }
       } else {
         // If role isn't customer
-        console.log("Not authorized");
+        console.log('Not authorized');
 
         res.status(403);
-        throw new Error("Not authorized");
+        throw new Error('Not authorized');
       }
     }
   }
