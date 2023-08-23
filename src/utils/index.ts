@@ -2,19 +2,40 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import cron from 'cron';
 import jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
 import User from '../models/user';
 import mail from '@sendgrid/mail';
 import Order from '../models/order';
 import Restaurant from '../models/restaurant';
+import { LeanDocument, Types, Document } from 'mongoose';
 import { orderReminderTemplate } from './emailTemplates';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { Addons, UserCompany, ItemSchema, OrdersPayload } from '../types';
+import {
+  Addons,
+  UserCompany,
+  ItemSchema,
+  OrderItem,
+  OrdersPayload,
+} from '../types';
 
 // Types
 interface SortScheduledRestaurant {
   date: Date;
 }
+
+type UpcomingRestaurant = {
+  _id: Types.ObjectId;
+  date: Date;
+  logo: string;
+  company: {
+    _id: Types.ObjectId;
+    shift: string;
+  };
+  items: Omit<
+    LeanDocument<Document<Types.ObjectId> & ItemSchema>,
+    '$isSingleNested' | 'ownerDocument' | 'parent'
+  >[];
+  scheduledAt: string;
+};
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -119,8 +140,6 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
         )
         .flat(2)
         .sort(sortByDate);
-
-      console.log(upcomingRestaurants);
 
       // Return the scheduled restaurants with response
       return upcomingRestaurants;
@@ -369,24 +388,9 @@ export function unless(path: string, middleware: RequestHandler) {
 export const sortIngredients = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase());
 
-interface IItem extends ItemSchema {
-  _id: Types.ObjectId;
-}
-
-type UpcomingRestaurants = {
-  _id: Types.ObjectId;
-  items: IItem[];
-  date: string;
-  company: {
-    _id: string;
-    shift: string;
-  };
-  scheduledAt: string;
-};
-
 // export function checkOrdersValidity(
 //   orders: OrdersPayload['items'],
-//   upcomingRestaurants: UpcomingRestaurants[]
+//   upcomingRestaurants: UpcomingRestaurant[]
 // ) {
 //   return orders.every((item) =>
 //     upcomingRestaurants.some(
