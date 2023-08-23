@@ -438,29 +438,29 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
 
         // Create payable orders
         const payableOrders = stipendAndCompanyDetails
-          .map((budgetAndCompanyDetail) => {
+          .map((stipendAndCompanyDetail) => {
             return {
               date: `${convertDateToText(
-                budgetAndCompanyDetail.date
-              )} - ${`${budgetAndCompanyDetail.shift[0].toUpperCase()}${budgetAndCompanyDetail.shift.slice(
+                stipendAndCompanyDetail.date
+              )} - ${`${stipendAndCompanyDetail.shift[0].toUpperCase()}${stipendAndCompanyDetail.shift.slice(
                 1
               )}`}`,
               items: orders
                 .filter(
                   (order) =>
-                    order.delivery.date === budgetAndCompanyDetail.date &&
+                    order.delivery.date === stipendAndCompanyDetail.date &&
                     order.company._id.toString() ===
-                      budgetAndCompanyDetail.companyId
+                      stipendAndCompanyDetail.companyId
                 )
                 .map((order) => order.item.name),
               amount:
-                budgetAndCompanyDetail.stipendLeft -
+                stipendAndCompanyDetail.stipendLeft -
                 orders
                   .filter(
                     (order) =>
-                      order.delivery.date === budgetAndCompanyDetail.date &&
+                      order.delivery.date === stipendAndCompanyDetail.date &&
                       order.company._id.toString() ===
-                        budgetAndCompanyDetail.companyId
+                        stipendAndCompanyDetail.companyId
                   )
                   .reduce((acc, curr) => acc + curr.item.total, 0),
             };
