@@ -478,10 +478,6 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           })
           .filter((payableItem) => payableItem.amount < 0);
 
-        console.log(payableOrders);
-
-        res.end();
-
         if (payableOrders.length > 0) {
           // Create random pending Id
           const pendingOrderId = generateRandomString();
@@ -490,6 +486,7 @@ router.post('/create-orders', authUser, async (req: Request, res: Response) => {
           const session = await stripeCheckout(
             email,
             pendingOrderId,
+            discountCodeId,
             payableOrders
           );
 

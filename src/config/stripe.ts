@@ -14,6 +14,7 @@ export const stripe = new Stripe(process.env.STRIPE_KEY as string, {
 export async function stripeCheckout(
   customerEmail: string,
   pendingOrderId: string,
+  discountCodeId: string,
   payableOrders: IStripePayableOrders[]
 ) {
   try {
@@ -35,7 +36,11 @@ export async function stripeCheckout(
         };
       }),
       metadata: {
-        details: JSON.stringify({ company: 'sporkbox', pendingOrderId }),
+        details: JSON.stringify({
+          pendingOrderId,
+          discountCodeId,
+          company: 'sporkbox',
+        }),
       },
       allow_promotion_codes: true,
       customer_email: customerEmail,
