@@ -10,6 +10,8 @@ import {
   generateRandomString,
   getUpcomingRestaurants,
   getDateTotal,
+  createAddons,
+  getAddonsPrice,
 } from '../utils';
 import {
   orderArchiveTemplate,
@@ -237,29 +239,23 @@ router.post('/create-orders', authUser, async (req, res) => {
           );
 
           // Get optional addons
-          const optionalAddons = orderPayload.optionalAddons?.map(
-            (optionalAddon) => optionalAddon.split('-')[0].trim()
-          );
+          const optionalAddons = createAddons(orderPayload.optionalAddons);
 
           // Get required addons
-          const requiredAddons = orderPayload.requiredAddons?.map(
-            (requiredAddon) => requiredAddon.split('-')[0].trim()
-          );
+          const requiredAddons = createAddons(orderPayload.requiredAddons);
 
           if (item) {
-            // Get total optional addons price
-            const optionalAddonsPrice =
-              item.optionalAddons &&
-              splitAddons(item.optionalAddons.addons)
-                .filter((addon) => optionalAddons?.includes(addon[0]))
-                .reduce((acc, curr) => acc + +curr[1], 0);
+            // Get optional addons price total
+            const optionalAddonsPrice = getAddonsPrice(
+              item.optionalAddons.addons,
+              optionalAddons
+            );
 
-            // Get total optional addons price
-            const requiredAddonsPrice =
-              item.requiredAddons &&
-              splitAddons(item.requiredAddons.addons)
-                .filter((addon) => requiredAddons?.includes(addon[0]))
-                .reduce((acc, curr) => acc + +curr[1], 0);
+            // Get required addons price total
+            const requiredAddonsPrice = getAddonsPrice(
+              item.requiredAddons.addons,
+              requiredAddons
+            );
 
             // Get total addons price
             const totalAddonsPrice =

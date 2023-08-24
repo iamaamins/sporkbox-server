@@ -384,3 +384,13 @@ export function getDateTotal(details: DateTotal[]) {
     }
   }, [] as DateTotal[]);
 }
+
+// Create addons
+export const createAddons = (addons: string[]) =>
+  addons.map((addon) => addon.split('-')[0].trim());
+
+// Get addons price
+export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
+  splitAddons(serverAddons)
+    .filter((addon) => clientAddons.includes(addon[0]))
+    .reduce((acc, curr) => acc + +curr[1], 0);
