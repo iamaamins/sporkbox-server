@@ -24,8 +24,9 @@ router.post('/webhook', async (req, res) => {
   // Get pending order id
   const pendingOrderId = parsedMetadataDetails.pendingOrderId;
 
-  // Get discount code id
+  // Get discount code id and amount
   const discountCodeId = parsedMetadataDetails.discountCodeId;
+  const discountAmount = parsedMetadataDetails.discountAmount;
 
   // Signature
   const signature = req.headers['stripe-signature'] as string;
@@ -62,7 +63,7 @@ router.post('/webhook', async (req, res) => {
         );
 
         // Update total redeem amount
-        discountCodeId &&
+        +discountAmount > 0 &&
           (await DiscountCode.updateOne(
             { _id: discountCodeId },
             {

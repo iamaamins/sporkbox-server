@@ -487,6 +487,7 @@ router.post('/create-orders', authUser, async (req, res) => {
             email,
             pendingOrderId,
             discountCodeId,
+            discountAmount,
             payableOrders
           );
 

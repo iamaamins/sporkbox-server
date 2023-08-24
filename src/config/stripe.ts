@@ -21,6 +21,7 @@ export async function stripeCheckout(
   customerEmail: string,
   pendingOrderId: string,
   discountCodeId: string,
+  discountAmount: number,
   payableOrders: StripePayableOrders[]
 ) {
   try {
@@ -45,6 +46,7 @@ export async function stripeCheckout(
         details: JSON.stringify({
           pendingOrderId,
           discountCodeId,
+          discountAmount,
           company: 'sporkbox',
         }),
       },
