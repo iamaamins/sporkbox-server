@@ -4,38 +4,17 @@ import cron from 'cron';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
 import mail from '@sendgrid/mail';
+import { Types } from 'mongoose';
 import Order from '../models/order';
 import Restaurant from '../models/restaurant';
-import { LeanDocument, Types, Document } from 'mongoose';
+import { Addons, DateTotal, UserCompany } from '../types';
 import { orderReminderTemplate } from './emailTemplates';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import {
-  Addons,
-  UserCompany,
-  ItemSchema,
-  OrderItem,
-  OrdersPayload,
-} from '../types';
 
 // Types
 interface SortScheduledRestaurant {
   date: Date;
 }
-
-type UpcomingRestaurant = {
-  _id: Types.ObjectId;
-  date: Date;
-  logo: string;
-  company: {
-    _id: Types.ObjectId;
-    shift: string;
-  };
-  items: Omit<
-    LeanDocument<Document<Types.ObjectId> & ItemSchema>,
-    '$isSingleNested' | 'ownerDocument' | 'parent'
-  >[];
-  scheduledAt: string;
-};
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -69,17 +48,17 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
 };
 
 // Convert number
-export const toUSD = (number: number) => +number.toLocaleString('en-US');
+export const toUSNumber = (number: number) => +number.toLocaleString('en-US');
 
 // Convert date to slug
-export const convertDateToMS = (date: Date | string): number =>
+export const dateToMS = (date: Date | string): number =>
   new Date(date).getTime();
 
 // Sort by date
 export const sortByDate = (
   a: SortScheduledRestaurant,
   b: SortScheduledRestaurant
-): number => convertDateToMS(a.date) - convertDateToMS(b.date);
+): number => dateToMS(a.date) - dateToMS(b.date);
 
 // Timestamp of current moment
 export const now = Date.now();
@@ -116,7 +95,7 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
           schedules: upcomingWeekRestaurant.schedules.filter(
             (schedule) =>
               schedule.status === 'ACTIVE' &&
-              convertDateToMS(schedule.date) >= now &&
+              dateToMS(schedule.date) >= now &&
               activeCompany._id.toString() === schedule.company._id.toString()
           ),
         }))
@@ -210,14 +189,14 @@ export async function resizeImage(
 }
 
 // Convert date to string
-export const convertDateToText = (date: Date | string | number): string =>
+export const dateToText = (date: Date | string | number): string =>
   new Date(date).toUTCString().split(' ').slice(0, 3).join(' ');
 
 // Generate unique string
 export const generateRandomString = () =>
   crypto.randomBytes(16).toString('hex');
 
-// Split and trim addable ingredients
+// Split and trim addons
 export const splitAddons = (addons: string) =>
   addons
     .split(',')
@@ -288,8 +267,7 @@ export async function sendOrderReminderEmails() {
       .map((upcomingWeekRestaurant) => ({
         schedules: upcomingWeekRestaurant.schedules.filter(
           (schedule) =>
-            schedule.status === 'ACTIVE' &&
-            convertDateToMS(schedule.date) >= now
+            schedule.status === 'ACTIVE' && dateToMS(schedule.date) >= now
         ),
       }))
       .map((upcomingWeekRestaurant) =>
@@ -387,55 +365,22 @@ export function unless(path: string, middleware: RequestHandler) {
 export const sortIngredients = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase());
 
-// export function checkOrdersValidity(
-//   orders: OrdersPayload['items'],
-//   upcomingRestaurants: UpcomingRestaurant[]
-// ) {
-//   return orders.every((item) =>
-//     upcomingRestaurants.some(
-//       (upcomingRestaurant) =>
-//         upcomingRestaurant._id.toString() === item.restaurantId &&
-//         upcomingRestaurant.company._id.toString() === item.companyId &&
-//         convertDateToMS(upcomingRestaurant.date) === item.deliveryDate &&
-//         upcomingRestaurant.items.some(
-//           (item) =>
-//             item._id?.toString() === item.itemId &&
-//             (item.optionalAddons.length > 0
-//               ? item.optionalAddons.addable >= item.optionalAddons.length &&
-//                 item.optionalAddons.every((orderOptionalAddon) =>
-//                   item.optionalAddons.addons
-//                     .split(',')
-//                     .some(
-//                       (itemOptionalAddon) =>
-//                         itemOptionalAddon.split('-')[0].trim() ===
-//                         orderOptionalAddon.split('-')[0].trim().toLowerCase()
-//                     )
-//                 )
-//               : true) &&
-//             (item.requiredAddons.length > 0
-//               ? item.requiredAddons.addable === item.requiredAddons.length &&
-//                 item.requiredAddons.every((orderRequiredAddon) =>
-//                   item.requiredAddons.addons
-//                     .split(',')
-//                     .some(
-//                       (itemRequiredAddon) =>
-//                         itemRequiredAddon.split('-')[0].trim() ===
-//                         orderRequiredAddon.split('-')[0].trim().toLowerCase()
-//                     )
-//                 )
-//               : true) &&
-//             (item.removedIngredients.length > 0
-//               ? item.removedIngredients.every((removedIngredient) =>
-//                   item.removableIngredients
-//                     .split(',')
-//                     .some(
-//                       (removableIngredient) =>
-//                         removableIngredient.trim() ===
-//                         removedIngredient.trim().toLowerCase()
-//                     )
-//                 )
-//               : true)
-//         )
-//     )
-//   );
-// }
+// Get total for each date
+export function getDateTotal(details: DateTotal[]) {
+  return details.reduce((acc, curr) => {
+    if (!acc.some((detail) => detail.date === curr.date)) {
+      return [...acc, curr];
+    } else {
+      return acc.map((detail) => {
+        if (detail.date === curr.date) {
+          return {
+            ...detail,
+            total: detail.total + curr.total,
+          };
+        } else {
+          return detail;
+        }
+      });
+    }
+  }, [] as DateTotal[]);
+}

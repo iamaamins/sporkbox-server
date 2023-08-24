@@ -10,7 +10,7 @@ import {
   deleteFields,
   checkActions,
   formatAddons,
-  convertDateToMS,
+  dateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
 } from '../utils';
@@ -107,8 +107,7 @@ router.get('/scheduled-restaurants', authUser, async (req, res) => {
           )
           .flat(2)
           .filter(
-            (scheduledRestaurant) =>
-              convertDateToMS(scheduledRestaurant.date) >= now
+            (scheduledRestaurant) => dateToMS(scheduledRestaurant.date) >= now
           )
           .sort(sortByDate);
 
@@ -151,7 +150,7 @@ router.post('/schedule-restaurant', authUser, async (req, res) => {
       }
 
       // If provided date is a past date
-      if (convertDateToMS(date) < now) {
+      if (dateToMS(date) < now) {
         // Log error
         console.log("Cant' schedule on the provided date");
 
@@ -182,7 +181,7 @@ router.post('/schedule-restaurant', authUser, async (req, res) => {
         const isScheduled = updatedRestaurant.schedules.some(
           (schedule) =>
             companyId === schedule.company._id.toString() &&
-            convertDateToMS(schedule.date) === convertDateToMS(date)
+            dateToMS(schedule.date) === dateToMS(date)
         );
 
         // If the restaurant is already scheduled

@@ -4,11 +4,12 @@ import { Router } from 'express';
 import {
   splitAddons,
   sortIngredients,
-  convertDateToMS,
-  convertDateToText,
-  toUSD,
+  dateToMS,
+  dateToText,
+  toUSNumber,
   generateRandomString,
   getUpcomingRestaurants,
+  getDateTotal,
 } from '../utils';
 import {
   orderArchiveTemplate,
@@ -140,10 +141,13 @@ router.post('/create-orders', authUser, async (req, res) => {
         console.log('Please provide valid orders data');
 
         res.status(401);
-        throw new Error('Please prov ide valid orders data');
+        throw new Error('Please provide valid orders data');
       }
 
       // Get upcoming week restaurants
+      // to validate the orders,
+      // to get the order item details, and
+      // to get scheduled dates and company ids
       const upcomingRestaurants = await getUpcomingRestaurants(companies);
 
       // Check if the provided order items are valid
@@ -153,8 +157,7 @@ router.post('/create-orders', authUser, async (req, res) => {
             upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
             upcomingRestaurant.company._id.toString() ===
               orderPayload.companyId &&
-            convertDateToMS(upcomingRestaurant.date) ===
-              orderPayload.deliveryDate &&
+            dateToMS(upcomingRestaurant.date) === orderPayload.deliveryDate &&
             upcomingRestaurant.items.some(
               (item) =>
                 item._id?.toString() === orderPayload.itemId &&
@@ -302,7 +305,7 @@ router.post('/create-orders', authUser, async (req, res) => {
                 removedIngredients: orderPayload.removedIngredients
                   .sort(sortIngredients)
                   .join(', '),
-                total: toUSD(
+                total: toUSNumber(
                   item.price * orderPayload.quantity + totalAddonsPrice
                 ),
               },
@@ -324,31 +327,120 @@ router.post('/create-orders', authUser, async (req, res) => {
         }
       });
 
-      // Get number of order days
-      const orderDays = orders
-        .map((order) => order.delivery.date)
-        .filter((date, index, dates) => dates.indexOf(date) === index).length;
+      try {
+        // Get unique upcoming dates and company ids
+        // Dates will be used to get the upcoming orders
+        const upcomingDetails = upcomingRestaurants
+          .map((upcomingRestaurant) => ({
+            date: dateToMS(upcomingRestaurant.date),
+            companyId: upcomingRestaurant.company._id,
+          }))
+          .filter(
+            (detail, index, details) =>
+              details.findIndex(
+                (el) =>
+                  el.date === detail.date && el.companyId === detail.companyId
+              ) === index
+          );
 
-      // Unique upcoming dates and companies
-      const upcomingDatesAndCompanies = upcomingRestaurants
-        .map((upcomingRestaurant) => ({
-          date: convertDateToMS(upcomingRestaurant.date),
-          companyId: upcomingRestaurant.company._id.toString(),
-        }))
-        .filter(
-          (detail, index, details) =>
-            details.findIndex(
-              (element) =>
-                element.date === detail.date &&
-                element.companyId === detail.companyId
-            ) === index
+        // Get customer upcoming orders
+        const upcomingOrders = await Order.find({
+          'customer._id': _id,
+          status: {
+            $nin: ['PENDING', 'ARCHIVED'],
+          },
+          'delivery.date': {
+            $gte: Math.min(
+              ...upcomingDetails.map((upcomingDetail) => upcomingDetail.date)
+            ),
+          },
+        })
+          .select('delivery item company')
+          .lean();
+
+        // Get upcoming orders that matches order item dates
+        const upcomingDateTotalDetails = upcomingOrders
+          .filter((upcomingOrder) =>
+            orders.some(
+              (order) =>
+                order.delivery.date === dateToMS(upcomingOrder.delivery.date) &&
+                order.company._id.toString() ===
+                  upcomingOrder.company._id.toString()
+            )
+          )
+          .map((upcomingOrder) => ({
+            total: upcomingOrder.item.total,
+            shift: upcomingOrder.company.shift,
+            date: dateToMS(upcomingOrder.delivery.date),
+            companyId: upcomingOrder.company._id.toString(),
+          }));
+
+        // Get upcoming order date and total
+        // with shift and company id details
+        const upcomingOrderDetails = getDateTotal(upcomingDateTotalDetails);
+
+        // Create order date total details
+        const orderDateTotalDetails = orders.map((order) => ({
+          shift: order.company.shift,
+          date: order.delivery.date,
+          total: order.item.total,
+          companyId: order.company._id.toString(),
+        }));
+
+        // Get order date and total with
+        // shift and company id details
+        const orderItemDetails = getDateTotal(orderDateTotalDetails);
+
+        // Find the active company
+        const company = companies.find(
+          (company) => company.status === 'ACTIVE'
         );
 
-      try {
+        // Get shift budget
+        const shiftBudget = company?.shiftBudget || 0;
+
+        // Get payable details
+        const payableDetails = orderItemDetails
+          .map((orderItemDetail) => {
+            // Destructure data
+            const { total, ...rest } = orderItemDetail;
+
+            if (
+              !upcomingOrderDetails.some(
+                (upcomingOrderDetail) =>
+                  upcomingOrderDetail.date === orderItemDetail.date
+              )
+            ) {
+              return {
+                ...rest,
+                payable: orderItemDetail.total - shiftBudget,
+              };
+            } else {
+              // Get upcoming order date and total detail
+              const upcomingOrderDetail = upcomingOrderDetails.find(
+                (upcomingOrderDetail) =>
+                  upcomingOrderDetail.date === orderItemDetail.date
+              );
+
+              // Get order total for the day
+              const upcomingDayOrderTotal = upcomingOrderDetail?.total || 0;
+
+              return {
+                ...rest,
+                payable:
+                  upcomingDayOrderTotal >= shiftBudget
+                    ? orderItemDetail.total
+                    : orderItemDetail.total -
+                      (shiftBudget - upcomingDayOrderTotal),
+              };
+            }
+          })
+          .filter((detail) => detail.payable > 0);
+
         // Initial discount value
         let discountAmount = 0;
 
-        if (discountCodeId) {
+        if (discountCodeId && payableDetails.length > 0) {
           // Get the discount details
           const discountCode = await DiscountCode.findById(discountCodeId)
             .select('value redeemability totalRedeem')
@@ -363,116 +455,28 @@ router.post('/create-orders', authUser, async (req, res) => {
             redeemability === 'unlimited' ||
             (redeemability === 'once' && discountCode.totalRedeem < 1)
           ) {
-            // Update variable
+            // Update discount amount
             discountAmount = discountCode.value;
           }
         }
 
-        // Get customer orders which delivery dates are
-        // greater than or equal to the smallest upcoming dates
-        const allUpcomingOrders = await Order.find({
-          'customer._id': _id,
-          status: {
-            $nin: ['PENDING', 'ARCHIVED'],
-          },
-          'delivery.date': {
-            $gte: Math.min(
-              ...upcomingDatesAndCompanies.map(
-                (upcomingDateAndCompany) => upcomingDateAndCompany.date
-              )
-            ),
-          },
-        })
-          .select('delivery item company')
-          .lean();
-
-        // Get shift, stipend left, date and company id array
-        const stipendAndCompanyDetails = upcomingDatesAndCompanies.map(
-          (upcomingDateAndCompany) => {
-            // Find the orders those match the date
-            const upcomingOrdersOnDate = allUpcomingOrders.filter(
-              (upcomingOrder) =>
-                convertDateToMS(upcomingOrder.delivery.date) ===
-                  upcomingDateAndCompany.date &&
-                upcomingOrder.company._id.toString() ===
-                  upcomingDateAndCompany.companyId
-            );
-
-            // Find company
-            const company = companies.find(
-              (company) =>
-                company._id.toString() === upcomingDateAndCompany.companyId
-            ) as UserCompany;
-
-            // Get the discount amount for each day
-            const singleDayDiscount = toUSD(discountAmount / orderDays);
-
-            // Get total stipend
-            const totalStipend = company.shiftBudget + singleDayDiscount;
-
-            // If upcoming orders are found on the date
-            if (upcomingOrdersOnDate.length > 0) {
-              // Calculate the upcoming orders total
-              const upcomingOrdersTotalOnDate = upcomingOrdersOnDate.reduce(
-                (acc, order) => acc + order.item.total,
-                0
-              );
-
-              // Return the date and company budget - upcoming orders total
-              return {
-                ...upcomingDateAndCompany,
-                shift: company.shift,
-                stipendLeft:
-                  upcomingOrdersTotalOnDate >= company.shiftBudget
-                    ? singleDayDiscount
-                    : toUSD(totalStipend - upcomingOrdersTotalOnDate),
-              };
-            } else {
-              // If no upcoming orders are found with the
-              // date then return the date and company budget
-              return {
-                ...upcomingDateAndCompany,
-                shift: company.shift,
-                stipendLeft: totalStipend,
-              };
-            }
-          }
-        );
-
-        console.log(stipendAndCompanyDetails);
-
-        return res.end();
-
         // Create payable orders
-        const payableOrders = stipendAndCompanyDetails
-          .map((stipendAndCompanyDetail) => {
-            return {
-              date: `${convertDateToText(
-                stipendAndCompanyDetail.date
-              )} - ${`${stipendAndCompanyDetail.shift[0].toUpperCase()}${stipendAndCompanyDetail.shift.slice(
-                1
-              )}`}`,
-              items: orders
-                .filter(
-                  (order) =>
-                    order.delivery.date === stipendAndCompanyDetail.date &&
-                    order.company._id.toString() ===
-                      stipendAndCompanyDetail.companyId
-                )
-                .map((order) => order.item.name),
-              amount:
-                stipendAndCompanyDetail.stipendLeft -
-                orders
-                  .filter(
-                    (order) =>
-                      order.delivery.date === stipendAndCompanyDetail.date &&
-                      order.company._id.toString() ===
-                        stipendAndCompanyDetail.companyId
-                  )
-                  .reduce((acc, curr) => acc + curr.item.total, 0),
-            };
-          })
-          .filter((payableItem) => payableItem.amount < 0);
+        const payableOrders = payableDetails.map((payableDetail) => ({
+          date: `${dateToText(
+            payableDetail.date
+          )} - ${`${payableDetail.shift[0].toUpperCase()}${payableDetail.shift.slice(
+            1
+          )}`}`,
+          items: orders
+            .filter(
+              (order) =>
+                order.delivery.date === payableDetail.date &&
+                order.company._id.toString() === payableDetail.companyId
+            )
+            .map((order) => order.item.name),
+          amount:
+            payableDetail.payable - discountAmount / payableDetails.length,
+        }));
 
         if (payableOrders.length > 0) {
           // Create random pending Id
@@ -525,7 +529,7 @@ router.post('/create-orders', authUser, async (req, res) => {
             }));
 
             // Update total redeem amount
-            discountCodeId &&
+            discountAmount > 0 &&
               (await DiscountCode.updateOne(
                 { _id: discountCodeId },
                 {

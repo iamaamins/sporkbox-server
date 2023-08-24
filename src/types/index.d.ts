@@ -155,3 +155,10 @@ export type DiscountCodeSchema = {
   totalRedeem: number;
   redeemability: 'once' | 'unlimited';
 };
+
+export interface DateTotal {
+  shift: string;
+  date: number;
+  total: number;
+  companyId: string;
+}
