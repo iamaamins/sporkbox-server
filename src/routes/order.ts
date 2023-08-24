@@ -460,25 +460,34 @@ router.post('/create-orders', authUser, async (req, res) => {
           }
         }
 
-        // Create payable orders
-        const payableOrders = payableDetails.map((payableDetail) => ({
-          date: `${dateToText(
-            payableDetail.date
-          )} - ${`${payableDetail.shift[0].toUpperCase()}${payableDetail.shift.slice(
-            1
-          )}`}`,
-          items: orders
-            .filter(
-              (order) =>
-                order.delivery.date === payableDetail.date &&
-                order.company._id.toString() === payableDetail.companyId
-            )
-            .map((order) => order.item.name),
-          amount:
-            payableDetail.payable - discountAmount / payableDetails.length,
-        }));
+        // Get total payable amount
+        const totalPayableAmount = payableDetails.reduce(
+          (acc, curr) => acc + curr.payable,
+          0
+        );
 
-        if (payableOrders.length > 0) {
+        // Check if there is an amount to pay
+        const hasPayableItems = totalPayableAmount > discountAmount;
+
+        if (hasPayableItems) {
+          // Create payable orders
+          const payableOrders = payableDetails.map((payableDetail) => ({
+            date: `${dateToText(
+              payableDetail.date
+            )} - ${`${payableDetail.shift[0].toUpperCase()}${payableDetail.shift.slice(
+              1
+            )}`}`,
+            items: orders
+              .filter(
+                (order) =>
+                  order.delivery.date === payableDetail.date &&
+                  order.company._id.toString() === payableDetail.companyId
+              )
+              .map((order) => order.item.name),
+            amount:
+              payableDetail.payable - discountAmount / payableDetails.length,
+          }));
+
           // Create random pending Id
           const pendingOrderId = generateRandomString();
 
@@ -498,59 +507,45 @@ router.post('/create-orders', authUser, async (req, res) => {
             status: 'PENDING',
           }));
 
-          try {
-            // Create orders
-            await Order.insertMany(pendingOrders);
+          // Create orders
+          await Order.insertMany(pendingOrders);
 
-            // Send the session url with response
-            res.status(200).json(session.url);
-          } catch (err) {
-            // If orders fails to create
-            console.log(err);
-
-            throw err;
-          }
+          // Send the session url with response
+          res.status(200).json(session.url);
         } else {
-          try {
-            // Create orders
-            const response = await Order.insertMany(orders);
+          // Create orders
+          const response = await Order.insertMany(orders);
 
-            // Format orders for customer
-            const ordersForCustomers = response.map((order) => ({
-              _id: order._id,
-              item: order.item,
-              status: order.status,
-              createdAt: order.createdAt,
-              restaurant: order.restaurant,
-              delivery: {
-                date: order.delivery.date,
-              },
-              hasReviewed: order.hasReviewed,
-              company: { shift: order.company.shift },
-            }));
+          // Format orders for customer
+          const ordersForCustomers = response.map((order) => ({
+            _id: order._id,
+            item: order.item,
+            status: order.status,
+            createdAt: order.createdAt,
+            restaurant: order.restaurant,
+            delivery: {
+              date: order.delivery.date,
+            },
+            hasReviewed: order.hasReviewed,
+            company: { shift: order.company.shift },
+          }));
 
-            // Update total redeem amount
-            discountAmount > 0 &&
-              (await DiscountCode.updateOne(
-                { _id: discountCodeId },
-                {
-                  $inc: {
-                    totalRedeem: 1,
-                  },
-                }
-              ));
+          // Update total redeem amount
+          discountAmount > 0 &&
+            (await DiscountCode.updateOne(
+              { _id: discountCodeId },
+              {
+                $inc: {
+                  totalRedeem: 1,
+                },
+              }
+            ));
 
-            // Send the data with response
-            res.status(201).json(ordersForCustomers);
-          } catch (err) {
-            // If orders fails to create
-            console.log(err);
-
-            throw err;
-          }
+          // Send the data with response
+          res.status(201).json(ordersForCustomers);
         }
       } catch (err) {
-        // If upcoming orders fails to fetch
+        // Log error
         console.log(err);
 
         throw err;
