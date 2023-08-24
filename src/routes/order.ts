@@ -697,35 +697,21 @@ router.patch('/change-orders-status', authUser, async (req, res) => {
           { $set: { status: 'DELIVERED' } }
         );
 
-        try {
-          // Find the orders
-          const orders = await Order.find({ _id: { $in: orderIds } });
+        // Find the orders
+        const orders = await Order.find({ _id: { $in: orderIds } });
 
-          try {
-            // Send delivery email
-            await Promise.all(
-              orders.map(
-                async (order) =>
-                  await mail.send(orderDeliveryTemplate(order.toObject()))
-              )
-            );
+        // Send delivery email
+        await Promise.all(
+          orders.map(
+            async (order) =>
+              await mail.send(orderDeliveryTemplate(order.toObject()))
+          )
+        );
 
-            // Send the update
-            res.status(200).json('Delivery email sent');
-          } catch (err) {
-            // If emails aren't sent
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If orders aren't fetched
-          console.log(err);
-
-          throw err;
-        }
+        // Send the update
+        res.status(200).json('Delivery email sent');
       } catch (err) {
-        // If order status isn't updated
+        // Log error
         console.log(err);
 
         throw err;
@@ -762,21 +748,13 @@ router.patch('/:orderId/change-order-status', authUser, async (req, res) => {
           .select('-__v -updatedAt')
           .orFail();
 
-        // If order is updated
-        try {
-          // Send cancellation email
-          await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
+        // Send cancellation email
+        await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
 
-          // Send updated order with the response
-          res.status(201).json(updatedOrder);
-        } catch (err) {
-          // If email isn't sent
-          console.log(err);
-
-          throw err;
-        }
+        // Send updated order with the response
+        res.status(201).json(updatedOrder);
       } catch (err) {
-        // If order status isn't updated
+        // Log error
         console.log(err);
 
         throw err;
