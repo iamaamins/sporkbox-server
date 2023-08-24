@@ -6,7 +6,7 @@ import {
   sortIngredients,
   convertDateToMS,
   convertDateToText,
-  formatNumberToUS,
+  toUSD,
   generateRandomString,
   getUpcomingRestaurants,
 } from '../utils';
@@ -302,7 +302,7 @@ router.post('/create-orders', authUser, async (req, res) => {
                 removedIngredients: orderPayload.removedIngredients
                   .sort(sortIngredients)
                   .join(', '),
-                total: formatNumberToUS(
+                total: toUSD(
                   item.price * orderPayload.quantity + totalAddonsPrice
                 ),
               },
@@ -404,8 +404,11 @@ router.post('/create-orders', authUser, async (req, res) => {
                 company._id.toString() === upcomingDateAndCompany.companyId
             ) as UserCompany;
 
-            // Stipend with discount
-            const totalStipend = company.shiftBudget + discountAmount;
+            // Get the discount amount for each day
+            const singleDayDiscount = toUSD(discountAmount / orderDays);
+
+            // Get total stipend
+            const totalStipend = company.shiftBudget + singleDayDiscount;
 
             // If upcoming orders are found on the date
             if (upcomingOrdersOnDate.length > 0) {
@@ -415,12 +418,6 @@ router.post('/create-orders', authUser, async (req, res) => {
                 0
               );
 
-              // Get the discount amount for each day
-              const singleDayDiscount = discountAmount / orderDays;
-
-              // Get total stipend
-              const totalStipend = company.shiftBudget + singleDayDiscount;
-
               // Return the date and company budget - upcoming orders total
               return {
                 ...upcomingDateAndCompany,
@@ -428,9 +425,7 @@ router.post('/create-orders', authUser, async (req, res) => {
                 stipendLeft:
                   upcomingOrdersTotalOnDate >= company.shiftBudget
                     ? singleDayDiscount
-                    : formatNumberToUS(
-                        totalStipend - upcomingOrdersTotalOnDate
-                      ),
+                    : toUSD(totalStipend - upcomingOrdersTotalOnDate),
               };
             } else {
               // If no upcoming orders are found with the
@@ -443,6 +438,10 @@ router.post('/create-orders', authUser, async (req, res) => {
             }
           }
         );
+
+        console.log(stipendAndCompanyDetails);
+
+        return res.end();
 
         // Create payable orders
         const payableOrders = stipendAndCompanyDetails

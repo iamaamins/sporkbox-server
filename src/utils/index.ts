@@ -69,8 +69,7 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
 };
 
 // Convert number
-export const formatNumberToUS = (number: number) =>
-  +number.toLocaleString('en-US');
+export const toUSD = (number: number) => +number.toLocaleString('en-US');
 
 // Convert date to slug
 export const convertDateToMS = (date: Date | string): number =>
