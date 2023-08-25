@@ -139,7 +139,7 @@ router.post('/apply/:code', authUser, async (req, res) => {
       try {
         // Query database
         const discountCode = await DiscountCode.findOne({ code })
-          .select('code redeemability value')
+          .select('-__v -createdAt -updatedAt')
           .lean()
           .orFail();
 
