@@ -50,7 +50,6 @@ export async function stripeCheckout(
           company: 'sporkbox',
         }),
       },
-      allow_promotion_codes: true,
       customer_email: customerEmail,
       success_url: `${process.env.CLIENT_URL}/success?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,
