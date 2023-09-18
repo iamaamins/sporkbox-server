@@ -417,7 +417,7 @@ router.patch(
         .orFail();
 
       // Send data with response
-      res.status(200).json(updatedCustomer);
+      res.status(201).json(updatedCustomer);
     } catch (err) {
       // Log error
       console.log(err);
