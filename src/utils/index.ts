@@ -246,7 +246,11 @@ const followingWeekSunday = getFutureDate(14);
 export async function sendOrderReminderEmails() {
   try {
     // Get all active customers
-    const customers = await User.find({ role: 'CUSTOMER', status: 'ACTIVE' })
+    const customers = await User.find({
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      'subscribedTo.orderReminder': true,
+    })
       .select('companies email')
       .lean();
 
