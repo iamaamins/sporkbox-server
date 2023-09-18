@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { subscriptions } from '../utils';
 
 declare global {
   namespace Express {
@@ -115,9 +116,7 @@ export interface UserSchema extends GenericUser {
   shifts: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;
-  subscribedTo: {
-    orderReminder: boolean;
-  };
+  subscribedTo: typeof subscriptions;
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 

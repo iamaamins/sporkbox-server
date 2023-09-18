@@ -2,7 +2,13 @@ import bcrypt from 'bcrypt';
 import User from '../models/user';
 import Company from '../models/company';
 import authUser from '../middleware/authUser';
-import { setCookie, deleteFields, checkActions, checkShift } from '../utils';
+import {
+  setCookie,
+  deleteFields,
+  checkActions,
+  checkShift,
+  subscriptions,
+} from '../utils';
 import { Router } from 'express';
 import { GenericUser, StatusChangePayload } from '../types';
 
@@ -13,10 +19,6 @@ interface CustomerPayload extends GenericUser {
 }
 
 interface EditCustomerPayload extends GenericUser {}
-
-interface ShiftChangePayload {
-  shift: string;
-}
 
 // Initialize router
 const router = Router();
@@ -74,10 +76,8 @@ router.post('/register-customer', async (req, res, next) => {
             status: 'ACTIVE',
             role: 'CUSTOMER',
             password: hashedPassword,
+            subscribedTo: subscriptions,
             companies: archivedCompanies,
-            subscribedTo: {
-              orderReminder: true,
-            },
           });
 
           // Convert BSON to object
@@ -275,7 +275,7 @@ router.patch(
       if (role === 'CUSTOMER') {
         // Destructure data from request
         const { customerId, companyCode } = req.params;
-        const { shift }: ShiftChangePayload = req.body;
+        const { shift }: { shift: string } = req.body;
 
         // If no shift is provided
         if (!shift || typeof shift !== 'string') {
@@ -397,15 +397,24 @@ router.patch(
     const { customerId } = req.params;
     const { isSubscribed }: { isSubscribed: boolean } = req.body;
 
+    // Updated subscriptions
+    let updatedSubscriptions = {};
+
+    // Update subscription's status
+    for (let subscription in subscriptions) {
+      updatedSubscriptions = {
+        ...updatedSubscriptions,
+        [subscription]: !isSubscribed,
+      };
+    }
+
     try {
       //  Opt out from all emails
       const updatedCustomer = await User.findByIdAndUpdate(
         customerId,
         {
           $set: {
-            subscribedTo: {
-              orderReminder: !isSubscribed,
-            },
+            subscribedTo: updatedSubscriptions,
           },
         },
         {

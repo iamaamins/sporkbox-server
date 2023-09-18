@@ -398,3 +398,8 @@ export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
   splitAddons(serverAddons)
     .filter((addon) => clientAddons.includes(addon[0]))
     .reduce((acc, curr) => acc + +curr[1], 0);
+
+// Email subscriptions
+export const subscriptions = {
+  orderReminder: true,
+};
