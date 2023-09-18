@@ -75,6 +75,9 @@ router.post('/register-customer', async (req, res, next) => {
             role: 'CUSTOMER',
             password: hashedPassword,
             companies: archivedCompanies,
+            subscribedTo: {
+              orderReminder: true,
+            },
           });
 
           // Convert BSON to object
