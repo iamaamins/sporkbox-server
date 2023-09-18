@@ -61,7 +61,7 @@ export function passwordResetConfirmationTemplate(user: GenericUser) {
   };
 }
 
-export function orderReminderTemplate(user: GenericUser) {
+export function thursdayOrderReminderTemplate(user: GenericUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
@@ -78,6 +78,30 @@ export function orderReminderTemplate(user: GenericUser) {
         <p>Make your meal selections at www.sporkbox.app</p>
 
         <p>You must complete your selections by <strong>NOON Friday</strong> to lock in your order!</p>
+
+        <p>Thanks!</p>
+
+        <p>- The Spork Bytes Team</p>
+        `,
+  };
+}
+export function fridayOrderReminderTemplate(user: GenericUser) {
+  return {
+    to: user.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Have you placed your order for lunch next week?`,
+    html: `
+        <p>Hey there!</p>
+
+        <p>
+          <strong>
+            Have you placed your order for lunch next week?
+          </strong>
+        </p>
+
+        <p>Make your meal selections at www.sporkbox.app</p>
+
+        <p>You must complete your selections by <strong>NOON TODAY</strong> to lock in your order!</p>
 
         <p>Thanks!</p>
 

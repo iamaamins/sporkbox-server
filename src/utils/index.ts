@@ -7,14 +7,24 @@ import mail from '@sendgrid/mail';
 import { Types } from 'mongoose';
 import Order from '../models/order';
 import Restaurant from '../models/restaurant';
-import { Addons, DateTotal, UserCompany } from '../types';
-import { orderReminderTemplate } from './emailTemplates';
+import { Addons, DateTotal, GenericUser, UserCompany } from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
+import {
+  thursdayOrderReminderTemplate,
+  fridayOrderReminderTemplate,
+} from './emailTemplates';
 
 // Types
-interface SortScheduledRestaurant {
+type SortScheduledRestaurant = {
   date: Date;
-}
+};
+
+type OrderReminderTemplate = (customer: GenericUser) => {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+};
 
 // Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
@@ -243,7 +253,9 @@ const nextWeekMonday = getFutureDate(8);
 const followingWeekSunday = getFutureDate(14);
 
 // Remind to order
-export async function sendOrderReminderEmails() {
+export async function sendOrderReminderEmails(
+  orderReminderTemplate: OrderReminderTemplate
+) {
   try {
     // Get all active customers
     const customers = await User.find({
@@ -336,7 +348,7 @@ export async function sendOrderReminderEmails() {
 new cron.CronJob(
   '0 0 14 * * Thu',
   () => {
-    sendOrderReminderEmails();
+    sendOrderReminderEmails(thursdayOrderReminderTemplate);
   },
   null,
   true,
@@ -347,7 +359,7 @@ new cron.CronJob(
 new cron.CronJob(
   '0 0 8 * * Fri',
   () => {
-    sendOrderReminderEmails();
+    sendOrderReminderEmails(fridayOrderReminderTemplate);
   },
   null,
   true,
