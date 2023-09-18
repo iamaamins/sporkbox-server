@@ -372,4 +372,59 @@ router.patch(
   }
 );
 
+// Update customer email subscriptions
+router.patch(
+  '/:customerId/update-email-subscriptions',
+  authUser,
+  async (req, res) => {
+    if (!req.user) {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+
+    if (req.user.role !== 'CUSTOMER') {
+      // If role isn't customer
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+
+    // Get data
+    const { customerId } = req.params;
+    const { isSubscribed }: { isSubscribed: boolean } = req.body;
+
+    try {
+      //  Opt out from all emails
+      const updatedCustomer = await User.findByIdAndUpdate(
+        customerId,
+        {
+          $set: {
+            subscribedTo: {
+              orderReminder: !isSubscribed,
+            },
+          },
+        },
+        {
+          returnDocument: 'after',
+        }
+      )
+        .select('-__v -password -updatedAt -createdAt')
+        .lean()
+        .orFail();
+
+      // Send data with response
+      res.status(200).json(updatedCustomer);
+    } catch (err) {
+      // Log error
+      console.log(err);
+
+      throw err;
+    }
+  }
+);
+
 export default router;
