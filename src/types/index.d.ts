@@ -115,6 +115,9 @@ export interface UserSchema extends GenericUser {
   shifts: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;
+  subscribedTo: {
+    orderReminder: boolean;
+  };
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 

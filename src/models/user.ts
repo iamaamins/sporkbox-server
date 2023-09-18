@@ -106,6 +106,9 @@ const userSchema = new Schema<UserSchema>(
       type: Schema.Types.ObjectId,
       ref: 'Restaurant',
     },
+    subscribedTo: {
+      orderReminder: Boolean,
+    },
   },
   {
     timestamps: true,
