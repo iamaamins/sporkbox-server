@@ -16,7 +16,7 @@ import {
 } from '../utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
-import { Addons, StatusChangePayload, GenericItem } from '../types';
+import { Addon, StatusChangePayload, GenericItem } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancelTemplate } from '../utils/emailTemplates';
 
@@ -495,12 +495,12 @@ router.post('/:restaurantId/add-item', authUser, upload, async (req, res) => {
       }
 
       // Parse addons
-      const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
-      const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+      const parsedOptionalAddons: Addon[] = JSON.parse(optionalAddons);
+      const parsedRequiredAddons: Addon[] = JSON.parse(requiredAddons);
 
       // Check optional addons format
       if (
-        parsedOptionalAddons.addons &&
+        parsedOptionalAddons.length > 0 &&
         !isCorrectAddonsFormat(parsedOptionalAddons)
       ) {
         // Log error
@@ -512,7 +512,7 @@ router.post('/:restaurantId/add-item', authUser, upload, async (req, res) => {
 
       // Check required addons format
       if (
-        parsedRequiredAddons.addons &&
+        parsedRequiredAddons.length > 0 &&
         !isCorrectAddonsFormat(parsedRequiredAddons)
       ) {
         // Log error
@@ -539,11 +539,11 @@ router.post('/:restaurantId/add-item', authUser, upload, async (req, res) => {
 
       // Formatted optional addons
       const formattedOptionalAddons =
-        parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
+        parsedOptionalAddons.length > 0 && formatAddons(parsedOptionalAddons);
 
       // Formatted required addons
       const formattedRequiredAddons =
-        parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
+        parsedRequiredAddons.length > 0 && formatAddons(parsedRequiredAddons);
 
       try {
         // Find the restaurant and add the item
@@ -634,12 +634,12 @@ router.patch(
         }
 
         // Parse addons
-        const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
-        const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+        const parsedOptionalAddons: Addon[] = JSON.parse(optionalAddons);
+        const parsedRequiredAddons: Addon[] = JSON.parse(requiredAddons);
 
         // Check optional addons format
         if (
-          parsedOptionalAddons.addons &&
+          parsedOptionalAddons.length > 0 &&
           !isCorrectAddonsFormat(parsedOptionalAddons)
         ) {
           // Log error
@@ -651,7 +651,7 @@ router.patch(
 
         // Check required addons format
         if (
-          parsedRequiredAddons.addons &&
+          parsedRequiredAddons.length > 0 &&
           !isCorrectAddonsFormat(parsedRequiredAddons)
         ) {
           // Log error
@@ -687,11 +687,11 @@ router.patch(
 
         // Formatted optional addons
         const formattedOptionalAddons =
-          parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
+          parsedOptionalAddons.length > 0 && formatAddons(parsedOptionalAddons);
 
         // Formatted required addons
         const formattedRequiredAddons =
-          parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
+          parsedRequiredAddons.length > 0 && formatAddons(parsedRequiredAddons);
 
         try {
           if (!imageUrl) {

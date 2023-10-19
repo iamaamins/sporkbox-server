@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { subscriptions } from '../utils';
+import { subscriptions } from './utils';
 
 declare global {
   namespace Express {
@@ -40,7 +40,7 @@ export interface OrderRestaurant {
   name: string;
 }
 
-interface GenericItem {
+export interface GenericItem {
   name: string;
   tags: string;
   image: string;
@@ -60,8 +60,8 @@ export interface ItemSchema extends GenericItem {
   index: number;
   price: number;
   status: string;
-  optionalAddons: Addons;
-  requiredAddons: Addons;
+  optionalAddons: Addon[];
+  requiredAddons: Addon[];
   removableIngredients: string;
   reviews: Types.DocumentArray<ReviewSchema>;
 }
@@ -88,7 +88,7 @@ interface ReviewSchema {
   comment: string;
 }
 
-export interface Addons {
+export interface Addon {
   addons: string;
   addable: number;
 }
@@ -120,12 +120,17 @@ export interface UserSchema extends GenericUser {
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 
-interface FavRestaurantItem extends GenericItem {
+export interface FavRestaurantItem extends GenericItem {
   _id: Types.ObjectId;
   index: number;
   price: number;
   reviews: ReviewSchema[];
 }
+
+export type OrderAddon = {
+  index: number;
+  addons: string[];
+};
 
 export interface OrdersPayload {
   items: {
@@ -134,8 +139,8 @@ export interface OrdersPayload {
     companyId: string;
     restaurantId: string;
     deliveryDate: number;
-    optionalAddons: string[];
-    requiredAddons: string[];
+    optionalAddons: OrderAddon[];
+    requiredAddons: OrderAddon[];
     removedIngredients: string[];
   }[];
   discountCodeId: string;

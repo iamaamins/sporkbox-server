@@ -102,30 +102,36 @@ const restaurantSchema = new Schema<RestaurantSchema>(
           enum: ['ARCHIVED', 'ACTIVE'],
           required: [true, 'Please provide a status'],
         },
-        optionalAddons: {
-          addons: {
-            type: String,
-            trim: true,
-            lowercase: true,
-            required: [true, 'Please provide optional addons'],
+        optionalAddons: [
+          {
+            _id: false,
+            addons: {
+              type: String,
+              trim: true,
+              lowercase: true,
+              required: [true, 'Please provide optional addons'],
+            },
+            addable: {
+              type: Number,
+              required: [true, 'Please provide optional addable'],
+            },
           },
-          addable: {
-            type: Number,
-            required: [true, 'Please provide optional addable'],
+        ],
+        requiredAddons: [
+          {
+            _id: false,
+            addons: {
+              type: String,
+              trim: true,
+              lowercase: true,
+              required: [true, 'Please provide required addons'],
+            },
+            addable: {
+              type: Number,
+              required: [true, 'Please provide required addable'],
+            },
           },
-        },
-        requiredAddons: {
-          addons: {
-            type: String,
-            trim: true,
-            lowercase: true,
-            required: [true, 'Please provide required addons'],
-          },
-          addable: {
-            type: Number,
-            required: [true, 'Please provide required addable'],
-          },
-        },
+        ],
         removableIngredients: {
           type: String,
           trim: true,

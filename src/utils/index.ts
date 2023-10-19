@@ -2,12 +2,12 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import cron from 'cron';
 import jwt from 'jsonwebtoken';
-import User from '../models/user';
+import User from '@models/user';
 import mail from '@sendgrid/mail';
 import { Types } from 'mongoose';
-import Order from '../models/order';
-import Restaurant from '../models/restaurant';
-import { Addons, DateTotal, GenericUser, UserCompany } from '../types';
+import Order from '@models/order';
+import Restaurant from '@models/restaurant';
+import { Addon, DateTotal, GenericUser, OrderAddon, UserCompany } from '@types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import {
   thursdayOrderReminderTemplate,
@@ -216,22 +216,25 @@ export const splitAddons = (addons: string) =>
     );
 
 // Check addable ingredients format
-export const isCorrectAddonsFormat = (parsedAddons: Addons) =>
-  splitAddons(parsedAddons.addons).every(
-    (ingredient) =>
-      ingredient.length === 2 &&
-      ingredient[1] !== '' &&
-      +ingredient[1] >= 0 &&
-      splitAddons(parsedAddons.addons).length >= parsedAddons.addable
+export const isCorrectAddonsFormat = (parsedAddons: Addon[]) =>
+  parsedAddons.every((parsedAddon) =>
+    splitAddons(parsedAddon.addons).every(
+      (ingredient) =>
+        ingredient.length === 2 &&
+        ingredient[1] !== '' &&
+        +ingredient[1] >= 0 &&
+        splitAddons(parsedAddon.addons).length >= parsedAddon.addable
+    )
   );
 
 // Format addable ingredients
-export const formatAddons = (parsedAddons: Addons) => ({
-  addons: splitAddons(parsedAddons.addons)
-    .map((ingredient) => ingredient.join(' - '))
-    .join(', '),
-  addable: parsedAddons.addable || splitAddons(parsedAddons.addons).length,
-});
+export const formatAddons = (parsedAddons: Addon[]) =>
+  parsedAddons.map((parsedAddon) => ({
+    addons: splitAddons(parsedAddon.addons)
+      .map((ingredient) => ingredient.join(' - '))
+      .join(', '),
+    addable: parsedAddon.addable || splitAddons(parsedAddon.addons).length,
+  }));
 
 // Get future date
 export function getFutureDate(dayToAdd: number) {
@@ -402,16 +405,45 @@ export function getDateTotal(details: DateTotal[]) {
 }
 
 // Create addons
-export const createAddons = (addons: string[]) =>
-  addons.map((addon) => addon.split('-')[0].trim());
+export const createAddons = (addons: OrderAddon[]) =>
+  addons
+    .flatMap((addon) => addon.addons)
+    .map((addon) => addon.split('-')[0].trim());
 
 // Get addons price
-export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
-  splitAddons(serverAddons)
-    .filter((addon) => clientAddons.includes(addon[0]))
+export const getAddonsPrice = (
+  serverAddons: Addon[],
+  orderAddons: OrderAddon[]
+) =>
+  orderAddons
+    .flatMap((orderAddon) =>
+      splitAddons(serverAddons.at(orderAddon.index)?.addons as string).filter(
+        (sAddon) =>
+          orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
+      )
+    )
     .reduce((acc, curr) => acc + +curr[1], 0);
 
 // Email subscriptions
 export const subscriptions = {
   orderReminder: true,
 };
+
+// Verify valid addons
+export const matchAddons = (itemAddons: Addon[], orderAddons: OrderAddon[]) =>
+  itemAddons.every((itemAddon, itemIndex) =>
+    orderAddons.some(
+      (orderAddon) =>
+        orderAddon.index === itemIndex &&
+        orderAddon.addons.length === itemAddon.addable &&
+        orderAddon.addons.every((oAddon) =>
+          itemAddon.addons
+            .split(',')
+            .some(
+              (iAddon) =>
+                iAddon.split('-')[0].trim() ===
+                oAddon.split('-')[0].trim().toLowerCase()
+            )
+        )
+    )
+  );

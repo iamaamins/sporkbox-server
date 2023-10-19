@@ -1,8 +1,7 @@
-import Order from '../models/order';
-import authUser from '../middleware/authUser';
+import Order from '@models/order';
+import authUser from '@middleware/authUser';
 import { Router } from 'express';
 import {
-  splitAddons,
   sortIngredients,
   dateToMS,
   dateToText,
@@ -12,15 +11,16 @@ import {
   getDateTotal,
   createAddons,
   getAddonsPrice,
-} from '../utils';
+  matchAddons,
+} from '@utils/index';
 import {
   orderArchiveTemplate,
   orderDeliveryTemplate,
-} from '../utils/emailTemplates';
+} from '@utils/emailTemplates';
 import mail from '@sendgrid/mail';
-import { stripeCheckout } from '../config/stripe';
-import DiscountCode from '../models/discountCode';
-import { UserCompany, OrdersPayload } from '../types';
+import { stripeCheckout } from '@config/stripe';
+import DiscountCode from '@models/discountCode';
+import { Addon, OrderAddon, OrdersPayload } from '@types';
 
 // Types
 interface OrdersStatusPayload {
@@ -156,45 +156,32 @@ router.post('/create-orders', authUser, async (req, res) => {
       const orderItemsAreValid = items.every((orderPayload) =>
         upcomingRestaurants.some(
           (upcomingRestaurant) =>
+            // Match restaurant
             upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
+            // Match company
             upcomingRestaurant.company._id.toString() ===
               orderPayload.companyId &&
+            // Match delivery date
             dateToMS(upcomingRestaurant.date) === orderPayload.deliveryDate &&
+            // Match items
             upcomingRestaurant.items.some(
               (item) =>
+                // Match item
                 item._id?.toString() === orderPayload.itemId &&
+                // Match addons
                 (orderPayload.optionalAddons.length > 0
-                  ? item.optionalAddons.addable >=
-                      orderPayload.optionalAddons.length &&
-                    orderPayload.optionalAddons.every((orderOptionalAddon) =>
-                      item.optionalAddons.addons
-                        .split(',')
-                        .some(
-                          (itemOptionalAddon) =>
-                            itemOptionalAddon.split('-')[0].trim() ===
-                            orderOptionalAddon
-                              .split('-')[0]
-                              .trim()
-                              .toLowerCase()
-                        )
+                  ? matchAddons(
+                      item.optionalAddons,
+                      orderPayload.optionalAddons
                     )
                   : true) &&
                 (orderPayload.requiredAddons.length > 0
-                  ? item.requiredAddons.addable ===
-                      orderPayload.requiredAddons.length &&
-                    orderPayload.requiredAddons.every((orderRequiredAddon) =>
-                      item.requiredAddons.addons
-                        .split(',')
-                        .some(
-                          (itemRequiredAddon) =>
-                            itemRequiredAddon.split('-')[0].trim() ===
-                            orderRequiredAddon
-                              .split('-')[0]
-                              .trim()
-                              .toLowerCase()
-                        )
+                  ? matchAddons(
+                      item.requiredAddons,
+                      orderPayload.requiredAddons
                     )
                   : true) &&
+                // Match removable ingredients
                 (orderPayload.removedIngredients.length > 0
                   ? orderPayload.removedIngredients.every((removedIngredient) =>
                       item.removableIngredients
@@ -238,28 +225,28 @@ router.post('/create-orders', authUser, async (req, res) => {
             (item) => item._id?.toString() === orderPayload.itemId
           );
 
-          // Get optional addons
-          const optionalAddons = createAddons(orderPayload.optionalAddons);
-
-          // Get required addons
-          const requiredAddons = createAddons(orderPayload.requiredAddons);
-
           if (item) {
             // Get optional addons price total
             const optionalAddonsPrice = getAddonsPrice(
-              item.optionalAddons.addons,
-              optionalAddons
+              item.optionalAddons,
+              orderPayload.optionalAddons
             );
 
             // Get required addons price total
             const requiredAddonsPrice = getAddonsPrice(
-              item.requiredAddons.addons,
-              requiredAddons
+              item.requiredAddons,
+              orderPayload.requiredAddons
             );
 
             // Get total addons price
             const totalAddonsPrice =
               (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
+
+            // Get optional addons
+            const optionalAddons = createAddons(orderPayload.optionalAddons);
+
+            // Get required addons
+            const requiredAddons = createAddons(orderPayload.requiredAddons);
 
             // Create and return individual order
             return {
