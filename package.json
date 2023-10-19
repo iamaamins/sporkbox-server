@@ -5,10 +5,10 @@
   "main": "app.js",
   "scripts": {
     "tsc": "tsc",
-    "dev": "nodemon",
     "start": "node ./dist/app.js",
     "postinstall": "npm run tsc",
     "migrate-mongo": "migrate-mongo",
+    "dev": "nodemon --files ./src/app.ts",
     "heroku-postbuild": "npm run migrate-mongo up"
   },
   "author": "",
@@ -31,7 +31,6 @@
     "multer": "^1.4.5-lts.1",
     "sharp": "^0.31.3",
     "stripe": "^11.6.0",
-    "tsconfig-paths": "^4.2.0",
     "xss-clean": "^0.1.1"
   },
   "devDependencies": {

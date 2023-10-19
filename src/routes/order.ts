@@ -1,5 +1,5 @@
-import Order from '@models/order';
-import authUser from '@middleware/authUser';
+import Order from '../models/order';
+import authUser from '../middleware/authUser';
 import { Router } from 'express';
 import {
   sortIngredients,
@@ -12,15 +12,15 @@ import {
   createAddons,
   getAddonsPrice,
   matchAddons,
-} from '@utils/index';
+} from '../utils/index';
 import {
   orderArchiveTemplate,
   orderDeliveryTemplate,
-} from '@utils/emailTemplates';
+} from '../utils/emailTemplates';
 import mail from '@sendgrid/mail';
-import { stripeCheckout } from '@config/stripe';
-import DiscountCode from '@models/discountCode';
-import { Addon, OrderAddon, OrdersPayload } from '@types';
+import { stripeCheckout } from '../config/stripe';
+import DiscountCode from '../models/discountCode';
+import { OrdersPayload } from '../types';
 
 // Types
 interface OrdersStatusPayload {

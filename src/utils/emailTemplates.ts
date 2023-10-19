@@ -1,4 +1,4 @@
-import { OrderForEmail, GenericUser } from '@types';
+import { OrderForEmail, GenericUser } from '../types';
 
 export function orderDeliveryTemplate(order: OrderForEmail) {
   return {

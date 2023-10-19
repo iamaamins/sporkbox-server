@@ -2,12 +2,18 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import cron from 'cron';
 import jwt from 'jsonwebtoken';
-import User from '@models/user';
+import User from '../models/user';
 import mail from '@sendgrid/mail';
 import { Types } from 'mongoose';
-import Order from '@models/order';
-import Restaurant from '@models/restaurant';
-import { Addon, DateTotal, GenericUser, OrderAddon, UserCompany } from '@types';
+import Order from '../models/order';
+import Restaurant from '../models/restaurant';
+import {
+  Addon,
+  DateTotal,
+  GenericUser,
+  OrderAddon,
+  UserCompany,
+} from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import {
   thursdayOrderReminderTemplate,
