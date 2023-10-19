@@ -420,15 +420,19 @@ export const createAddons = (addons: OrderAddon[]) =>
 export const getAddonsPrice = (
   serverAddons: Addon[],
   orderAddons: OrderAddon[]
-) =>
-  orderAddons
-    .flatMap((orderAddon) =>
-      splitAddons(serverAddons.at(orderAddon.index)?.addons as string).filter(
-        (sAddon) =>
-          orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
-      )
-    )
-    .reduce((acc, curr) => acc + +curr[1], 0);
+) => {
+  return orderAddons.length > 0
+    ? orderAddons
+        .flatMap((orderAddon) =>
+          splitAddons(
+            serverAddons.at(orderAddon.index)?.addons as string
+          ).filter((sAddon) =>
+            orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
+          )
+        )
+        .reduce((acc, curr) => acc + +curr[1], 0)
+    : 0;
+};
 
 // Email subscriptions
 export const subscriptions = {
