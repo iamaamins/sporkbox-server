@@ -163,7 +163,7 @@ router.post('/create-orders', authUser, async (req, res) => {
               orderPayload.companyId &&
             // Match delivery date
             dateToMS(upcomingRestaurant.date) === orderPayload.deliveryDate &&
-            // Match items
+            // Match item details
             upcomingRestaurant.items.some(
               (item) =>
                 // Match item
@@ -241,8 +241,7 @@ router.post('/create-orders', authUser, async (req, res) => {
             );
 
             // Get total addons price
-            const totalAddonsPrice =
-              (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
+            const totalAddonsPrice = optionalAddonsPrice + requiredAddonsPrice;
 
             // Get optional addons
             const optionalAddons = createAddons(orderPayload.optionalAddons);

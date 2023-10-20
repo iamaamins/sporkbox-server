@@ -424,9 +424,8 @@ export const getAddonsPrice = (
   orderAddons.length > 0
     ? orderAddons
         .flatMap((orderAddon) =>
-          splitAddons(serverAddons[orderAddon.index]?.addons as string).filter(
-            (sAddon) =>
-              orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
+          splitAddons(serverAddons[orderAddon.index].addons).filter((sAddon) =>
+            orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
           )
         )
         .reduce((acc, curr) => acc + +curr[1], 0)
