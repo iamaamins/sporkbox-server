@@ -171,12 +171,14 @@ router.post('/create-orders', authUser, async (req, res) => {
                 // Match addons
                 (orderPayload.optionalAddons.length > 0
                   ? matchAddons(
+                      'optionalAddons',
                       item.optionalAddons,
                       orderPayload.optionalAddons
                     )
                   : true) &&
                 (orderPayload.requiredAddons.length > 0
                   ? matchAddons(
+                      'requiredAddons',
                       item.requiredAddons,
                       orderPayload.requiredAddons
                     )

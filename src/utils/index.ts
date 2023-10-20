@@ -420,19 +420,17 @@ export const createAddons = (addons: OrderAddon[]) =>
 export const getAddonsPrice = (
   serverAddons: Addon[],
   orderAddons: OrderAddon[]
-) => {
-  return orderAddons.length > 0
+) =>
+  orderAddons.length > 0
     ? orderAddons
         .flatMap((orderAddon) =>
-          splitAddons(
-            serverAddons.at(orderAddon.index)?.addons as string
-          ).filter((sAddon) =>
-            orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
+          splitAddons(serverAddons[orderAddon.index]?.addons as string).filter(
+            (sAddon) =>
+              orderAddon.addons.some((oAddon) => oAddon.includes(sAddon[0]))
           )
         )
         .reduce((acc, curr) => acc + +curr[1], 0)
     : 0;
-};
 
 // Email subscriptions
 export const subscriptions = {
@@ -440,20 +438,24 @@ export const subscriptions = {
 };
 
 // Verify valid addons
-export const matchAddons = (itemAddons: Addon[], orderAddons: OrderAddon[]) =>
+export const matchAddons = (
+  addonsType: string,
+  itemAddons: Addon[],
+  orderAddons: OrderAddon[]
+) =>
   itemAddons.every((itemAddon, itemIndex) =>
-    orderAddons.some(
-      (orderAddon) =>
-        orderAddon.index === itemIndex &&
-        orderAddon.addons.length === itemAddon.addable &&
-        orderAddon.addons.every((oAddon) =>
-          itemAddon.addons
-            .split(',')
-            .some(
-              (iAddon) =>
-                iAddon.split('-')[0].trim() ===
-                oAddon.split('-')[0].trim().toLowerCase()
-            )
-        )
+    orderAddons.some((orderAddon) =>
+      orderAddon.index === itemIndex && addonsType === 'optionalAddons'
+        ? orderAddon.addons.length <= itemAddon.addable
+        : orderAddon.addons.length === itemAddon.addable &&
+          orderAddon.addons.every((oAddon) =>
+            itemAddon.addons
+              .split(',')
+              .some(
+                (iAddon) =>
+                  iAddon.split('-')[0].trim() ===
+                  oAddon.split('-')[0].trim().toLowerCase()
+              )
+          )
     )
   );
