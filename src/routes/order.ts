@@ -2,7 +2,6 @@ import Order from '../models/order';
 import authUser from '../middleware/authUser';
 import { Router } from 'express';
 import {
-  splitAddons,
   sortIngredients,
   dateToMS,
   dateToText,
@@ -20,7 +19,7 @@ import {
 import mail from '@sendgrid/mail';
 import { stripeCheckout } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
-import { UserCompany, OrdersPayload } from '../types';
+import { OrdersPayload } from '../types';
 
 // Types
 interface OrdersStatusPayload {
