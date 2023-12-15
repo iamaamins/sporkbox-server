@@ -301,7 +301,7 @@ router.post('/create-orders', authUser, async (req, res) => {
                   .sort(sortIngredients)
                   .join(', '),
                 total: toUSNumber(
-                  item.price * orderPayload.quantity + totalAddonsPrice
+                  (item.price + totalAddonsPrice) * orderPayload.quantity
                 ),
               },
             };
