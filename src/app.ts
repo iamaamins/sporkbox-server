@@ -6,6 +6,7 @@ import 'express-async-errors';
 import User from './routes/user';
 import mail from '@sendgrid/mail';
 import { unless } from './utils';
+import Stat from './routes/stat';
 import Admin from './routes/admin';
 import Order from './routes/order';
 import Stripe from './routes/stripe';
@@ -53,6 +54,7 @@ app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 
 // Routes
 app.use('/users', User);
+app.use('/stats', Stat);
 app.use('/orders', Order);
 app.use('/admins', Admin);
 app.use('/stripe', Stripe);
