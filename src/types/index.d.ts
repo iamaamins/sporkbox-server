@@ -164,3 +164,22 @@ export interface DateTotal {
   total: number;
   companyId: string;
 }
+
+interface Restaurant {
+  id: string;
+  name: string;
+}
+
+export interface OrderStat {
+  restaurant: Restaurant;
+  quantity: number;
+}
+
+export interface ItemStat {
+  restaurant: Restaurant;
+  item: {
+    id: string;
+    name: string;
+    quantity: number;
+  };
+}

@@ -1,112 +1,124 @@
 import { Router } from 'express';
 import Order from '../models/order';
+import { ItemStat, OrderStat } from '../types';
+import authUser from '../middleware/authUser';
 
 const router = Router();
 
-type Restaurant = {
-  id: string;
-  name: string;
-};
+router.get('/order', authUser, async (req, res) => {
+  if (req.user) {
+    // Get user role
+    const { role } = req.user;
 
-type OrderData = {
-  restaurant: Restaurant;
-  quantity: number;
-};
+    if (role === 'ADMIN') {
+      // Get all delivered orders
+      const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
 
-type ItemData = {
-  restaurant: Restaurant;
-  item: {
-    id: string;
-    name: string;
-    quantity: number;
-  };
-};
-
-router.get('/order', async (req, res) => {
-  // Get all delivered orders
-  const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
-
-  // Create results
-  const results = orders.reduce((acc, curr) => {
-    if (
-      !acc.some(
-        (order) => order.restaurant.id === curr.restaurant._id.toString()
-      )
-    ) {
-      return [
-        ...acc,
-        {
-          restaurant: {
-            id: curr.restaurant._id.toString(),
-            name: curr.restaurant.name,
-          },
-          quantity: curr.item.quantity,
-        },
-      ];
-    } else {
-      return acc.map((order) => {
-        if (order.restaurant.id === curr.restaurant._id.toString()) {
-          return { ...order, quantity: order.quantity + curr.item.quantity };
+      // Create results
+      const results = orders.reduce((acc, curr) => {
+        if (
+          !acc.some(
+            (order) => order.restaurant.id === curr.restaurant._id.toString()
+          )
+        ) {
+          return [
+            ...acc,
+            {
+              restaurant: {
+                id: curr.restaurant._id.toString(),
+                name: curr.restaurant.name,
+              },
+              quantity: curr.item.quantity,
+            },
+          ];
         } else {
-          return order;
+          return acc.map((order) => {
+            if (order.restaurant.id === curr.restaurant._id.toString()) {
+              return {
+                ...order,
+                quantity: order.quantity + curr.item.quantity,
+              };
+            } else {
+              return order;
+            }
+          });
         }
-      });
-    }
-  }, [] as OrderData[]);
+      }, [] as OrderStat[]);
 
-  // Return the response
-  res.status(200).json(results);
+      // Return the response
+      res.status(200).json(results);
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+  }
 });
 
 router.get('/item', async (req, res) => {
-  // Get all delivered orders
-  const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
+  if (req.user) {
+    // Get role
+    const { role } = req.user;
 
-  // Create results
-  const results = orders.reduce((acc, curr) => {
-    if (
-      !acc.some(
-        (order) =>
-          order.item.id === curr.item._id.toString() &&
-          order.restaurant.id === curr.restaurant._id.toString()
-      )
-    ) {
-      return [
-        ...acc,
-        {
-          restaurant: {
-            id: curr.restaurant._id.toString(),
-            name: curr.restaurant.name,
-          },
-          item: {
-            id: curr.item._id.toString(),
-            name: curr.item.name,
-            quantity: curr.item.quantity,
-          },
-        },
-      ];
-    } else {
-      return acc.map((order) => {
+    if (role === 'ADMIN') {
+      // Get all delivered orders
+      const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
+
+      // Create results
+      const results = orders.reduce((acc, curr) => {
         if (
-          order.item.id === curr.item._id.toString() &&
-          order.restaurant.id === curr.restaurant._id.toString()
+          !acc.some(
+            (order) =>
+              order.item.id === curr.item._id.toString() &&
+              order.restaurant.id === curr.restaurant._id.toString()
+          )
         ) {
-          return {
-            ...order,
-            item: {
-              ...order.item,
-              quantity: order.item.quantity + curr.item.quantity,
+          return [
+            ...acc,
+            {
+              restaurant: {
+                id: curr.restaurant._id.toString(),
+                name: curr.restaurant.name,
+              },
+              item: {
+                id: curr.item._id.toString(),
+                name: curr.item.name,
+                quantity: curr.item.quantity,
+              },
             },
-          };
+          ];
         } else {
-          return order;
+          return acc.map((order) => {
+            if (
+              order.item.id === curr.item._id.toString() &&
+              order.restaurant.id === curr.restaurant._id.toString()
+            ) {
+              return {
+                ...order,
+                item: {
+                  ...order.item,
+                  quantity: order.item.quantity + curr.item.quantity,
+                },
+              };
+            } else {
+              return order;
+            }
+          });
         }
-      });
-    }
-  }, [] as ItemData[]);
+      }, [] as ItemStat[]);
 
-  // Return results
-  res.status(200).json(results);
+      // Return results
+      res.status(200).json(results);
+    } else {
+      // If role isn't admin
+      console.log('Not authorized');
+
+      res.status(403);
+      throw new Error('Not authorized');
+    }
+  }
 });
 
 export default router;
