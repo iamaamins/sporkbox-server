@@ -57,7 +57,7 @@ router.get('/order', authUser, async (req, res) => {
   }
 });
 
-router.get('/item', async (req, res) => {
+router.get('/item', authUser, async (req, res) => {
   if (req.user) {
     // Get role
     const { role } = req.user;
