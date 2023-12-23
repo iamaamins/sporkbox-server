@@ -5,6 +5,8 @@ import authUser from '../middleware/authUser';
 
 const router = Router();
 
+const companies = ['643dec49e88d25d4249723ef', '643e162fe88d25d424972a55'];
+
 router.get('/order', authUser, async (req, res) => {
   if (req.user) {
     // Get user role
@@ -12,7 +14,12 @@ router.get('/order', authUser, async (req, res) => {
 
     if (role === 'ADMIN') {
       // Get all delivered orders
-      const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
+      const orders = await Order.find({
+        status: 'DELIVERED',
+        'company._id': { $in: companies },
+      })
+        .lean()
+        .orFail();
 
       // Create results
       const results = orders.reduce((acc, curr) => {
@@ -64,7 +71,12 @@ router.get('/item', authUser, async (req, res) => {
 
     if (role === 'ADMIN') {
       // Get all delivered orders
-      const orders = await Order.find({ status: 'DELIVERED' }).lean().orFail();
+      const orders = await Order.find({
+        status: 'DELIVERED',
+        'company._id': { $in: companies },
+      })
+        .lean()
+        .orFail();
 
       // Create results
       const results = orders.reduce((acc, curr) => {
