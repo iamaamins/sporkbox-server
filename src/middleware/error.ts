@@ -109,7 +109,7 @@ const handler: ErrorRequestHandler = (err, req, res, next) => {
   }
 
   // Stripe checkout amount too small
-  if (err.raw.code === 'amount_too_small') {
+  if (err.message.includes('at least $0.50 usd')) {
     return res
       .status(400)
       .json({ message: 'Checkout amount must be $.5 or more' });

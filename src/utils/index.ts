@@ -407,9 +407,11 @@ export const createAddons = (addons: string[]) =>
 
 // Get addons price
 export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
-  splitAddons(serverAddons)
-    .filter((addon) => clientAddons.includes(addon[0]))
-    .reduce((acc, curr) => acc + +curr[1], 0);
+  serverAddons
+    ? splitAddons(serverAddons)
+        .filter((addon) => clientAddons.includes(addon[0]))
+        .reduce((acc, curr) => acc + +curr[1], 0)
+    : 0;
 
 // Email subscriptions
 export const subscriptions = {
