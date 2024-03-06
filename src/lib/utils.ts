@@ -70,19 +70,16 @@ export const sortByDate = (
   b: SortScheduledRestaurant
 ): number => dateToMS(a.date) - dateToMS(b.date);
 
-// Timestamp of current moment
 export const now = Date.now();
 
 // Get upcoming restaurant
 export async function getUpcomingRestaurants(companies: UserCompany[]) {
-  // Get the active company
   const activeCompany = companies.find(
     (company) => company.status === 'ACTIVE'
   );
 
   if (activeCompany) {
     try {
-      // Get the scheduled restaurants
       const response = await Restaurant.find({
         schedules: {
           $elemMatch: {
@@ -111,10 +108,7 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
         }))
         .map((upcomingWeekRestaurant) =>
           upcomingWeekRestaurant.schedules.map((schedule) => {
-            // Destructure scheduled restaurant
             const { schedules, ...rest } = upcomingWeekRestaurant;
-
-            // Create new restaurant object
             return {
               ...rest,
               date: schedule.date,
@@ -129,19 +123,13 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
         .flat(2)
         .sort(sortByDate);
 
-      // Return the scheduled restaurants with response
       return upcomingRestaurants;
     } catch (err) {
-      // If scheduled restaurants aren't fetched successfully
       console.log(err);
-
       throw err;
     }
   } else {
-    // Log error
     console.log('No enrolled shift found');
-
-    // If no active company is found
     throw new Error('No enrolled shift found');
   }
 }
