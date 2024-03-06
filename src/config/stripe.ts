@@ -56,3 +56,33 @@ export async function stripeCheckout(
     throw err;
   }
 }
+
+export async function stripeRefund(amount: number, paymentIntent: string) {
+  try {
+    await stripe.refunds.create({
+      payment_intent: paymentIntent,
+      amount: Math.round(amount * 100),
+    });
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
+
+export async function stripeRefundAmount(paymentIntent: string) {
+  let total: number = 0;
+  try {
+    const refunds = await stripe.refunds.list({
+      payment_intent: paymentIntent,
+    });
+    for (const refund of refunds.data) {
+      if (refund.status === 'succeeded') {
+        total += refund.amount;
+      }
+    }
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+  return total / 100;
+}

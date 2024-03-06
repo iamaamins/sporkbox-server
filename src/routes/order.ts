@@ -17,14 +17,14 @@ import {
   orderDeliveryTemplate,
 } from '../lib/emailTemplates';
 import mail from '@sendgrid/mail';
-import { stripeCheckout } from '../config/stripe';
+import {
+  stripeCheckout,
+  stripeRefund,
+  stripeRefundAmount,
+} from '../config/stripe';
 import DiscountCode from '../models/discountCode';
 import { OrdersPayload } from '../types';
-import {
-  invalidCredentials,
-  requiredFields,
-  unAuthorized,
-} from '../lib/messages';
+import { invalidCredentials, unAuthorized } from '../lib/messages';
 
 const router = Router();
 
@@ -558,6 +558,55 @@ router.patch('/:orderId/change-order-status', auth, async (req, res) => {
       .orFail();
     await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
     res.status(201).json(updatedOrder);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
+// Cancel an order: by customer
+router.patch('/:orderId/cancel', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { orderId } = req.params;
+  try {
+    const order = await Order.findOne({
+      _id: orderId,
+      status: 'PROCESSING',
+    }).orFail();
+    order.status = 'CANCELLED';
+
+    if (!order.payment.intent) {
+      await order.save();
+      return res.status(200).json({ message: 'Order cancelled' });
+    }
+
+    const refunded = await stripeRefundAmount(order.payment.intent);
+    const askingRefund = order.item.total;
+    const paid = order.payment.amount;
+    const totalRefund = refunded + askingRefund;
+
+    if (paid === refunded) {
+      await order.save();
+      return res.status(200).json({ message: 'Order cancelled' });
+    }
+
+    if (paid >= totalRefund) {
+      await stripeRefund(askingRefund, order.payment.intent);
+      await order.save();
+      return res.status(200).json({ message: 'Order cancelled' });
+    }
+
+    if (paid < totalRefund) {
+      const finalRefund = paid - refunded;
+      await stripeRefund(finalRefund, order.payment.intent);
+      await order.save();
+      return res.status(200).json({ message: 'Order cancelled' });
+    }
   } catch (err) {
     console.log(err);
     throw err;
