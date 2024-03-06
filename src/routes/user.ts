@@ -105,14 +105,14 @@ router.post('/forgot-password', async (req, res) => {
 
 // Reset password
 router.patch('/reset-password/:userId/:token', async (req, res) => {
-  const { userId, token } = req.params;
-  const { password }: ResetPasswordPayload = req.body;
-  if (!password || !userId || !token) {
+  const { password } = req.body;
+  if (!password) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
 
+  const { userId, token } = req.params;
   try {
     const user = await User.findById(userId).orFail();
     const jwtSecret = process.env.JWT_SECRET + user.password;

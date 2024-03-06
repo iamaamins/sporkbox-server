@@ -13,6 +13,7 @@ import {
   resizeImage,
 } from '../lib/utils';
 import {
+  requiredAction,
   requiredFields,
   requiredLogo,
   unAuthorized,
@@ -267,7 +268,6 @@ router.patch(
       !email ||
       !state ||
       !lastName ||
-      !vendorId ||
       !firstName ||
       !addressLine1 ||
       !restaurantName
@@ -344,10 +344,10 @@ router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
 
   const { vendorId } = req.params;
   const { action } = req.body;
-  if (!vendorId || !action) {
-    console.log(requiredFields);
+  if (!action) {
+    console.log(requiredAction);
     res.status(400);
-    throw new Error(requiredFields);
+    throw new Error(requiredAction);
   }
   checkActions(undefined, action, res);
 

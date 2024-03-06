@@ -22,6 +22,7 @@ import { orderCancelTemplate } from '../lib/emailTemplates';
 import {
   invalidOptionalAddOnsFormat,
   invalidRequiredAddOnsFormat,
+  requiredAction,
   requiredFields,
   unAuthorized,
 } from '../lib/messages';
@@ -193,10 +194,10 @@ router.patch(
 
     const { restaurantId, scheduleId } = req.params;
     const { action } = req.body;
-    if (!action || !restaurantId || !scheduleId) {
-      console.log(requiredFields);
+    if (!action) {
+      console.log(requiredAction);
       res.status(400);
-      throw new Error(requiredFields);
+      throw new Error(requiredAction);
     }
     checkActions(['Activate', 'Deactivate'], action, res);
 
@@ -247,12 +248,6 @@ router.patch(
     }
 
     const { restaurantId, scheduleId } = req.params;
-    if (!restaurantId || !scheduleId) {
-      console.log(requiredFields);
-      res.status(400);
-      throw new Error(requiredFields);
-    }
-
     try {
       // Find the restaurant and remove the schedule
       const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -333,7 +328,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     !price ||
     !index ||
     !description ||
-    !restaurantId ||
     !optionalAddons ||
     !requiredAddons
   ) {
@@ -435,9 +429,7 @@ router.patch(
       !name ||
       !tags ||
       !price ||
-      !itemId ||
       !description ||
-      !restaurantId ||
       !optionalAddons ||
       !requiredAddons
     ) {
@@ -559,10 +551,10 @@ router.patch(
 
     const { restaurantId, itemId } = req.params;
     const { action } = req.body;
-    if (!action || !restaurantId || !itemId) {
-      console.log(requiredFields);
+    if (!action) {
+      console.log(requiredAction);
       res.status(400);
-      throw new Error(requiredFields);
+      throw new Error(requiredAction);
     }
     checkActions(undefined, action, res);
 
@@ -599,7 +591,7 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
 
   const { restaurantId, itemId } = req.params;
   const { rating, comment, orderId } = req.body;
-  if (!restaurantId || !itemId || !rating || !comment || !orderId) {
+  if (!rating || !comment || !orderId) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);

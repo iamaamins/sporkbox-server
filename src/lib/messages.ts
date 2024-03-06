@@ -8,3 +8,4 @@ export const invalidRequiredAddOnsFormat = 'Invalid required addons format';
 export const invalidEmail = 'Please provide a valid email';
 export const requiredLogo = 'Please provide a logo';
 export const vendorAlreadyExists = 'Vendor already exists';
+export const requiredAction = 'Please provide an action';

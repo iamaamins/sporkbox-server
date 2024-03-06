@@ -4,7 +4,7 @@ import Order from '../models/order';
 import Company from '../models/company';
 import auth from '../middleware/auth';
 import { checkActions, checkShift, deleteFields } from '../lib/utils';
-import { requiredFields, unAuthorized } from '../lib/messages';
+import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 
 const router = Router();
 
@@ -136,7 +136,6 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     !city ||
     !state ||
     !website ||
-    !companyId ||
     !shiftBudget ||
     !addressLine1
   ) {
@@ -194,10 +193,10 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
   const { companyId } = req.params;
   const { action } = req.body;
 
-  if (!companyId || !action) {
-    console.log(requiredFields);
+  if (!action) {
+    console.log(requiredAction);
     res.status(400);
-    throw new Error(requiredFields);
+    throw new Error(requiredAction);
   }
   checkActions(undefined, action, res);
 

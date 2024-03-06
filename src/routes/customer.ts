@@ -10,8 +10,12 @@ import {
   subscriptions,
 } from '../lib/utils';
 import { Router } from 'express';
-import { StatusChangePayload } from '../types';
-import { invalidShift, requiredFields, unAuthorized } from '../lib/messages';
+import {
+  invalidShift,
+  requiredAction,
+  requiredFields,
+  unAuthorized,
+} from '../lib/messages';
 
 const router = Router();
 
@@ -94,7 +98,7 @@ router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
 
   const { customerId } = req.params;
   const { firstName, lastName, email } = req.body;
-  if (!customerId || !firstName || !lastName || !email) {
+  if (!firstName || !lastName || !email) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -128,11 +132,11 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
   }
 
   const { customerId } = req.params;
-  const { action }: StatusChangePayload = req.body;
-  if (!customerId || !action) {
-    console.log(requiredFields);
+  const { action } = req.body;
+  if (!action) {
+    console.log(requiredAction);
     res.status(400);
-    throw new Error(requiredFields);
+    throw new Error(requiredAction);
   }
   checkActions(undefined, action, res);
 
