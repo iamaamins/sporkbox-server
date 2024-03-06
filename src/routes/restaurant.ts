@@ -1,7 +1,7 @@
 import Order from '../models/order';
 import Company from '../models/company';
 import Restaurant from '../models/restaurant';
-import authUser from '../middleware/auth';
+import auth from '../middleware/auth';
 import { Router } from 'express';
 import {
   now,
@@ -19,6 +19,12 @@ import { deleteImage, uploadImage } from '../config/s3';
 import { Addons, StatusChangePayload, GenericItem } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancelTemplate } from '../lib/emailTemplates';
+import {
+  invalidOptionalAddOnsFormat,
+  invalidRequiredAddOnsFormat,
+  requiredFields,
+  unAuthorized,
+} from '../lib/messages';
 
 // Types
 interface ScheduleRestaurantPayload {
@@ -48,296 +54,206 @@ interface ItemsIndexPayload {
   }[];
 }
 
-// Initialize router
 const router = Router();
 
 // Get upcoming restaurants
-router.get('/upcoming-restaurants', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role, companies } = req.user;
+router.get('/upcoming-restaurants', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'CUSTOMER' && companies && companies.length > 0) {
-      // Get upcoming week restaurants
-      const upcomingRestaurants = await getUpcomingRestaurants(companies);
+  const { companies } = req.user;
+  if (!companies || companies.length === 0) {
+    console.log(unAuthorized);
+    res.status(400);
+    throw new Error(unAuthorized);
+  }
 
-      // Send the data with response
-      res.status(200).json(upcomingRestaurants);
-    } else {
-      // If role isn't customer
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+  try {
+    const upcomingRestaurants = await getUpcomingRestaurants(companies);
+    res.status(200).json(upcomingRestaurants);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Get all scheduled restaurants
-router.get('/scheduled-restaurants', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.get('/scheduled-restaurants', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      try {
-        // Get the scheduled restaurants
-        const response = await Restaurant.find({
-          'schedules.date': {
-            $gte: now,
-          },
-        }).select('-__v -updatedAt -createdAt -address -items -logo');
+  try {
+    const response = await Restaurant.find({
+      'schedules.date': {
+        $gte: now,
+      },
+    }).select('-__v -updatedAt -createdAt -address -items -logo');
 
-        // Create scheduled restaurants, then flat and sort
-        const scheduledRestaurants = response
-          .map((scheduledRestaurant) =>
-            scheduledRestaurant.schedules.map((schedule) => {
-              // Destructure scheduled restaurant
-              const { schedules, ...rest } = scheduledRestaurant.toObject();
+    const scheduledRestaurants = response
+      .map((scheduledRestaurant) =>
+        scheduledRestaurant.schedules.map((schedule) => {
+          const { schedules, ...rest } = scheduledRestaurant.toObject();
 
-              // Create new scheduled restaurant
-              return {
-                ...rest,
-                scheduleId: schedule._id,
-                date: schedule.date,
-                status: schedule.status,
-                company: schedule.company,
-              };
-            })
-          )
-          .flat(2)
-          .filter(
-            (scheduledRestaurant) => dateToMS(scheduledRestaurant.date) >= now
-          )
-          .sort(sortByDate);
+          return {
+            ...rest,
+            scheduleId: schedule._id,
+            date: schedule.date,
+            status: schedule.status,
+            company: schedule.company,
+          };
+        })
+      )
+      .flat(2)
+      .filter(
+        (scheduledRestaurant) => dateToMS(scheduledRestaurant.date) >= now
+      )
+      .sort(sortByDate);
 
-        // Return the scheduled restaurants with response
-        res.status(200).json(scheduledRestaurants);
-      } catch (err) {
-        // If scheduled restaurants aren't found successfully
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+    res.status(200).json(scheduledRestaurants);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Schedule a restaurant
-router.post('/schedule-restaurant', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.post('/schedule-restaurant', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      // Destructure data from req
-      const { date, companyId, restaurantId }: ScheduleRestaurantPayload =
-        req.body;
+  const { date, companyId, restaurantId } = req.body;
+  if (!date || !companyId || !restaurantId) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
 
-      // If full data isn't provided
-      if (!date || !companyId || !restaurantId) {
-        // Log error
-        console.log('Please provide all the fields');
+  if (dateToMS(date) < now) {
+    console.log("Cant' schedule on the provided date");
+    res.status(400);
+    throw new Error("Cant' schedule on the provided date");
+  }
 
-        res.status(400);
-        throw new Error('Please fill all the fields');
-      }
-
-      // If provided date is a past date
-      if (dateToMS(date) < now) {
-        // Log error
-        console.log("Cant' schedule on the provided date");
-
-        res.status(400);
-        throw new Error("Cant' schedule on the provided date");
-      }
-
-      try {
-        // Find the restaurant and remove past dates
-        const updatedRestaurant = await Restaurant.findOneAndUpdate(
-          { _id: restaurantId },
-          {
-            $pull: {
-              schedules: {
-                date: { $lt: now },
-              },
-            },
+  try {
+    // Find the restaurant and remove past dates
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: restaurantId },
+      {
+        $pull: {
+          schedules: {
+            date: { $lt: now },
           },
-          {
-            returnDocument: 'after',
-          }
-        )
-          .select('-__v -updatedAt -createdAt -address -items -logo')
-          .orFail();
-
-        // Check if the restaurant is schedule
-        // on the same date for the same company
-        const isScheduled = updatedRestaurant.schedules.some(
-          (schedule) =>
-            companyId === schedule.company._id.toString() &&
-            dateToMS(schedule.date) === dateToMS(date)
-        );
-
-        // If the restaurant is already scheduled
-        if (isScheduled) {
-          // Log error
-          console.log('Already scheduled on the provided date');
-
-          res.status(401);
-          throw new Error('Already scheduled on the provided date');
-        }
-
-        try {
-          // Find the company
-          const company = await Company.findById(companyId).orFail();
-
-          // Create the schedule
-          const schedule = {
-            date,
-            status: 'ACTIVE',
-            company: {
-              _id: company.id,
-              name: company.name,
-              shift: company.shift,
-            },
-          };
-
-          // Add the schedule details to schedules
-          updatedRestaurant.schedules.push(schedule);
-
-          try {
-            // Save the restaurant
-            await updatedRestaurant.save();
-
-            // Get added schedule
-            const addedSchedule =
-              updatedRestaurant.schedules[
-                updatedRestaurant.schedules.length - 1
-              ];
-
-            // Destructure the restaurant object
-            const { schedules, ...rest } = updatedRestaurant.toObject();
-
-            // Create restaurant with scheduled date and company details
-            const scheduledRestaurant = {
-              ...rest,
-              ...schedule,
-              scheduleId: addedSchedule._id,
-            };
-
-            // Delete fields
-            deleteFields(scheduledRestaurant);
-
-            // Send updated restaurant with response
-            res.status(201).json(scheduledRestaurant);
-          } catch (err) {
-            // If restaurant isn't saved successfully
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If company isn't found successfully
-          console.log(err);
-
-          throw err;
-        }
-      } catch (err) {
-        // If past schedules aren't remove successfully
-        console.log(err);
-
-        throw err;
+        },
+      },
+      {
+        returnDocument: 'after',
       }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
+    )
+      .select('-__v -updatedAt -createdAt -address -items -logo')
+      .orFail();
 
-      res.status(403);
-      throw new Error('Not authorized');
+    const isScheduled = updatedRestaurant.schedules.some(
+      (schedule) =>
+        companyId === schedule.company._id.toString() &&
+        dateToMS(schedule.date) === dateToMS(date)
+    );
+
+    if (isScheduled) {
+      console.log('Already scheduled on the provided date');
+      res.status(401);
+      throw new Error('Already scheduled on the provided date');
     }
+
+    const company = await Company.findById(companyId).orFail();
+    const schedule = {
+      date,
+      status: 'ACTIVE',
+      company: {
+        _id: company.id,
+        name: company.name,
+        shift: company.shift,
+      },
+    };
+    updatedRestaurant.schedules.push(schedule);
+    await updatedRestaurant.save();
+
+    const addedSchedule =
+      updatedRestaurant.schedules[updatedRestaurant.schedules.length - 1];
+    const { schedules, ...rest } = updatedRestaurant.toObject();
+    const scheduledRestaurant = {
+      ...rest,
+      ...schedule,
+      scheduleId: addedSchedule._id,
+    };
+
+    deleteFields(scheduledRestaurant);
+    res.status(201).json(scheduledRestaurant);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Change schedule status
 router.patch(
   '/:restaurantId/:scheduleId/change-schedule-status',
-  authUser,
+  auth,
   async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { restaurantId, scheduleId } = req.params;
-        const { action }: StatusChangePayload = req.body;
+    const { restaurantId, scheduleId } = req.params;
+    const { action } = req.body;
+    if (!action || !restaurantId || !scheduleId) {
+      console.log(requiredFields);
+      res.status(400);
+      throw new Error(requiredFields);
+    }
+    checkActions(['Activate', 'Deactivate'], action, res);
 
-        // If all the fields aren't provide
-        if (!action || !restaurantId || !scheduleId) {
-          // Log error
-          console.log('Please provide all the fields');
-
-          res.status(400);
-          throw new Error('Please provide all the fields');
+    try {
+      const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        { _id: restaurantId, 'schedules._id': scheduleId },
+        {
+          $set: {
+            'schedules.$.status':
+              action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE',
+          },
+        },
+        {
+          returnDocument: 'after',
         }
+      )
+        .select('-__v -updatedAt -createdAt -address -items')
+        .lean()
+        .orFail();
 
-        // Check actions validity
-        checkActions(['Activate', 'Deactivate'], action, res);
-
-        try {
-          // Find and update the schedule status
-          const updatedRestaurant = await Restaurant.findOneAndUpdate(
-            { _id: restaurantId, 'schedules._id': scheduleId },
-            {
-              $set: {
-                'schedules.$.status':
-                  action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE',
-              },
-            },
-            {
-              returnDocument: 'after',
-            }
-          )
-            .select('-__v -updatedAt -createdAt -address -items')
-            .lean()
-            .orFail();
-
-          // If the schedule is updated successfully
-          const updatedSchedules = updatedRestaurant.schedules.map(
-            (schedule) => {
-              // Create new schedule
-              return {
-                _id: updatedRestaurant._id,
-                name: updatedRestaurant.name,
-                scheduleId: schedule._id,
-                date: schedule.date,
-                status: schedule.status,
-                company: schedule.company,
-              };
-            }
-          );
-
-          // Send the updated schedules with response
-          res.status(201).json(updatedSchedules);
-        } catch (err) {
-          // If schedule status isn't changed successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin or vendor
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
-      }
+      const updatedSchedules = updatedRestaurant.schedules.map((schedule) => {
+        return {
+          _id: updatedRestaurant._id,
+          name: updatedRestaurant.name,
+          scheduleId: schedule._id,
+          date: schedule.date,
+          status: schedule.status,
+          company: schedule.company,
+        };
+      });
+      res.status(201).json(updatedSchedules);
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 );
@@ -345,431 +261,309 @@ router.patch(
 // Remove a schedule
 router.patch(
   '/:restaurantId/:scheduleId/remove-schedule',
-  authUser,
+  auth,
   async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { restaurantId, scheduleId } = req.params;
+    const { restaurantId, scheduleId } = req.params;
+    if (!restaurantId || !scheduleId) {
+      console.log(requiredFields);
+      res.status(400);
+      throw new Error(requiredFields);
+    }
 
-        // If all the fields aren't provide
-        if (!restaurantId || !scheduleId) {
-          // Log error
-          console.log('Please provide all the fields');
-
-          res.status(400);
-          throw new Error('Please provide all the fields');
+    try {
+      // Find the restaurant and remove the schedule
+      const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        { _id: restaurantId },
+        {
+          $pull: {
+            schedules: { _id: scheduleId },
+          },
         }
+      )
+        .select('-__v -updatedAt -createdAt -address -items')
+        .lean()
+        .orFail();
 
-        try {
-          // Find the restaurant and remove the schedule
-          const updatedRestaurant = await Restaurant.findOneAndUpdate(
-            { _id: restaurantId },
-            {
-              $pull: {
-                schedules: { _id: scheduleId },
-              },
-            }
+      const removedSchedule = updatedRestaurant.schedules.find(
+        (schedule) => schedule._id?.toString() === scheduleId
+      );
+      if (removedSchedule) {
+        const orders = await Order.find({
+          status: 'PROCESSING',
+          'delivery.date': removedSchedule.date,
+          'restaurant._id': updatedRestaurant._id,
+          'company._id': removedSchedule.company._id,
+        });
+
+        await Promise.all(
+          orders.map(
+            async (order) =>
+              await mail.send(orderCancelTemplate(order.toObject()))
           )
-            .select('-__v -updatedAt -createdAt -address -items')
-            .lean()
-            .orFail();
-
-          // Find the removed schedule
-          const removedSchedule = updatedRestaurant.schedules.find(
-            (schedule) => schedule._id?.toString() === scheduleId
-          );
-
-          if (removedSchedule) {
-            try {
-              // Find the orders
-              const orders = await Order.find({
-                status: 'PROCESSING',
-                'delivery.date': removedSchedule.date,
-                'restaurant._id': updatedRestaurant._id,
-                'company._id': removedSchedule.company._id,
-              });
-
-              try {
-                // Send cancellation email
-                await Promise.all(
-                  orders.map(
-                    async (order) =>
-                      await mail.send(orderCancelTemplate(order.toObject()))
-                  )
-                );
-
-                try {
-                  // Change orders status to archive
-                  await Order.updateMany(
-                    {
-                      status: 'PROCESSING',
-                      'restaurant._id': updatedRestaurant._id,
-                      'delivery.date': removedSchedule.date,
-                      'company._id': removedSchedule.company._id,
-                    },
-                    {
-                      $set: { status: 'ARCHIVED' },
-                    }
-                  );
-
-                  // Send response
-                  res
-                    .status(201)
-                    .json('Schedule and orders removed successfully');
-                } catch (err) {
-                  // If orders status aren't changed
-                  console.log(err);
-
-                  throw err;
-                }
-              } catch (err) {
-                // If emails aren't sent
-                console.log(err);
-
-                throw err;
-              }
-            } catch (err) {
-              // If orders aren't fetched
-              console.log(err);
-
-              throw err;
-            }
+        );
+        await Order.updateMany(
+          {
+            status: 'PROCESSING',
+            'restaurant._id': updatedRestaurant._id,
+            'delivery.date': removedSchedule.date,
+            'company._id': removedSchedule.company._id,
+          },
+          {
+            $set: { status: 'ARCHIVED' },
           }
-        } catch (err) {
-          // If past schedules aren't removed
-          console.log(err);
+        );
 
-          throw err;
-        }
-      } else {
-        // If role isn't admin or vendor
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+        res.status(201).json('Schedule and orders removed successfully');
       }
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 );
 
 // Cerate an item
-router.post('/:restaurantId/add-item', authUser, upload, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN' || role === 'VENDOR') {
-      // Destructure data from req
-      const { restaurantId } = req.params;
-      const {
-        name,
-        tags,
-        price,
-        index,
-        description,
-        optionalAddons,
-        requiredAddons,
-        removableIngredients,
-      }: ItemPayload = req.body;
+  const { restaurantId } = req.params;
+  const {
+    name,
+    tags,
+    price,
+    index,
+    description,
+    optionalAddons,
+    requiredAddons,
+    removableIngredients,
+  } = req.body;
+  if (
+    !name ||
+    !tags ||
+    !price ||
+    !index ||
+    !description ||
+    !restaurantId ||
+    !optionalAddons ||
+    !requiredAddons
+  ) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
 
-      // If required fields aren't provided
-      if (
-        !name ||
-        !tags ||
-        !price ||
-        !index ||
-        !description ||
-        !restaurantId ||
-        !optionalAddons ||
-        !requiredAddons
-      ) {
-        // Log error
-        console.log('Please provide all the fields');
+  // Parse addons
+  const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
+  const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
 
-        res.status(400);
-        throw new Error('Please provide all the fields');
-      }
+  if (
+    parsedOptionalAddons.addons &&
+    !isCorrectAddonsFormat(parsedOptionalAddons)
+  ) {
+    console.log(invalidOptionalAddOnsFormat);
+    res.status(400);
+    throw new Error(invalidOptionalAddOnsFormat);
+  }
 
-      // Parse addons
-      const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
-      const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+  if (
+    parsedRequiredAddons.addons &&
+    !isCorrectAddonsFormat(parsedRequiredAddons)
+  ) {
+    console.log(invalidRequiredAddOnsFormat);
+    res.status(400);
+    throw new Error(invalidRequiredAddOnsFormat);
+  }
 
-      // Check optional addons format
-      if (
-        parsedOptionalAddons.addons &&
-        !isCorrectAddonsFormat(parsedOptionalAddons)
-      ) {
-        // Log error
-        console.log('Invalid optional addons format');
+  let imageUrl;
+  if (req.file) {
+    const { buffer, mimetype } = req.file;
+    const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+    imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+  }
 
-        res.status(400);
-        throw new Error('Invalid optional addons format');
-      }
+  const formattedOptionalAddons =
+    parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
+  const formattedRequiredAddons =
+    parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
 
-      // Check required addons format
-      if (
-        parsedRequiredAddons.addons &&
-        !isCorrectAddonsFormat(parsedRequiredAddons)
-      ) {
-        // Log error
-        console.log('Invalid required addons format');
-
-        res.status(400);
-        throw new Error('Invalid required addons format');
-      }
-
-      // Create image URL
-      let imageUrl;
-
-      // If there is a file
-      if (req.file) {
-        // Destructure file data
-        const { buffer, mimetype } = req.file;
-
-        // Resize the image
-        const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
-
-        // Upload image and get the URL
-        imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
-      }
-
-      // Formatted optional addons
-      const formattedOptionalAddons =
-        parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
-
-      // Formatted required addons
-      const formattedRequiredAddons =
-        parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
-
-      try {
-        // Find the restaurant and add the item
-        const updatedRestaurant = await Restaurant.findOneAndUpdate(
-          { _id: restaurantId },
-          {
-            $push: {
-              items: {
-                name,
-                tags,
-                price,
-                index,
-                description,
-                image: imageUrl,
-                status: 'ACTIVE',
-                removableIngredients,
-                optionalAddons: formattedOptionalAddons || parsedOptionalAddons,
-                requiredAddons: formattedRequiredAddons || parsedRequiredAddons,
-              },
-            },
+  try {
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: restaurantId },
+      {
+        $push: {
+          items: {
+            name,
+            tags,
+            price,
+            index,
+            description,
+            image: imageUrl,
+            status: 'ACTIVE',
+            removableIngredients,
+            optionalAddons: formattedOptionalAddons || parsedOptionalAddons,
+            requiredAddons: formattedRequiredAddons || parsedRequiredAddons,
           },
-          {
-            returnDocument: 'after',
-          }
-        )
-          .select('-__v -updatedAt')
-          .lean()
-          .orFail();
-
-        // Return the updated restaurant
-        res.status(201).json(updatedRestaurant);
-      } catch (err) {
-        // If item isn't added successfully
-        console.log(err);
-
-        throw err;
+        },
+      },
+      {
+        returnDocument: 'after',
       }
-    } else {
-      // If role isn't admin or vendor
-      console.log('Not authorized');
+    )
+      .select('-__v -updatedAt')
+      .lean()
+      .orFail();
 
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+    res.status(201).json(updatedRestaurant);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Edit an item
 router.patch(
   '/:restaurantId/:itemId/update-item-details',
-  authUser,
+  auth,
   upload,
   async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
 
-      if (role === 'ADMIN' || role === 'VENDOR') {
-        // Destructure data from req
-        const { restaurantId, itemId } = req.params;
-        const {
-          name,
-          tags,
-          price,
-          image,
-          description,
-          optionalAddons,
-          requiredAddons,
-          removableIngredients,
-        }: ItemPayload = req.body;
+    const { restaurantId, itemId } = req.params;
+    const {
+      name,
+      tags,
+      price,
+      image,
+      description,
+      optionalAddons,
+      requiredAddons,
+      removableIngredients,
+    } = req.body;
+    if (
+      !name ||
+      !tags ||
+      !price ||
+      !itemId ||
+      !description ||
+      !restaurantId ||
+      !optionalAddons ||
+      !requiredAddons
+    ) {
+      console.log(requiredFields);
+      res.status(400);
+      throw new Error(requiredFields);
+    }
 
-        // If required fields aren't provided
-        if (
-          !name ||
-          !tags ||
-          !price ||
-          !itemId ||
-          !description ||
-          !restaurantId ||
-          !optionalAddons ||
-          !requiredAddons
-        ) {
-          // Log error
-          console.log('Please provide all the fields');
+    const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
+    const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
 
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
+    if (
+      parsedOptionalAddons.addons &&
+      !isCorrectAddonsFormat(parsedOptionalAddons)
+    ) {
+      console.log(invalidOptionalAddOnsFormat);
+      res.status(400);
+      throw new Error(invalidOptionalAddOnsFormat);
+    }
+    if (
+      parsedRequiredAddons.addons &&
+      !isCorrectAddonsFormat(parsedRequiredAddons)
+    ) {
+      console.log(invalidRequiredAddOnsFormat);
+      res.status(400);
+      throw new Error(invalidRequiredAddOnsFormat);
+    }
 
-        // Parse addons
-        const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
-        const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+    if (req.file && image) {
+      const name = image.split('/')[image.split('/').length - 1];
+      await deleteImage(res, name);
+    }
 
-        // Check optional addons format
-        if (
-          parsedOptionalAddons.addons &&
-          !isCorrectAddonsFormat(parsedOptionalAddons)
-        ) {
-          // Log error
-          console.log('Invalid optional addons format');
+    let imageUrl = image;
+    if (req.file) {
+      const { buffer, mimetype } = req.file;
+      const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+      imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+    }
 
-          res.status(400);
-          throw new Error('Invalid optional addons format');
-        }
+    const formattedOptionalAddons =
+      parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
+    const formattedRequiredAddons =
+      parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
 
-        // Check required addons format
-        if (
-          parsedRequiredAddons.addons &&
-          !isCorrectAddonsFormat(parsedRequiredAddons)
-        ) {
-          // Log error
-          console.log('Invalid required addons format');
-
-          res.status(400);
-          throw new Error('Invalid required addons format');
-        }
-
-        // If a new file is provided and an image already exists
-        if (req.file && image) {
-          // Create name
-          const name = image.split('/')[image.split('/').length - 1];
-
-          // Delete image from s3
-          await deleteImage(res, name);
-        }
-
-        // Create image URL
-        let imageUrl = image;
-
-        // If there is a file
-        if (req.file) {
-          // Destructure file data
-          const { buffer, mimetype } = req.file;
-
-          // Resize the image
-          const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
-
-          // Upload image and get the URL
-          imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
-        }
-
-        // Formatted optional addons
-        const formattedOptionalAddons =
-          parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
-
-        // Formatted required addons
-        const formattedRequiredAddons =
-          parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
-
-        try {
-          if (!imageUrl) {
-            // Update the item
-            const updatedRestaurant = await Restaurant.findOneAndUpdate(
-              { _id: restaurantId, 'items._id': itemId },
-              {
-                $set: {
-                  'items.$.name': name,
-                  'items.$.tags': tags,
-                  'items.$.price': price,
-                  'items.$.description': description,
-                  'items.$.optionalAddons':
-                    formattedOptionalAddons || parsedOptionalAddons,
-                  'items.$.requiredAddons':
-                    formattedRequiredAddons || parsedRequiredAddons,
-                  'items.$.removableIngredients': removableIngredients,
-                },
-                $unset: {
-                  'items.$.image': null,
-                },
-              },
-              {
-                returnDocument: 'after',
-              }
-            )
-              .lean()
-              .orFail();
-
-            // Delete fields
-            deleteFields(updatedRestaurant, ['createdAt']);
-
-            // Return the updated restaurant with response
-            res.status(201).json(updatedRestaurant);
-          } else if (imageUrl) {
-            // Update the item
-            const updatedRestaurant = await Restaurant.findOneAndUpdate(
-              { _id: restaurantId, 'items._id': itemId },
-              {
-                $set: {
-                  'items.$.name': name,
-                  'items.$.tags': tags,
-                  'items.$.price': price,
-                  'items.$.image': imageUrl,
-                  'items.$.description': description,
-                  'items.$.optionalAddons':
-                    formattedOptionalAddons || parsedOptionalAddons,
-                  'items.$.requiredAddons':
-                    formattedRequiredAddons || parsedRequiredAddons,
-                  'items.$.removableIngredients': removableIngredients,
-                },
-              },
-              {
-                returnDocument: 'after',
-              }
-            )
-              .lean()
-              .orFail();
-
-            // Delete fields
-            deleteFields(updatedRestaurant, ['createdAt']);
-
-            // Return the updated restaurant with response
-            res.status(201).json(updatedRestaurant);
+    try {
+      if (!imageUrl) {
+        const updatedRestaurant = await Restaurant.findOneAndUpdate(
+          { _id: restaurantId, 'items._id': itemId },
+          {
+            $set: {
+              'items.$.name': name,
+              'items.$.tags': tags,
+              'items.$.price': price,
+              'items.$.description': description,
+              'items.$.optionalAddons':
+                formattedOptionalAddons || parsedOptionalAddons,
+              'items.$.requiredAddons':
+                formattedRequiredAddons || parsedRequiredAddons,
+              'items.$.removableIngredients': removableIngredients,
+            },
+            $unset: {
+              'items.$.image': null,
+            },
+          },
+          {
+            returnDocument: 'after',
           }
-        } catch (err) {
-          // If item isn't updated successfully
-          console.log(err);
+        )
+          .lean()
+          .orFail();
 
-          throw err;
-        }
-      } else {
-        // If role isn't admin or vendor
-        console.log('Not authorized');
+        deleteFields(updatedRestaurant, ['createdAt']);
+        res.status(201).json(updatedRestaurant);
+      } else if (imageUrl) {
+        const updatedRestaurant = await Restaurant.findOneAndUpdate(
+          { _id: restaurantId, 'items._id': itemId },
+          {
+            $set: {
+              'items.$.name': name,
+              'items.$.tags': tags,
+              'items.$.price': price,
+              'items.$.image': imageUrl,
+              'items.$.description': description,
+              'items.$.optionalAddons':
+                formattedOptionalAddons || parsedOptionalAddons,
+              'items.$.requiredAddons':
+                formattedRequiredAddons || parsedRequiredAddons,
+              'items.$.removableIngredients': removableIngredients,
+            },
+          },
+          {
+            returnDocument: 'after',
+          }
+        )
+          .lean()
+          .orFail();
 
-        res.status(403);
-        throw new Error('Not authorized');
+        deleteFields(updatedRestaurant, ['createdAt']);
+        res.status(201).json(updatedRestaurant);
       }
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 );
@@ -777,184 +571,122 @@ router.patch(
 // Change item status
 router.patch(
   '/:restaurantId/:itemId/change-item-status',
-  authUser,
+  auth,
   async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { restaurantId, itemId } = req.params;
-        const { action }: StatusChangePayload = req.body;
+    const { restaurantId, itemId } = req.params;
+    const { action } = req.body;
 
-        // If all the fields aren't provided
-        if (!action || !restaurantId || !itemId) {
-          // Log error
-          console.log('Please provide all the fields');
+    if (!action || !restaurantId || !itemId) {
+      console.log(requiredFields);
+      res.status(400);
+      throw new Error(requiredFields);
+    }
+    checkActions(undefined, action, res);
 
-          res.status(400);
-          throw new Error('Please provide all the fields');
+    try {
+      const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        { _id: restaurantId, 'items._id': itemId },
+        {
+          $set: {
+            'items.$.status': action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+          },
+        },
+        {
+          returnDocument: 'after',
         }
-
-        // Check actions validity
-        checkActions(undefined, action, res);
-
-        try {
-          // Find the restaurant and update the item status
-          const updatedRestaurant = await Restaurant.findOneAndUpdate(
-            { _id: restaurantId, 'items._id': itemId },
-            {
-              $set: {
-                'items.$.status': action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-              },
-            },
-            {
-              returnDocument: 'after',
-            }
-          )
-            .select('-__v -updatedAt')
-            .lean()
-            .orFail();
-
-          // Send the updated restaurant with response
-          res.status(200).json(updatedRestaurant);
-        } catch (err) {
-          // If item status isn't updated successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin or vendor
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
-      }
+      )
+        .select('-__v -updatedAt')
+        .lean()
+        .orFail();
+      res.status(200).json(updatedRestaurant);
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 );
 
-// Add a review to an item
-router.post(
-  '/:restaurantId/:itemId/add-a-review',
-  authUser,
-  async (req, res) => {
-    if (req.user) {
-      // Destructure data
-      const { role, _id } = req.user;
-
-      if (role === 'CUSTOMER') {
-        // Destructure data from req
-        const { restaurantId, itemId } = req.params;
-        const { rating, comment, orderId }: ReviewPayload = req.body;
-
-        // If rating or comment isn't provided
-        if (!restaurantId || !itemId || !rating || !comment || !orderId) {
-          // Log error
-          console.log('Please provide all the fields');
-
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
-
-        try {
-          // Find and update the order
-          const order = await Order.findOneAndUpdate(
-            {
-              _id: orderId,
-              hasReviewed: false,
-              status: 'DELIVERED',
-              'customer._id': _id,
-            },
-            { $set: { hasReviewed: true } },
-            {
-              returnDocument: 'after',
-            }
-          ).orFail();
-
-          try {
-            // Find the restaurant and the review
-            await Restaurant.findOneAndUpdate(
-              {
-                _id: restaurantId,
-                'items._id': itemId,
-                'items.reviews.customer': { $ne: _id },
-              },
-              {
-                $push: {
-                  'items.$.reviews': { customer: _id, rating, comment },
-                },
-              },
-              { returnDocument: 'after' }
-            ).orFail();
-
-            // Send the updated order with the response
-            res.status(201).json(order);
-          } catch (err) {
-            // If review isn't added successfully
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If order isn't found
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't customer
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
-      }
-    }
+// Review item
+router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
+
+  const { _id } = req.user;
+  const { restaurantId, itemId } = req.params;
+  const { rating, comment, orderId } = req.body;
+
+  if (!restaurantId || !itemId || !rating || !comment || !orderId) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        hasReviewed: false,
+        status: 'DELIVERED',
+        'customer._id': _id,
+      },
+      { $set: { hasReviewed: true } },
+      {
+        returnDocument: 'after',
+      }
+    ).orFail();
+
+    await Restaurant.findOneAndUpdate(
+      {
+        _id: restaurantId,
+        'items._id': itemId,
+        'items.reviews.customer': { $ne: _id },
+      },
+      {
+        $push: {
+          'items.$.reviews': { customer: _id, rating, comment },
+        },
+      },
+      { returnDocument: 'after' }
+    ).orFail();
+    res.status(201).json(order);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
 
 // Update items index
-router.patch(
-  '/:restaurantId/update-items-index',
-  authUser,
-  async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
-
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { restaurantId } = req.params;
-        const { reorderedItems }: ItemsIndexPayload = req.body;
-
-        try {
-          // Update items index
-          reorderedItems.forEach(async (item) => {
-            await Restaurant.updateOne(
-              { _id: restaurantId, 'items._id': item._id },
-              { $set: { 'items.$.index': item.index } }
-            );
-          });
-
-          // Send response
-          res.status(200).json('Items order updated');
-        } catch (err) {
-          // If items index aren't updated
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
-      }
-    }
+router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
+
+  const { restaurantId } = req.params;
+  const { reorderedItems }: ItemsIndexPayload = req.body;
+
+  try {
+    reorderedItems.forEach(async (item) => {
+      await Restaurant.updateOne(
+        { _id: restaurantId, 'items._id': item._id },
+        { $set: { 'items.$.index': item.index } }
+      );
+    });
+    res.status(200).json('Items order updated');
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
 
 export default router;

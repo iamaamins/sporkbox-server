@@ -2,403 +2,262 @@ import User from '../models/user';
 import { Router } from 'express';
 import Order from '../models/order';
 import Company from '../models/company';
-import authUser from '../middleware/auth';
+import auth from '../middleware/auth';
 import { checkActions, checkShift, deleteFields } from '../lib/utils';
-import { Address, CompanyDetails, StatusChangePayload } from '../types';
+import { requiredFields, unAuthorized } from '../lib/messages';
 
-// Types
-interface CompanyPayload extends CompanyDetails, Address {}
-
-// Initialize router
 const router = Router();
 
 // Add a company
-router.post('/add-company', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.post('/add-company', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      // Destructure body data
-      const {
-        name,
-        code,
-        zip,
+  const {
+    name,
+    code,
+    zip,
+    city,
+    state,
+    shift,
+    website,
+    shiftBudget,
+    addressLine1,
+    addressLine2,
+  } = req.body;
+
+  if (
+    !name ||
+    !code ||
+    !city ||
+    !state ||
+    !zip ||
+    !shift ||
+    !website ||
+    !shiftBudget ||
+    !addressLine1
+  ) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+  checkShift(res, shift);
+
+  try {
+    const companyExist = await Company.findOne({ code, shift });
+    if (companyExist) {
+      console.log('A company with a same shift already exists');
+      res.status(400);
+      throw new Error('A company with a same shift already exists');
+    }
+
+    const response = await Company.create({
+      name,
+      code,
+      shift,
+      website,
+      address: {
         city,
         state,
-        shift,
-        website,
-        shiftBudget,
+        zip,
         addressLine1,
         addressLine2,
-      }: CompanyPayload = req.body;
+      },
+      shiftBudget,
+      status: 'ACTIVE',
+    });
 
-      // If all the fields aren't provided
-      if (
-        !name ||
-        !code ||
-        !city ||
-        !state ||
-        !zip ||
-        !shift ||
-        !website ||
-        !shiftBudget ||
-        !addressLine1
-      ) {
-        // Log error
-        console.log('Please provide all the fields');
+    const company = response.toObject();
+    deleteFields(company);
+    const { website: companyWebsite, createdAt, ...rest } = company;
 
-        res.status(400);
-        throw new Error('Please provide all the fields');
+    await User.updateMany(
+      { 'companies.code': code },
+      {
+        $push: {
+          shifts: company.shift,
+          companies: { ...rest, status: 'ARCHIVED' },
+        },
       }
-
-      // Check shift
-      checkShift(res, shift);
-
-      try {
-        // Check if a company exists with the provided shift
-        const companyExist = await Company.findOne({ code, shift });
-
-        // Throw error if a company with the same shift exists
-        if (companyExist) {
-          // Log error
-          console.log('A company with a same shift already exists');
-
-          res.status(400);
-          throw new Error('A company with a same shift already exists');
-        }
-
-        try {
-          // Create a new company
-          const response = await Company.create({
-            name,
-            code,
-            shift,
-            website,
-            address: {
-              city,
-              state,
-              zip,
-              addressLine1,
-              addressLine2,
-            },
-            shiftBudget,
-            status: 'ACTIVE',
-          });
-
-          try {
-            // Convert company document to object
-            const company = response.toObject();
-
-            // Delete fields
-            deleteFields(company);
-
-            // Destructure the company
-            const { website, createdAt, ...rest } = company;
-
-            // Add the new shift to all users
-            await User.updateMany(
-              { 'companies.code': code },
-              {
-                $push: {
-                  shifts: company.shift,
-                  companies: { ...rest, status: 'ARCHIVED' },
-                },
-              }
-            );
-
-            // Send the company with response
-            res.status(200).json(company);
-          } catch (err) {
-            // If users aren't updated successfully
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If company isn't created successfully
-          console.log(err);
-
-          throw err;
-        }
-      } catch (err) {
-        // If company isn't fetched successfully
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+    );
+    res.status(200).json(company);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Get all companies
-router.get('/', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data from req
-    const { role } = req.user;
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      try {
-        // Create a new company
-        const companies = await Company.find()
-          .select('-__v -updatedAt')
-          .sort({ createdAt: -1 });
+  try {
+    const companies = await Company.find()
+      .select('-__v -updatedAt')
+      .sort({ createdAt: -1 });
 
-        // Send the companies with response
-        res.status(201).json(companies);
-      } catch (err) {
-        // If companies aren't fetched successfully
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+    res.status(201).json(companies);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Update company details
-router.patch(
-  '/:companyId/update-company-details',
-  authUser,
-  async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+router.patch('/:companyId/update-company-details', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { companyId } = req.params;
-        const {
-          name,
-          city,
+  const { companyId } = req.params;
+  const {
+    name,
+    city,
+    zip,
+    state,
+    website,
+    shiftBudget,
+    addressLine1,
+    addressLine2,
+  } = req.body;
+
+  if (
+    !zip ||
+    !name ||
+    !city ||
+    !state ||
+    !website ||
+    !companyId ||
+    !shiftBudget ||
+    !addressLine1
+  ) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+
+  try {
+    const updatedCompany = await Company.findOneAndUpdate(
+      { _id: companyId },
+      {
+        name,
+        website,
+        address: {
           zip,
+          city,
           state,
-          website,
-          shiftBudget,
           addressLine1,
           addressLine2,
-        }: CompanyPayload = req.body;
+        },
+        shiftBudget,
+      },
+      { returnDocument: 'after' }
+    )
+      .lean()
+      .orFail();
 
-        // If all the fields aren't provided
-        if (
-          !zip ||
-          !name ||
-          !city ||
-          !state ||
-          !website ||
-          !companyId ||
-          !shiftBudget ||
-          !addressLine1
-        ) {
-          // Log error
-          console.log('Please provide all the fields');
-
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
-
-        try {
-          // Find and update the company
-          const updatedCompany = await Company.findOneAndUpdate(
-            { _id: companyId },
-            {
-              name,
-              website,
-              address: {
-                zip,
-                city,
-                state,
-                addressLine1,
-                addressLine2,
-              },
-              shiftBudget,
-            },
-            { returnDocument: 'after' }
-          )
-            .lean()
-            .orFail();
-
-          try {
-            // Update all users's company
-            await User.updateMany(
-              { 'companies._id': companyId },
-              {
-                $set: {
-                  'companies.$.name': updatedCompany.name,
-                  'companies.$.address': updatedCompany.address,
-                  'companies.$.shiftBudget': updatedCompany.shiftBudget,
-                },
-              }
-            );
-
-            // Delete fields
-            deleteFields(updatedCompany);
-
-            // Send the updated company with response
-            res.status(201).json(updatedCompany);
-          } catch (err) {
-            // If users aren't updated successfully
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If company isn't updated successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+    await User.updateMany(
+      { 'companies._id': companyId },
+      {
+        $set: {
+          'companies.$.name': updatedCompany.name,
+          'companies.$.address': updatedCompany.address,
+          'companies.$.shiftBudget': updatedCompany.shiftBudget,
+        },
       }
-    }
+    );
+    deleteFields(updatedCompany);
+    res.status(201).json(updatedCompany);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
-);
+});
 
 // Change company status
-router.patch(
-  '/:companyId/change-company-status',
-  authUser,
-  async (req, res) => {
-    if (req.user) {
-      // Destructure data from req
-      const { role } = req.user;
+router.patch('/:companyId/change-company-status', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-      if (role === 'ADMIN') {
-        // Destructure data from req
-        const { companyId } = req.params;
-        const { action }: StatusChangePayload = req.body;
+  const { companyId } = req.params;
+  const { action } = req.body;
 
-        // If all the fields aren't provided
-        if (!companyId || !action) {
-          // Log error
-          console.log('Please provide all the fields');
+  if (!companyId || !action) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+  checkActions(undefined, action, res);
 
-          res.status(400);
-          throw new Error('Please provide all the fields');
-        }
+  try {
+    if (action === 'Archive') {
+      const orders = await Order.find({
+        status: 'PROCESSING',
+        'company._id': companyId,
+      })
+        .select('_id')
+        .lean();
 
-        // Check actions validity
-        checkActions(undefined, action, res);
-
-        try {
-          if (action === 'Archive') {
-            // Get the active orders of the company
-            const orders = await Order.find({
-              status: 'PROCESSING',
-              'company._id': companyId,
-            })
-              .select('_id')
-              .lean();
-
-            // Throw error if there are active orders
-            if (orders.length > 0) {
-              // Log error
-              console.log("Can't archive a company with active orders");
-
-              res.status(404);
-              throw new Error("Can't archive a company with active orders");
-            }
-          }
-
-          try {
-            // Find and update company status
-            const updatedCompany = await Company.findOneAndUpdate(
-              { _id: companyId },
-              {
-                status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-              },
-              { returnDocument: 'after' }
-            )
-              .select('-__v -updatedAt')
-              .lean()
-              .orFail();
-
-            if (updatedCompany.status === 'ARCHIVED') {
-              try {
-                // Remove the shift and the company status of users
-                await User.updateMany(
-                  {
-                    'companies._id': updatedCompany._id,
-                  },
-                  {
-                    $pull: {
-                      shifts: updatedCompany.shift,
-                    },
-                    $set: {
-                      'companies.$.status': updatedCompany.status,
-                    },
-                  }
-                );
-
-                // Send data with response
-                res.status(200).json(updatedCompany);
-              } catch (err) {
-                // If users aren't updated
-                console.log(err);
-
-                throw err;
-              }
-            } else if (updatedCompany.status === 'ACTIVE') {
-              // Add the shift and the company from all users
-
-              try {
-                // Remove the shift and the company from all users
-                await User.updateMany(
-                  { 'companies.code': updatedCompany.code },
-                  {
-                    $push: {
-                      shifts: updatedCompany.shift,
-                    },
-                  }
-                );
-
-                // Send data with response
-                res.status(200).json(updatedCompany);
-              } catch (err) {
-                // If users aren't updated
-                console.log(err);
-
-                throw err;
-              }
-            }
-          } catch (err) {
-            // If company status isn't changed successfully
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If orders aren't fetched successfully
-          console.log(err);
-
-          throw err;
-        }
-      } else {
-        // If role isn't admin
-        console.log('Not authorized');
-
-        res.status(403);
-        throw new Error('Not authorized');
+      if (orders.length > 0) {
+        console.log("Can't archive a company with active orders");
+        res.status(404);
+        throw new Error("Can't archive a company with active orders");
       }
     }
+
+    const updatedCompany = await Company.findOneAndUpdate(
+      { _id: companyId },
+      {
+        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+      },
+      { returnDocument: 'after' }
+    )
+      .select('-__v -updatedAt')
+      .lean()
+      .orFail();
+
+    if (updatedCompany.status === 'ARCHIVED') {
+      await User.updateMany(
+        {
+          'companies._id': updatedCompany._id,
+        },
+        {
+          $pull: {
+            shifts: updatedCompany.shift,
+          },
+          $set: {
+            'companies.$.status': updatedCompany.status,
+          },
+        }
+      );
+      res.status(200).json(updatedCompany);
+    } else if (updatedCompany.status === 'ACTIVE') {
+      await User.updateMany(
+        { 'companies.code': updatedCompany.code },
+        {
+          $push: {
+            shifts: updatedCompany.shift,
+          },
+        }
+      );
+      res.status(200).json(updatedCompany);
+    }
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
-);
+});
 
 export default router;

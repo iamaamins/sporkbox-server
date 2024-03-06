@@ -1,12 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
-import { Address, CompanyDetails } from '../types';
-
-interface CompanySchema extends CompanyDetails {
-  _id: Types.ObjectId;
-  createdAt: Date;
-  address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
-}
+import { CompanySchema } from '../types';
 
 const companySchema = new Schema<CompanySchema>(
   {

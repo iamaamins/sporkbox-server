@@ -1,180 +1,110 @@
 import { Router } from 'express';
-import authUser from '../middleware/auth';
-import { DiscountCodeSchema } from '../types';
+import auth from '../middleware/auth';
 import { deleteFields } from '../lib/utils';
 import DiscountCode from '../models/discountCode';
+import { requiredFields, unAuthorized } from '../lib/messages';
 
-// Types
-type DiscountCodePayload = Omit<DiscountCodeSchema, 'totalRedeem'>;
-
-// Initiate router
 const router = Router();
 
 // Add a discount code
-router.post('/add', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data
-    const { role } = req.user;
+router.post('/add', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      // Destructure data
-      const { code, value, redeemability }: DiscountCodePayload = req.body;
+  const { code, value, redeemability } = req.body;
+  if (!code || !value || !redeemability) {
+    console.log(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
 
-      // Validation
-      if (!code || !value || !redeemability) {
-        // Log error
-        console.log('Please provide all the fields');
-
-        res.status(400);
-        throw new Error('Please provide all the fields');
-      }
-
-      try {
-        // Create document
-        const response = await DiscountCode.create({
-          code,
-          value,
-          redeemability,
-        });
-
-        // Convert the response
-        const discountCode = response.toObject();
-
-        // Delete fields
-        deleteFields(discountCode, ['createdAt']);
-
-        // Send response
-        res.status(201).json(discountCode);
-      } catch (err) {
-        // Log error
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+  try {
+    const response = await DiscountCode.create({
+      code,
+      value,
+      redeemability,
+    });
+    const discountCode = response.toObject();
+    deleteFields(discountCode, ['createdAt']);
+    res.status(201).json(discountCode);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Get all discount codes
-router.get('/', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data
-    const { role } = req.user;
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      try {
-        // Query database
-        const discountCodes = await DiscountCode.find()
-          .select('-__v -createdAt -updatedAt')
-          .lean();
-
-        // Send response
-        res.status(200).json(discountCodes);
-      } catch (err) {
-        // Log error
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+  try {
+    const discountCodes = await DiscountCode.find()
+      .select('-__v -createdAt -updatedAt')
+      .lean();
+    res.status(200).json(discountCodes);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Delete a discount code
-router.delete('/delete/:id', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data
-    const { role } = req.user;
+router.delete('/delete/:id', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
 
-    if (role === 'ADMIN') {
-      // Destructure data
-      const { id } = req.params;
+  const { id } = req.params;
 
-      try {
-        // Delete document
-        const deletedCode = await DiscountCode.findByIdAndDelete(id)
-          .lean()
-          .orFail();
-
-        // Send response
-        res.status(200).json(deletedCode._id);
-      } catch (err) {
-        // Log error
-        console.log(err);
-
-        throw err;
-      }
-    } else {
-      // If role isn't Admin
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
-    }
+  try {
+    const deletedCode = await DiscountCode.findByIdAndDelete(id)
+      .lean()
+      .orFail();
+    res.status(200).json(deletedCode._id);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 
 // Apply discount code
-router.post('/apply/:code', authUser, async (req, res) => {
-  if (req.user) {
-    // Destructure data
-    const { role } = req.user;
+router.post('/apply/:code', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+  const { code } = req.params;
 
-    if (role === 'CUSTOMER') {
-      // Destructure data
-      const { code } = req.params;
+  try {
+    const discountCode = await DiscountCode.findOne({ code })
+      .select('-__v -createdAt -updatedAt')
+      .lean()
+      .orFail();
+    const redeemability = discountCode.redeemability;
 
-      try {
-        // Query database
-        const discountCode = await DiscountCode.findOne({ code })
-          .select('-__v -createdAt -updatedAt')
-          .lean()
-          .orFail();
-
-        // Redeemability
-        const redeemability = discountCode.redeemability;
-
-        // Check redeemability
-        if (
-          redeemability === 'unlimited' ||
-          (redeemability === 'once' && discountCode.totalRedeem < 1)
-        ) {
-          // Destructure discount code
-          const { redeemability, ...rest } = discountCode;
-
-          // Send response
-          res.status(200).json(rest);
-        } else {
-          // Log error
-          console.log('Invalid discount code');
-
-          res.status(400).json({ message: 'Invalid discount code' });
-        }
-      } catch (err) {
-        // Log error
-        console.log(err);
-
-        throw err;
-      }
+    if (
+      redeemability === 'unlimited' ||
+      (redeemability === 'once' && discountCode.totalRedeem < 1)
+    ) {
+      const { redeemability, ...rest } = discountCode;
+      res.status(200).json(rest);
     } else {
-      // If role isn't customer
-      console.log('Not authorized');
-
-      res.status(403);
-      throw new Error('Not authorized');
+      console.log('Invalid discount code');
+      res.status(400).json({ message: 'Invalid discount code' });
     }
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 });
 

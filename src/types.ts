@@ -183,3 +183,10 @@ export interface ItemStat {
     quantity: number;
   };
 }
+
+export interface CompanySchema extends CompanyDetails {
+  _id: Types.ObjectId;
+  createdAt: Date;
+  address: Address;
+  status: 'ACTIVE' | 'ARCHIVED';
+}

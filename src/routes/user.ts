@@ -2,14 +2,18 @@ import bcrypt from 'bcrypt';
 import mail from '@sendgrid/mail';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
-import authUser from '../middleware/auth';
+import auth from '../middleware/auth';
 import { setCookie, deleteFields } from '../lib/utils';
 import { Router } from 'express';
 import {
   passwordResetTemplate,
   passwordResetConfirmationTemplate,
 } from '../lib/emailTemplates';
-import { invalidCredentials, requiredFields } from '../lib/messages';
+import {
+  invalidCredentials,
+  invalidEmail,
+  requiredFields,
+} from '../lib/messages';
 
 // Types
 interface LoginPayload {
@@ -39,26 +43,31 @@ router.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email }).lean().orFail();
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      setCookie(res, user._id);
-      deleteFields(user, ['password', 'createdAt']);
-      res.status(200).json(user);
-    } else {
+    if (!user) {
       console.log(invalidCredentials);
-      res.status(400);
+      res.status(403);
       throw new Error(invalidCredentials);
     }
+
+    const correctPassword = await bcrypt.compare(password, user.password);
+    if (!correctPassword) {
+      console.log(invalidCredentials);
+      res.status(403);
+      throw new Error(invalidCredentials);
+    }
+
+    setCookie(res, user._id);
+    deleteFields(user, ['password', 'createdAt']);
+    res.status(200).json(user);
   } catch (err) {
     console.log(invalidCredentials);
-    res.status(400);
+    res.status(403);
     throw new Error(invalidCredentials);
   }
 });
 
 // Log out user
 router.post('/logout', async (req, res) => {
-  // Clear cookie
   res
     .clearCookie('token', {
       path: '/',
@@ -71,143 +80,65 @@ router.post('/logout', async (req, res) => {
 });
 
 // Get user details
-router.get('/me', authUser, async (req, res) => {
-  // Send the user with response
+router.get('/me', auth, async (req, res) => {
   res.status(200).json(req.user);
 });
 
 // Forgot password
 router.post('/forgot-password', async (req, res) => {
-  // Destructure data from req
-  const { email }: ForgotPasswordPayload = req.body;
+  const { email } = req.body;
 
-  // If no email is provided
   if (!email) {
-    // Log error
-    console.log('Please provide a valid email');
-
+    console.log(invalidEmail);
     res.status(400);
-    throw new Error('Please provide a valid email');
+    throw new Error(invalidEmail);
   }
 
   try {
-    // Find the user
     const user = await User.findOne({ email }).orFail();
 
-    //  Create unique jwt secret
     const jwtSecret = process.env.JWT_SECRET + user.password;
-
-    // Create jwt token
     const token = jwt.sign({ _id: user._id }, jwtSecret, { expiresIn: '15m' });
-
-    // Create password reset link
     const link = `${process.env.CLIENT_URL}/reset-password/${user._id}/${token}`;
 
-    try {
-      // Email user the password reset link
-      await mail.send(passwordResetTemplate(user.toObject(), link));
-
-      // Send the response
-      res.status(200).json('Password reset details sent to your email');
-    } catch (err) {
-      // If email send fails
-      console.log(err);
-
-      throw err;
-    }
+    await mail.send(passwordResetTemplate(user.toObject(), link));
+    res.status(200).json('Password reset details sent to your email');
   } catch (err) {
-    // If no user is found
     console.log(err);
-
     throw err;
   }
 });
 
 // Reset password
 router.patch('/reset-password/:userId/:token', async (req, res) => {
-  // Destructure data from req
   const { userId, token } = req.params;
   const { password }: ResetPasswordPayload = req.body;
 
-  // If all the fields aren't provided
   if (!password || !userId || !token) {
-    // Log error
-    console.log('Please provide all the fields');
-
+    console.log(requiredFields);
     res.status(400);
-    throw new Error('Please provide all the fields');
+    throw new Error(requiredFields);
   }
 
   try {
-    // Find the user
     const user = await User.findById(userId).orFail();
-
-    // Create the secret
     const jwtSecret = process.env.JWT_SECRET + user.password;
+    jwt.verify(token, jwtSecret);
 
-    try {
-      // Verify the token
-      jwt.verify(token, jwtSecret);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-      try {
-        // Create salt
-        const salt = await bcrypt.genSalt(10);
-
-        try {
-          // Hash password
-          const hashedPassword = await bcrypt.hash(password, salt);
-
-          try {
-            // Find the user update the user
-            await User.findOneAndUpdate(
-              { _id: userId },
-              {
-                password: hashedPassword,
-              }
-            ).orFail();
-
-            try {
-              // Email user
-              await mail.send(
-                passwordResetConfirmationTemplate(user.toObject())
-              );
-
-              // Send the response
-              res.status(201).json('Password reset successful');
-            } catch (err) {
-              // If email isn't sent
-              console.log(err);
-
-              throw err;
-            }
-          } catch (err) {
-            // If user isn't updated
-            console.log(err);
-
-            throw err;
-          }
-        } catch (err) {
-          // If password isn't hashed
-          console.log(err);
-
-          throw err;
-        }
-      } catch (err) {
-        // If failed to create salt
-        console.log(err);
-
-        throw err;
+    await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        password: hashedPassword,
       }
-    } catch (err) {
-      // If token in invalid or expired
-      console.log(err);
+    ).orFail();
 
-      throw err;
-    }
+    await mail.send(passwordResetConfirmationTemplate(user.toObject()));
+    res.status(201).json('Password reset successful');
   } catch (err) {
-    // If user isn't found
     console.log(err);
-
     throw err;
   }
 });
