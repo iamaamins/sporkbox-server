@@ -119,6 +119,7 @@ router.get('/item', auth, async (req, res) => {
       });
     }
   }, [] as ItemStat[]);
+
   res.status(200).json(results);
 });
 
@@ -151,6 +152,7 @@ router.get('/people', auth, async (req, res) => {
       });
     }
   }, [] as { date: number; customers: string[] }[]);
+
   res.status(200).json(results);
 });
 

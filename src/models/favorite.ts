@@ -1,6 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
 
-// Types
 export interface FavoriteSchema {
   customer: Types.ObjectId;
   item: Types.ObjectId;

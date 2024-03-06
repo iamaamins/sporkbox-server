@@ -19,18 +19,13 @@ import {
   vendorAlreadyExists,
 } from '../lib/messages';
 
-// Types
+const router = Router();
+
 interface VendorPayload extends GenericUser, Address {
   password?: string;
   logo?: string;
   restaurantName: string;
 }
-
-interface VendorStatusPayload {
-  action: string;
-}
-
-const router = Router();
 
 // Register a vendor and a restaurant
 router.post('/register-vendor', upload, async (req, res) => {

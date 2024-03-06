@@ -1,22 +1,18 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 
-// Types
 interface StripePayableOrders {
   date: string;
   items: string[];
   amount: number;
 }
 
-//Configure dot env
 dotenv.config();
 
-// Create stripe instance
 export const stripe = new Stripe(process.env.STRIPE_KEY as string, {
   apiVersion: '2022-11-15',
 });
 
-// Create stripe checkout session
 export async function stripeCheckout(
   customerEmail: string,
   pendingOrderId: string,
@@ -25,7 +21,6 @@ export async function stripeCheckout(
   payableOrders: StripePayableOrders[]
 ) {
   try {
-    // Create a session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -55,12 +50,9 @@ export async function stripeCheckout(
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,
     });
 
-    // Return the session
     return session;
   } catch (err) {
-    // If session fails to create
     console.log(err);
-
     throw err;
   }
 }

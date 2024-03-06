@@ -26,12 +26,6 @@ import {
   unAuthorized,
 } from '../lib/messages';
 
-// Types
-interface OrdersStatusPayload {
-  orderIds: string[];
-}
-
-// Initialize router
 const router = Router();
 
 // Get customer's all upcoming orders
@@ -67,12 +61,6 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 
   const { limit } = req.params;
-  if (!limit) {
-    console.log(requiredFields);
-    res.status(400);
-    throw new Error(requiredFields);
-  }
-
   try {
     const customerDeliveredOrders = await Order.find({
       'customer._id': req.user._id,
@@ -198,23 +186,22 @@ router.post('/create-orders', auth, async (req, res) => {
     );
 
     if (!restaurant || !company) {
-      console.log('Restaurant or company is not found');
+      console.log('Invalid restaurant or company');
       res.status(400);
-      throw new Error('Restaurant or company is not found');
+      throw new Error('Invalid restaurant or company');
     }
 
     const item = restaurant.items.find(
       (item) => item._id?.toString() === orderPayload.itemId
     );
-    const optionalAddons = createAddons(orderPayload.optionalAddons);
-    const requiredAddons = createAddons(orderPayload.requiredAddons);
-
     if (!item) {
       console.log('Item is not found');
       res.status(400);
       throw new Error('Item is not found');
     }
 
+    const optionalAddons = createAddons(orderPayload.optionalAddons);
+    const requiredAddons = createAddons(orderPayload.requiredAddons);
     const optionalAddonsPrice = getAddonsPrice(
       item.optionalAddons.addons,
       optionalAddons
@@ -272,21 +259,21 @@ router.post('/create-orders', auth, async (req, res) => {
     };
   });
 
-  try {
-    // Get unique upcoming dates and company ids
-    // Dates will be used to get the upcoming orders
-    const upcomingDetails = upcomingRestaurants
-      .map((upcomingRestaurant) => ({
-        date: dateToMS(upcomingRestaurant.date),
-        companyId: upcomingRestaurant.company._id,
-      }))
-      .filter(
-        (detail, index, details) =>
-          details.findIndex(
-            (el) => el.date === detail.date && el.companyId === detail.companyId
-          ) === index
-      );
+  // Get unique upcoming dates and company ids
+  // Dates will be used to get the upcoming orders
+  const upcomingDetails = upcomingRestaurants
+    .map((upcomingRestaurant) => ({
+      date: dateToMS(upcomingRestaurant.date),
+      companyId: upcomingRestaurant.company._id,
+    }))
+    .filter(
+      (detail, index, details) =>
+        details.findIndex(
+          (el) => el.date === detail.date && el.companyId === detail.companyId
+        ) === index
+    );
 
+  try {
     // Get customer upcoming orders
     const upcomingOrders = await Order.find({
       'customer._id': _id,
@@ -322,8 +309,6 @@ router.post('/create-orders', auth, async (req, res) => {
     // Get upcoming order date and total
     // with shift and company id details
     const upcomingOrderDetails = getDateTotal(upcomingDateTotalDetails);
-
-    // Create order date total details
     const orderDateTotalDetails = orders.map((order) => ({
       shift: order.company.shift,
       date: order.delivery.date,
@@ -447,7 +432,6 @@ router.post('/create-orders', auth, async (req, res) => {
             },
           }
         ));
-
       res.status(201).json(ordersForCustomers);
     }
   } catch (err) {
@@ -463,6 +447,7 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
+
   try {
     const upcomingOrders = await Order.find({ status: 'PROCESSING' })
       .select('-__v -updatedAt')
@@ -481,13 +466,8 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-  const { limit } = req.params;
-  if (!limit) {
-    console.log(requiredFields);
-    res.status(400);
-    throw new Error(requiredFields);
-  }
 
+  const { limit } = req.params;
   try {
     const deliveredOrders = await Order.find({ status: 'DELIVERED' })
       .limit(+limit)
@@ -509,7 +489,6 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
   }
 
   const { customerId } = req.params;
-
   try {
     const customerDeliveredOrders = await Order.find({
       'customer._id': customerId,
@@ -565,8 +544,8 @@ router.patch('/:orderId/change-order-status', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-  const { orderId } = req.params;
 
+  const { orderId } = req.params;
   try {
     const updatedOrder = await Order.findOneAndUpdate(
       { _id: orderId, status: 'PROCESSING' },

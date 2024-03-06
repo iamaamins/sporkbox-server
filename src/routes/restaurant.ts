@@ -16,7 +16,7 @@ import {
 } from '../lib/utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
-import { Addons, StatusChangePayload, GenericItem } from '../types';
+import { Addons } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancelTemplate } from '../lib/emailTemplates';
 import {
@@ -26,26 +26,7 @@ import {
   unAuthorized,
 } from '../lib/messages';
 
-// Types
-interface ScheduleRestaurantPayload {
-  date: Date;
-  companyId: string;
-  restaurantId: string;
-}
-
-interface ItemPayload extends GenericItem {
-  price: string;
-  index: string;
-  optionalAddons: string;
-  requiredAddons: string;
-  removableIngredients: string;
-}
-
-interface ReviewPayload {
-  rating: number;
-  comment: string;
-  orderId: string;
-}
+const router = Router();
 
 interface ItemsIndexPayload {
   reorderedItems: {
@@ -53,8 +34,6 @@ interface ItemsIndexPayload {
     index: number;
   }[];
 }
-
-const router = Router();
 
 // Get upcoming restaurants
 router.get('/upcoming-restaurants', auth, async (req, res) => {
@@ -114,7 +93,6 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
         (scheduledRestaurant) => dateToMS(scheduledRestaurant.date) >= now
       )
       .sort(sortByDate);
-
     res.status(200).json(scheduledRestaurants);
   } catch (err) {
     console.log(err);
@@ -166,7 +144,6 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
         companyId === schedule.company._id.toString() &&
         dateToMS(schedule.date) === dateToMS(date)
     );
-
     if (isScheduled) {
       console.log('Already scheduled on the provided date');
       res.status(401);
@@ -293,34 +270,37 @@ router.patch(
       const removedSchedule = updatedRestaurant.schedules.find(
         (schedule) => schedule._id?.toString() === scheduleId
       );
-      if (removedSchedule) {
-        const orders = await Order.find({
-          status: 'PROCESSING',
-          'delivery.date': removedSchedule.date,
-          'restaurant._id': updatedRestaurant._id,
-          'company._id': removedSchedule.company._id,
-        });
-
-        await Promise.all(
-          orders.map(
-            async (order) =>
-              await mail.send(orderCancelTemplate(order.toObject()))
-          )
-        );
-        await Order.updateMany(
-          {
-            status: 'PROCESSING',
-            'restaurant._id': updatedRestaurant._id,
-            'delivery.date': removedSchedule.date,
-            'company._id': removedSchedule.company._id,
-          },
-          {
-            $set: { status: 'ARCHIVED' },
-          }
-        );
-
-        res.status(201).json('Schedule and orders removed successfully');
+      if (!removedSchedule) {
+        console.log('Please provide a valid schedule');
+        res.status(400);
+        throw new Error('Please provide a valid schedule');
       }
+
+      const orders = await Order.find({
+        status: 'PROCESSING',
+        'delivery.date': removedSchedule.date,
+        'restaurant._id': updatedRestaurant._id,
+        'company._id': removedSchedule.company._id,
+      });
+
+      await Promise.all(
+        orders.map(
+          async (order) =>
+            await mail.send(orderCancelTemplate(order.toObject()))
+        )
+      );
+      await Order.updateMany(
+        {
+          status: 'PROCESSING',
+          'restaurant._id': updatedRestaurant._id,
+          'delivery.date': removedSchedule.date,
+          'company._id': removedSchedule.company._id,
+        },
+        {
+          $set: { status: 'ARCHIVED' },
+        }
+      );
+      res.status(201).json('Schedule and orders removed successfully');
     } catch (err) {
       console.log(err);
       throw err;
@@ -362,7 +342,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     throw new Error(requiredFields);
   }
 
-  // Parse addons
   const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
   const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
 
@@ -374,7 +353,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     res.status(400);
     throw new Error(invalidOptionalAddOnsFormat);
   }
-
   if (
     parsedRequiredAddons.addons &&
     !isCorrectAddonsFormat(parsedRequiredAddons)
@@ -581,7 +559,6 @@ router.patch(
 
     const { restaurantId, itemId } = req.params;
     const { action } = req.body;
-
     if (!action || !restaurantId || !itemId) {
       console.log(requiredFields);
       res.status(400);
@@ -620,16 +597,15 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
-  const { _id } = req.user;
   const { restaurantId, itemId } = req.params;
   const { rating, comment, orderId } = req.body;
-
   if (!restaurantId || !itemId || !rating || !comment || !orderId) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
 
+  const { _id } = req.user;
   try {
     const order = await Order.findOneAndUpdate(
       {
@@ -643,7 +619,6 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
         returnDocument: 'after',
       }
     ).orFail();
-
     await Restaurant.findOneAndUpdate(
       {
         _id: restaurantId,

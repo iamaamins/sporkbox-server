@@ -64,7 +64,6 @@ router.delete('/delete/:id', auth, async (req, res) => {
   }
 
   const { id } = req.params;
-
   try {
     const deletedCode = await DiscountCode.findByIdAndDelete(id)
       .lean()
@@ -83,8 +82,8 @@ router.post('/apply/:code', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-  const { code } = req.params;
 
+  const { code } = req.params;
   try {
     const discountCode = await DiscountCode.findOne({ code })
       .select('-__v -createdAt -updatedAt')

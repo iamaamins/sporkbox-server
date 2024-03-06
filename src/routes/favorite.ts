@@ -25,7 +25,6 @@ router.post('/add-to-favorite', auth, async (req, res) => {
 
   const { _id } = req.user;
   const { restaurantId, itemId } = req.body;
-
   if (!restaurantId || !itemId) {
     console.log(requiredFields);
     res.status(400);
@@ -37,7 +36,6 @@ router.post('/add-to-favorite', auth, async (req, res) => {
     const item = restaurant.items.find(
       (item) => item._id?.toString() === itemId
     );
-
     if (!item) {
       console.log(noItem);
       res.status(400);
@@ -49,7 +47,6 @@ router.post('/add-to-favorite', auth, async (req, res) => {
       item: itemId,
       restaurant: restaurantId,
     });
-
     const favorite = {
       _id: response._id,
       item: {
@@ -79,12 +76,6 @@ router.delete('/:favoriteId/remove-from-favorite', auth, async (req, res) => {
   }
 
   const { favoriteId } = req.params;
-  if (!favoriteId) {
-    console.log(requiredFields);
-    res.status(400);
-    throw new Error(requiredFields);
-  }
-
   try {
     await Favorite.findByIdAndDelete({
       _id: favoriteId,
@@ -118,7 +109,6 @@ router.get('/me', auth, async (req, res) => {
       const item = favorite.restaurant.items.find(
         (item) => item._id.toString() === favorite.item._id.toString()
       );
-
       if (!item) {
         console.log(noItem);
         res.status(400);

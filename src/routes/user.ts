@@ -15,7 +15,8 @@ import {
   requiredFields,
 } from '../lib/messages';
 
-// Types
+const router = Router();
+
 interface LoginPayload {
   email: string;
   password: string;
@@ -25,16 +26,9 @@ interface ResetPasswordPayload {
   password: string;
 }
 
-interface ForgotPasswordPayload {
-  email: string;
-}
-
-const router = Router();
-
 // Login user
 router.post('/login', async (req, res) => {
   const { email, password }: LoginPayload = req.body;
-
   if (!email || !password) {
     console.log(requiredFields);
     res.status(400);
@@ -113,7 +107,6 @@ router.post('/forgot-password', async (req, res) => {
 router.patch('/reset-password/:userId/:token', async (req, res) => {
   const { userId, token } = req.params;
   const { password }: ResetPasswordPayload = req.body;
-
   if (!password || !userId || !token) {
     console.log(requiredFields);
     res.status(400);
@@ -124,7 +117,6 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
     const user = await User.findById(userId).orFail();
     const jwtSecret = process.env.JWT_SECRET + user.password;
     jwt.verify(token, jwtSecret);
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -134,7 +126,6 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
         password: hashedPassword,
       }
     ).orFail();
-
     await mail.send(passwordResetConfirmationTemplate(user.toObject()));
     res.status(201).json('Password reset successful');
   } catch (err) {

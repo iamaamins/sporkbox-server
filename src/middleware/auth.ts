@@ -1,65 +1,46 @@
-import User from "../models/user";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { Request, Response, NextFunction } from "express";
+import User from '../models/user';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import { unAuthorized } from '../lib/messages';
 
 export default async function handler(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  // Return not authorized in there
-  // is no cookie in the headers
   if (!req.cookies) {
-    // Log error
-    console.log("Not authorized");
-
+    console.log(unAuthorized);
     res.status(401);
-    throw new Error("Not authorized");
+    throw new Error(unAuthorized);
   }
 
-  // If there are cookies
   const { token } = req.cookies;
-
-  // Return not authorized in there is no token
   if (!token) {
-    // Log error
-    console.log("Not authorized");
-
+    console.log(unAuthorized);
     res.status(401);
-    throw new Error("Not authorized");
+    throw new Error(unAuthorized);
   }
 
   try {
-    // Decode the token
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
     ) as JwtPayload;
 
-    try {
-      // Find the user
-      const user = await User.findById(decoded._id)
-        .select("-__v -password -updatedAt -createdAt")
-        .lean();
+    const user = await User.findById(decoded._id)
+      .select('-__v -password -updatedAt -createdAt')
+      .lean();
 
-      // If there is a user in db
-      if (user) {
-        // Send User data to the next middleware
-        req.user = user;
-
-        // Call the next middleware
-        next();
-      }
-    } catch (err) {
-      // If user isn't found
-      console.log(err);
-
-      throw err;
+    if (!user) {
+      console.log(unAuthorized);
+      res.status(401);
+      throw new Error(unAuthorized);
     }
-  } catch (err) {
-    // If token is invalid or expired
-    console.log(err);
 
+    req.user = user;
+    next();
+  } catch (err) {
+    console.log(err);
     throw err;
   }
 }

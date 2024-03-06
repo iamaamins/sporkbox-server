@@ -11,7 +11,6 @@ const router = Router();
 // Event webhook
 router.post('/webhook', async (req, res) => {
   const parsedBody = JSON.parse(req.body);
-
   const parsedMetadataDetails = JSON.parse(
     parsedBody.data.object.metadata.details
   );

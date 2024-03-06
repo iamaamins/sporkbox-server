@@ -16,7 +16,7 @@ import { invalidShift, requiredFields, unAuthorized } from '../lib/messages';
 const router = Router();
 
 // Register customer
-router.post('/register-customer', async (req, res, next) => {
+router.post('/register-customer', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;
   if (!firstName || !lastName || !email || !password) {
     console.log(requiredFields);
@@ -36,7 +36,6 @@ router.post('/register-customer', async (req, res, next) => {
       ...company,
       status: 'ARCHIVED',
     }));
-
     const shifts = companies
       .filter((company) => company.status === 'ACTIVE')
       .map((activeCompany) => activeCompany.shift);
@@ -59,7 +58,6 @@ router.post('/register-customer', async (req, res, next) => {
 
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
-
     res.status(201).json(customer);
   } catch (err) {
     console.log(err);
@@ -96,7 +94,6 @@ router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
 
   const { customerId } = req.params;
   const { firstName, lastName, email } = req.body;
-
   if (!customerId || !firstName || !lastName || !email) {
     console.log(requiredFields);
     res.status(400);
@@ -132,7 +129,6 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
 
   const { customerId } = req.params;
   const { action }: StatusChangePayload = req.body;
-
   if (!customerId || !action) {
     console.log(requiredFields);
     res.status(400);
@@ -171,7 +167,6 @@ router.patch(
 
     const { customerId, companyCode } = req.params;
     const { shift } = req.body;
-
     if (!shift || typeof shift !== 'string') {
       console.log(invalidShift);
       res.status(400);
@@ -255,7 +250,6 @@ router.patch(
         .select('-__v -password -updatedAt -createdAt')
         .lean()
         .orFail();
-
       res.status(201).json(updatedCustomer);
     } catch (err) {
       console.log(err);
