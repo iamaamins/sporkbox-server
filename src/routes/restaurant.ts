@@ -1,7 +1,7 @@
 import Order from '../models/order';
 import Company from '../models/company';
 import Restaurant from '../models/restaurant';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import { Router } from 'express';
 import {
   now,
@@ -13,12 +13,12 @@ import {
   dateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
-} from '../utils';
+} from '../lib/utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
 import { Addons, StatusChangePayload, GenericItem } from '../types';
 import mail from '@sendgrid/mail';
-import { orderCancelTemplate } from '../utils/emailTemplates';
+import { orderCancelTemplate } from '../lib/emailTemplates';
 
 // Types
 interface ScheduleRestaurantPayload {

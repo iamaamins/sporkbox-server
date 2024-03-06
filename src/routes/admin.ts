@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import { Router } from 'express';
-import { deleteFields } from '../utils';
-import authUser from '../middleware/authUser';
+import { deleteFields } from '../lib/utils';
+import authUser from '../middleware/auth';
 
 // Initialize router
 const router = Router();

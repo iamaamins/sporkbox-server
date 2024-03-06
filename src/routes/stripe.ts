@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { Router } from 'express';
 import Order from '../models/order';
 import { stripe } from '../config/stripe';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import DiscountCode from '../models/discountCode';
 
 // Initialize router

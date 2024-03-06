@@ -2,8 +2,8 @@ import User from '../models/user';
 import { Router } from 'express';
 import Order from '../models/order';
 import Company from '../models/company';
-import authUser from '../middleware/authUser';
-import { checkActions, checkShift, deleteFields } from '../utils';
+import authUser from '../middleware/auth';
+import { checkActions, checkShift, deleteFields } from '../lib/utils';
 import { Address, CompanyDetails, StatusChangePayload } from '../types';
 
 // Types

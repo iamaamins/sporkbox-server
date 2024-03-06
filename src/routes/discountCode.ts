@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import { DiscountCodeSchema } from '../types';
-import { deleteFields } from '../utils';
+import { deleteFields } from '../lib/utils';
 import DiscountCode from '../models/discountCode';
 
 // Types

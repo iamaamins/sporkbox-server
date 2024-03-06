@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import Order from '../models/order';
 import { ItemStat, OrderStat } from '../types';
-import authUser from '../middleware/authUser';
-import { dateToMS } from '../utils';
+import authUser from '../middleware/auth';
+import { dateToMS } from '../lib/utils';
 
 const router = Router();
 

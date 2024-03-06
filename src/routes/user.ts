@@ -2,13 +2,14 @@ import bcrypt from 'bcrypt';
 import mail from '@sendgrid/mail';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
-import authUser from '../middleware/authUser';
-import { setCookie, deleteFields } from '../utils';
+import authUser from '../middleware/auth';
+import { setCookie, deleteFields } from '../lib/utils';
 import { Router } from 'express';
 import {
   passwordResetTemplate,
   passwordResetConfirmationTemplate,
-} from '../utils/emailTemplates';
+} from '../lib/emailTemplates';
+import { invalidCredentials, requiredFields } from '../lib/messages';
 
 // Types
 interface LoginPayload {
@@ -24,51 +25,34 @@ interface ForgotPasswordPayload {
   email: string;
 }
 
-// Initialize router
 const router = Router();
 
-// user login
+// Login user
 router.post('/login', async (req, res) => {
-  // Destructure data from req
   const { email, password }: LoginPayload = req.body;
 
-  // If a value isn't provided
   if (!email || !password) {
-    // Log error
-    console.log('Please provide all the fields');
-
+    console.log(requiredFields);
     res.status(400);
-    throw new Error('Please fill all the fields');
+    throw new Error(requiredFields);
   }
 
   try {
-    // Find the user
     const user = await User.findOne({ email }).lean().orFail();
 
-    // If user exists and password matches
     if (user && (await bcrypt.compare(password, user.password))) {
-      // Generate jwt token and set
-      // cookie to the response header
       setCookie(res, user._id);
-
-      // Delete fields
       deleteFields(user, ['password', 'createdAt']);
-
-      // Send user data with the response
       res.status(200).json(user);
     } else {
-      // If user isn't found
-      console.log('Invalid credentials');
-
+      console.log(invalidCredentials);
       res.status(400);
-      throw new Error('Invalid credentials');
+      throw new Error(invalidCredentials);
     }
   } catch (err) {
-    // If user isn't found
-    console.log('Invalid credentials');
-
+    console.log(invalidCredentials);
     res.status(400);
-    throw new Error('Invalid credentials');
+    throw new Error(invalidCredentials);
   }
 });
 

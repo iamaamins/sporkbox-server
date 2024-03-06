@@ -1,14 +1,14 @@
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import Company from '../models/company';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import {
   setCookie,
   deleteFields,
   checkActions,
   checkShift,
   subscriptions,
-} from '../utils';
+} from '../lib/utils';
 import { Router } from 'express';
 import { GenericUser, StatusChangePayload } from '../types';
 

@@ -1,5 +1,5 @@
 import Order from '../models/order';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import { Router } from 'express';
 import {
   sortIngredients,
@@ -11,11 +11,11 @@ import {
   getDateTotal,
   createAddons,
   getAddonsPrice,
-} from '../utils';
+} from '../lib/utils';
 import {
   orderArchiveTemplate,
   orderDeliveryTemplate,
-} from '../utils/emailTemplates';
+} from '../lib/emailTemplates';
 import mail from '@sendgrid/mail';
 import { stripeCheckout } from '../config/stripe';
 import DiscountCode from '../models/discountCode';

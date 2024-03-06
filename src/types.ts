@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { subscriptions } from '../utils';
+import { subscriptions } from './lib/utils';
 
 declare global {
   namespace Express {
@@ -40,7 +40,7 @@ export interface OrderRestaurant {
   name: string;
 }
 
-interface GenericItem {
+export interface GenericItem {
   name: string;
   tags: string;
   image: string;
@@ -120,7 +120,7 @@ export interface UserSchema extends GenericUser {
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 
-interface FavRestaurantItem extends GenericItem {
+export interface FavRestaurantItem extends GenericItem {
   _id: Types.ObjectId;
   index: number;
   price: number;

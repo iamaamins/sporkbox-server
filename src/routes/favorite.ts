@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import Restaurant from '../models/restaurant';
 import Favorite from '../models/favorite';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import { Types } from 'mongoose';
 import { FavRestaurantItem } from '../types';
 

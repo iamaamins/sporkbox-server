@@ -3,10 +3,15 @@ import User from '../models/user';
 import { Router } from 'express';
 import { upload } from './../config/multer';
 import Restaurant from '../models/restaurant';
-import authUser from '../middleware/authUser';
+import authUser from '../middleware/auth';
 import { deleteImage, uploadImage } from '../config/s3';
 import { Address, GenericUser, RestaurantSchema } from '../types';
-import { setCookie, deleteFields, checkActions, resizeImage } from '../utils';
+import {
+  setCookie,
+  deleteFields,
+  checkActions,
+  resizeImage,
+} from '../lib/utils';
 
 // Types
 interface VendorPayload extends GenericUser, Address {
