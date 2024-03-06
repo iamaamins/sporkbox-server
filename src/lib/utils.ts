@@ -13,8 +13,8 @@ import {
   thursdayOrderReminderTemplate,
   fridayOrderReminderTemplate,
 } from './emailTemplates';
+import { invalidShift } from './messages';
 
-// Types
 type SortScheduledRestaurant = {
   date: Date;
 };
@@ -26,14 +26,11 @@ type OrderReminderTemplate = (customer: GenericUser) => {
   html: string;
 };
 
-// Generate token and set cookie to header
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
-  // Generate token
   const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
     expiresIn: '7d',
   });
 
-  // Set cookie to header
   res.cookie('token', jwtToken, {
     path: '/',
     httpOnly: true,
@@ -43,28 +40,19 @@ export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   });
 };
 
-// Delete unnecessary fields
 export const deleteFields = (data: object, moreFields?: string[]): void => {
-  // Default fields
   let fields = ['__v', 'updatedAt'];
-
-  // If more fields are provided
   if (moreFields) {
     fields = [...fields, ...moreFields];
   }
-
-  // Delete the fields
   fields.forEach((field) => delete data[field as keyof object]);
 };
 
-// Convert number
 export const toUSNumber = (number: number) => +number.toLocaleString('en-US');
 
-// Convert date to slug
 export const dateToMS = (date: Date | string): number =>
   new Date(date).getTime();
 
-// Sort by date
 export const sortByDate = (
   a: SortScheduledRestaurant,
   b: SortScheduledRestaurant
@@ -72,7 +60,6 @@ export const sortByDate = (
 
 export const now = Date.now();
 
-// Get upcoming restaurant
 export async function getUpcomingRestaurants(companies: UserCompany[]) {
   const activeCompany = companies.find(
     (company) => company.status === 'ACTIVE'
@@ -92,7 +79,6 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
         .select('-__v -updatedAt -createdAt -address')
         .lean();
 
-      // Create upcoming week restaurants, then flat and sort
       const upcomingRestaurants = response
         .map((upcomingWeekRestaurant) => ({
           ...upcomingWeekRestaurant,
@@ -134,33 +120,26 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
   }
 }
 
-// Check actions function
 export function checkActions(
   actions = ['Archive', 'Activate'],
   action: string,
   res: Response
 ) {
   if (!actions.includes(action)) {
-    // Log error
-    console.log('Please provide correct action');
-
+    console.log('Please provide valid action');
     res.status(400);
-    throw new Error('Please provide correct action');
+    throw new Error('Please provide valid action');
   }
 }
 
-// Check shifts function
 export function checkShift(res: Response, shift: string) {
   if (!['day', 'night'].includes(shift)) {
-    // Log error
-    console.log('Please provide a valid shift');
-
+    console.log(invalidShift);
     res.status(400);
-    throw new Error('Please provide a valid shift');
+    throw new Error(invalidShift);
   }
 }
 
-// Resize image
 export async function resizeImage(
   res: Response,
   buffer: Buffer,
@@ -168,7 +147,6 @@ export async function resizeImage(
   height: number
 ) {
   try {
-    // Return the resized buffer
     return await sharp(buffer)
       .resize({
         width,
@@ -178,23 +156,18 @@ export async function resizeImage(
       })
       .toBuffer();
   } catch (err) {
-    // If image resize fails
     console.log('Failed to resize image');
-
     res.status(500);
     throw new Error('Failed to resize image');
   }
 }
 
-// Convert date to string
 export const dateToText = (date: Date | string | number): string =>
   new Date(date).toUTCString().split(' ').slice(0, 3).join(' ');
 
-// Generate unique string
 export const generateRandomString = () =>
   crypto.randomBytes(16).toString('hex');
 
-// Split and trim addons
 export const splitAddons = (addons: string) =>
   addons
     .split(',')
@@ -203,7 +176,6 @@ export const splitAddons = (addons: string) =>
       ingredient.split('-').map((ingredient) => ingredient.trim())
     );
 
-// Check addable ingredients format
 export const isCorrectAddonsFormat = (parsedAddons: Addons) =>
   splitAddons(parsedAddons.addons).every(
     (ingredient) =>
@@ -213,7 +185,6 @@ export const isCorrectAddonsFormat = (parsedAddons: Addons) =>
       splitAddons(parsedAddons.addons).length >= parsedAddons.addable
   );
 
-// Format addable ingredients
 export const formatAddons = (parsedAddons: Addons) => ({
   addons: splitAddons(parsedAddons.addons)
     .map((ingredient) => ingredient.join(' - '))
@@ -221,31 +192,20 @@ export const formatAddons = (parsedAddons: Addons) => ({
   addable: parsedAddons.addable || splitAddons(parsedAddons.addons).length,
 });
 
-// Get future date
 export function getFutureDate(dayToAdd: number) {
-  // Today
   const today = new Date();
-
-  // Sunday's date of current week
   const sunday = today.getUTCDate() - today.getUTCDay();
-
-  // Get future date in MS
   const futureDate = today.setUTCDate(sunday + dayToAdd);
-
-  // Return future date without hours in MS
   return new Date(futureDate).setUTCHours(0, 0, 0, 0);
 }
 
-// Get dates in MS
 const nextWeekMonday = getFutureDate(8);
 const followingWeekSunday = getFutureDate(14);
 
-// Remind to order
 export async function sendOrderReminderEmails(
   orderReminderTemplate: OrderReminderTemplate
 ) {
   try {
-    // Get all active customers
     const customers = await User.find({
       role: 'CUSTOMER',
       status: 'ACTIVE',
@@ -254,7 +214,6 @@ export async function sendOrderReminderEmails(
       .select('companies email')
       .lean();
 
-    // Get all upcoming restaurants
     const response = await Restaurant.find({
       schedules: {
         $elemMatch: {
@@ -266,7 +225,6 @@ export async function sendOrderReminderEmails(
       .select('schedules')
       .lean();
 
-    // Create upcoming week restaurants, then flat and sort
     const upcomingRestaurants = response
       .map((upcomingWeekRestaurant) => ({
         schedules: upcomingWeekRestaurant.schedules.filter(
@@ -276,10 +234,7 @@ export async function sendOrderReminderEmails(
       }))
       .map((upcomingWeekRestaurant) =>
         upcomingWeekRestaurant.schedules.map((schedule) => {
-          // Destructure upcoming restaurant
           const { schedules, ...rest } = upcomingWeekRestaurant;
-
-          // Create new restaurant object
           return {
             ...rest,
             company: {
@@ -290,22 +245,18 @@ export async function sendOrderReminderEmails(
       )
       .flat(2);
 
-    // Get orders from next week Monday to following week Sunday
     const upcomingOrders = await Order.find({
       'delivery.date': { $gte: nextWeekMonday, $lt: followingWeekSunday },
     })
       .select('customer')
       .lean();
 
-    // Get customers with no upcomingO
     const customersWithNoOrder = customers.filter(
       (customer) =>
-        // Return customer with no upcoming orders
         !upcomingOrders.some(
           (upcomingOrder) =>
             upcomingOrder.customer._id.toString() === customer._id.toString()
         ) &&
-        // Return customer who has restaurants scheduled to order
         upcomingRestaurants.some((upcomingRestaurant) =>
           customer.companies?.some(
             (company) =>
@@ -315,19 +266,16 @@ export async function sendOrderReminderEmails(
         )
     );
 
-    // Send reminder email
     await Promise.all(
       customersWithNoOrder.map(
         async (customer) => await mail.send(orderReminderTemplate(customer))
       )
     );
 
-    // Log confirmation
     console.log(
       `Order reminder sent to ${customersWithNoOrder.length} customers`
     );
   } catch (err) {
-    // Log error
     console.log(err);
   }
 }
@@ -365,11 +313,9 @@ export function unless(path: string, middleware: RequestHandler) {
   };
 }
 
-// Sort addons
 export const sortIngredients = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase());
 
-// Get total for each date
 export function getDateTotal(details: DateTotal[]) {
   return details.reduce((acc, curr) => {
     if (!acc.some((detail) => detail.date === curr.date)) {
@@ -389,11 +335,9 @@ export function getDateTotal(details: DateTotal[]) {
   }, [] as DateTotal[]);
 }
 
-// Create addons
 export const createAddons = (addons: string[]) =>
   addons.map((addon) => addon.split('-')[0].trim());
 
-// Get addons price
 export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
   serverAddons
     ? splitAddons(serverAddons)
@@ -401,7 +345,6 @@ export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
         .reduce((acc, curr) => acc + +curr[1], 0)
     : 0;
 
-// Email subscriptions
 export const subscriptions = {
   orderReminder: true,
 };
