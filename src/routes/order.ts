@@ -24,6 +24,7 @@ import {
 } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
 import { OrdersPayload } from '../types';
+import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
 
 const router = Router();
@@ -578,6 +579,18 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       _id: orderId,
       status: 'PROCESSING',
     }).orFail();
+    const restaurant = await Restaurant.findById(order.restaurant._id).orFail();
+
+    const isScheduled = restaurant.schedules.some(
+      (schedule) =>
+        schedule.status === 'ACTIVE' &&
+        dateToMS(schedule.date) === dateToMS(order.delivery.date)
+    );
+    if (!isScheduled) {
+      console.log('Order changes are closed. Please contact support');
+      res.status(400);
+      throw new Error('Order changes are closed. Please contact support');
+    }
     order.status = 'CANCELLED';
 
     if (!order.payment.intent) {
