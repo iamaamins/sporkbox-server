@@ -123,8 +123,7 @@ router.post('/create-orders', auth, async (req, res) => {
     upcomingRestaurants.some(
       (upcomingRestaurant) =>
         dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
-        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
-        upcomingRestaurant.company._id.toString() === orderItem.companyId
+        upcomingRestaurant._id.toString() === orderItem.restaurantId
     )
   );
   if (!validRestaurants) {
@@ -135,11 +134,33 @@ router.post('/create-orders', auth, async (req, res) => {
     );
   }
 
+  const validCompanies = items.every((orderItem) =>
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId
+    )
+  );
+  if (!validCompanies) {
+    console.log(
+      "Your cart contains an item from a restaurant that isn't available for your company"
+    );
+    res.status(400);
+    throw new Error(
+      "Your cart contains an item from a restaurant that isn't available for your company"
+    );
+  }
+
   const validItems = items.every((orderItem) =>
-    upcomingRestaurants.some((upcomingRestaurant) =>
-      upcomingRestaurant.items.some(
-        (upcomingItem) => upcomingItem._id?.toString() === orderItem.itemId
-      )
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId &&
+        upcomingRestaurant.items.some(
+          (upcomingItem) => upcomingItem._id?.toString() === orderItem.itemId
+        )
     )
   );
   if (!validItems) {
@@ -149,23 +170,27 @@ router.post('/create-orders', auth, async (req, res) => {
   }
 
   const validOptionalAddons = items.every((orderItem) =>
-    upcomingRestaurants.some((upcomingRestaurant) =>
-      upcomingRestaurant.items.some((upcomingItem) =>
-        upcomingItem._id?.toString() === orderItem.itemId &&
-        orderItem.optionalAddons.length > 0
-          ? upcomingItem.optionalAddons.addable >=
-              orderItem.optionalAddons.length &&
-            orderItem.optionalAddons.every((orderOptionalAddon) =>
-              upcomingItem.optionalAddons.addons
-                .split(',')
-                .some(
-                  (upcomingOptionalAddon) =>
-                    upcomingOptionalAddon.split('-')[0].trim() ===
-                    orderOptionalAddon.split('-')[0].trim().toLowerCase()
-                )
-            )
-          : true
-      )
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId &&
+        upcomingRestaurant.items.some((upcomingItem) =>
+          upcomingItem._id?.toString() === orderItem.itemId &&
+          orderItem.optionalAddons.length > 0
+            ? upcomingItem.optionalAddons.addable >=
+                orderItem.optionalAddons.length &&
+              orderItem.optionalAddons.every((orderOptionalAddon) =>
+                upcomingItem.optionalAddons.addons
+                  .split(',')
+                  .some(
+                    (upcomingOptionalAddon) =>
+                      upcomingOptionalAddon.split('-')[0].trim() ===
+                      orderOptionalAddon.split('-')[0].trim().toLowerCase()
+                  )
+              )
+            : true
+        )
     )
   );
   if (!validOptionalAddons) {
@@ -175,23 +200,27 @@ router.post('/create-orders', auth, async (req, res) => {
   }
 
   const validRequiredAddons = items.every((orderItem) =>
-    upcomingRestaurants.some((upcomingRestaurant) =>
-      upcomingRestaurant.items.some((upcomingItem) =>
-        upcomingItem._id?.toString() === orderItem.itemId &&
-        orderItem.requiredAddons.length > 0
-          ? upcomingItem.requiredAddons.addable ===
-              orderItem.requiredAddons.length &&
-            orderItem.requiredAddons.every((orderRequiredAddon) =>
-              upcomingItem.requiredAddons.addons
-                .split(',')
-                .some(
-                  (upcomingRequiredAddon) =>
-                    upcomingRequiredAddon.split('-')[0].trim() ===
-                    orderRequiredAddon.split('-')[0].trim().toLowerCase()
-                )
-            )
-          : true
-      )
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId &&
+        upcomingRestaurant.items.some((upcomingItem) =>
+          upcomingItem._id?.toString() === orderItem.itemId &&
+          orderItem.requiredAddons.length > 0
+            ? upcomingItem.requiredAddons.addable ===
+                orderItem.requiredAddons.length &&
+              orderItem.requiredAddons.every((orderRequiredAddon) =>
+                upcomingItem.requiredAddons.addons
+                  .split(',')
+                  .some(
+                    (upcomingRequiredAddon) =>
+                      upcomingRequiredAddon.split('-')[0].trim() ===
+                      orderRequiredAddon.split('-')[0].trim().toLowerCase()
+                  )
+              )
+            : true
+        )
     )
   );
   if (!validRequiredAddons) {
@@ -201,21 +230,25 @@ router.post('/create-orders', auth, async (req, res) => {
   }
 
   const validRemovedIngredients = items.every((orderItem) =>
-    upcomingRestaurants.some((upcomingRestaurant) =>
-      upcomingRestaurant.items.some((upcomingItem) =>
-        upcomingItem._id?.toString() === orderItem.itemId &&
-        orderItem.removedIngredients.length > 0
-          ? orderItem.removedIngredients.every((removedIngredient) =>
-              upcomingItem.removableIngredients
-                .split(',')
-                .some(
-                  (removableIngredient) =>
-                    removableIngredient.trim() ===
-                    removedIngredient.trim().toLowerCase()
-                )
-            )
-          : true
-      )
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId &&
+        upcomingRestaurant.items.some((upcomingItem) =>
+          upcomingItem._id?.toString() === orderItem.itemId &&
+          orderItem.removedIngredients.length > 0
+            ? orderItem.removedIngredients.every((removedIngredient) =>
+                upcomingItem.removableIngredients
+                  .split(',')
+                  .some(
+                    (removableIngredient) =>
+                      removableIngredient.trim() ===
+                      removedIngredient.trim().toLowerCase()
+                  )
+              )
+            : true
+        )
     )
   );
   if (!validRemovedIngredients) {
