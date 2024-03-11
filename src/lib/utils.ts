@@ -65,58 +65,58 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
     (company) => company.status === 'ACTIVE'
   );
 
-  if (activeCompany) {
-    try {
-      const response = await Restaurant.find({
-        schedules: {
-          $elemMatch: {
-            date: { $gte: now },
-            status: 'ACTIVE',
-            'company._id': activeCompany._id,
-          },
-        },
-      })
-        .select('-__v -updatedAt -createdAt -address')
-        .lean();
-
-      const upcomingRestaurants = response
-        .map((upcomingWeekRestaurant) => ({
-          ...upcomingWeekRestaurant,
-          items: upcomingWeekRestaurant.items
-            .filter((item) => item.status === 'ACTIVE')
-            .sort((a, b) => a.index - b.index),
-          schedules: upcomingWeekRestaurant.schedules.filter(
-            (schedule) =>
-              schedule.status === 'ACTIVE' &&
-              dateToMS(schedule.date) >= now &&
-              activeCompany._id.toString() === schedule.company._id.toString()
-          ),
-        }))
-        .map((upcomingWeekRestaurant) =>
-          upcomingWeekRestaurant.schedules.map((schedule) => {
-            const { schedules, ...rest } = upcomingWeekRestaurant;
-            return {
-              ...rest,
-              date: schedule.date,
-              company: {
-                _id: schedule.company._id,
-                shift: schedule.company.shift,
-              },
-              scheduledAt: schedule.createdAt,
-            };
-          })
-        )
-        .flat(2)
-        .sort(sortByDate);
-
-      return upcomingRestaurants;
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  } else {
+  if (!activeCompany) {
     console.log('No enrolled shift found');
     throw new Error('No enrolled shift found');
+  }
+
+  try {
+    const response = await Restaurant.find({
+      schedules: {
+        $elemMatch: {
+          date: { $gte: now },
+          status: 'ACTIVE',
+          'company._id': activeCompany._id,
+        },
+      },
+    })
+      .select('-__v -updatedAt -createdAt -address')
+      .lean();
+
+    const upcomingRestaurants = response
+      .map((upcomingWeekRestaurant) => ({
+        ...upcomingWeekRestaurant,
+        items: upcomingWeekRestaurant.items
+          .filter((item) => item.status === 'ACTIVE')
+          .sort((a, b) => a.index - b.index),
+        schedules: upcomingWeekRestaurant.schedules.filter(
+          (schedule) =>
+            schedule.status === 'ACTIVE' &&
+            dateToMS(schedule.date) >= now &&
+            activeCompany._id.toString() === schedule.company._id.toString()
+        ),
+      }))
+      .map((upcomingWeekRestaurant) =>
+        upcomingWeekRestaurant.schedules.map((schedule) => {
+          const { schedules, ...rest } = upcomingWeekRestaurant;
+          return {
+            ...rest,
+            date: schedule.date,
+            company: {
+              _id: schedule.company._id,
+              shift: schedule.company.shift,
+            },
+            scheduledAt: schedule.createdAt,
+          };
+        })
+      )
+      .flat(2)
+      .sort(sortByDate);
+
+    return upcomingRestaurants;
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 }
 

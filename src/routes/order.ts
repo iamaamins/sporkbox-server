@@ -122,7 +122,9 @@ router.post('/create-orders', auth, async (req, res) => {
   const validRestaurants = items.every((orderItem) =>
     upcomingRestaurants.some(
       (upcomingRestaurant) =>
-        upcomingRestaurant._id.toString() === orderItem.restaurantId
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate &&
+        upcomingRestaurant._id.toString() === orderItem.restaurantId &&
+        upcomingRestaurant.company._id.toString() === orderItem.companyId
     )
   );
   if (!validRestaurants) {
@@ -131,34 +133,6 @@ router.post('/create-orders', auth, async (req, res) => {
     throw new Error(
       'Your cart contains an item from a restaurant that is closed'
     );
-  }
-
-  const validCompanies = items.every((orderItem) =>
-    upcomingRestaurants.some(
-      (upcomingRestaurant) =>
-        upcomingRestaurant.company._id.toString() === orderItem.companyId
-    )
-  );
-  if (!validCompanies) {
-    console.log(
-      'Your cart contains an item from a restaurant that is not available for your company'
-    );
-    res.status(400);
-    throw new Error(
-      'Your cart contains an item from a restaurant that is not available for your company'
-    );
-  }
-
-  const validDates = items.every((orderItem) =>
-    upcomingRestaurants.some(
-      (upcomingRestaurant) =>
-        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate
-    )
-  );
-  if (!validDates) {
-    console.log('Your cart contains an item from a day that is closed');
-    res.status(400);
-    throw new Error('Your cart contains an item from a day that is closed');
   }
 
   const validItems = items.every((orderItem) =>
@@ -177,6 +151,7 @@ router.post('/create-orders', auth, async (req, res) => {
   const validOptionalAddons = items.every((orderItem) =>
     upcomingRestaurants.some((upcomingRestaurant) =>
       upcomingRestaurant.items.some((upcomingItem) =>
+        upcomingItem._id?.toString() === orderItem.itemId &&
         orderItem.optionalAddons.length > 0
           ? upcomingItem.optionalAddons.addable >=
               orderItem.optionalAddons.length &&
@@ -202,6 +177,7 @@ router.post('/create-orders', auth, async (req, res) => {
   const validRequiredAddons = items.every((orderItem) =>
     upcomingRestaurants.some((upcomingRestaurant) =>
       upcomingRestaurant.items.some((upcomingItem) =>
+        upcomingItem._id?.toString() === orderItem.itemId &&
         orderItem.requiredAddons.length > 0
           ? upcomingItem.requiredAddons.addable ===
               orderItem.requiredAddons.length &&
@@ -227,6 +203,7 @@ router.post('/create-orders', auth, async (req, res) => {
   const validRemovedIngredients = items.every((orderItem) =>
     upcomingRestaurants.some((upcomingRestaurant) =>
       upcomingRestaurant.items.some((upcomingItem) =>
+        upcomingItem._id?.toString() === orderItem.itemId &&
         orderItem.removedIngredients.length > 0
           ? orderItem.removedIngredients.every((removedIngredient) =>
               upcomingItem.removableIngredients
