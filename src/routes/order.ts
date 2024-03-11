@@ -119,61 +119,136 @@ router.post('/create-orders', auth, async (req, res) => {
   // to get scheduled dates and company ids
   const upcomingRestaurants = await getUpcomingRestaurants(companies);
 
-  // Check if the provided order items are valid
-  const orderItemsAreValid = items.every((orderPayload) =>
+  const validRestaurants = items.every((orderItem) =>
     upcomingRestaurants.some(
       (upcomingRestaurant) =>
-        upcomingRestaurant._id.toString() === orderPayload.restaurantId &&
-        upcomingRestaurant.company._id.toString() === orderPayload.companyId &&
-        dateToMS(upcomingRestaurant.date) === orderPayload.deliveryDate &&
-        upcomingRestaurant.items.some(
-          (item) =>
-            item._id?.toString() === orderPayload.itemId &&
-            (orderPayload.optionalAddons.length > 0
-              ? item.optionalAddons.addable >=
-                  orderPayload.optionalAddons.length &&
-                orderPayload.optionalAddons.every((orderOptionalAddon) =>
-                  item.optionalAddons.addons
-                    .split(',')
-                    .some(
-                      (itemOptionalAddon) =>
-                        itemOptionalAddon.split('-')[0].trim() ===
-                        orderOptionalAddon.split('-')[0].trim().toLowerCase()
-                    )
-                )
-              : true) &&
-            (orderPayload.requiredAddons.length > 0
-              ? item.requiredAddons.addable ===
-                  orderPayload.requiredAddons.length &&
-                orderPayload.requiredAddons.every((orderRequiredAddon) =>
-                  item.requiredAddons.addons
-                    .split(',')
-                    .some(
-                      (itemRequiredAddon) =>
-                        itemRequiredAddon.split('-')[0].trim() ===
-                        orderRequiredAddon.split('-')[0].trim().toLowerCase()
-                    )
-                )
-              : true) &&
-            (orderPayload.removedIngredients.length > 0
-              ? orderPayload.removedIngredients.every((removedIngredient) =>
-                  item.removableIngredients
-                    .split(',')
-                    .some(
-                      (removableIngredient) =>
-                        removableIngredient.trim() ===
-                        removedIngredient.trim().toLowerCase()
-                    )
-                )
-              : true)
-        )
+        upcomingRestaurant._id.toString() === orderItem.restaurantId
     )
   );
-
-  if (!orderItemsAreValid) {
-    console.log('Orders are not valid');
+  if (!validRestaurants) {
+    console.log('Your cart contains an item from a restaurant that is closed');
     res.status(400);
-    throw new Error('Orders are not valid');
+    throw new Error(
+      'Your cart contains an item from a restaurant that is closed'
+    );
+  }
+
+  const validCompanies = items.every((orderItem) =>
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        upcomingRestaurant.company._id.toString() === orderItem.companyId
+    )
+  );
+  if (!validCompanies) {
+    console.log(
+      'Your cart contains an item from a restaurant that is not available for your company'
+    );
+    res.status(400);
+    throw new Error(
+      'Your cart contains an item from a restaurant that is not available for your company'
+    );
+  }
+
+  const validDates = items.every((orderItem) =>
+    upcomingRestaurants.some(
+      (upcomingRestaurant) =>
+        dateToMS(upcomingRestaurant.date) === orderItem.deliveryDate
+    )
+  );
+  if (!validDates) {
+    console.log('Your cart contains an item from a day that is closed');
+    res.status(400);
+    throw new Error('Your cart contains an item from a day that is closed');
+  }
+
+  const validItems = items.every((orderItem) =>
+    upcomingRestaurants.some((upcomingRestaurant) =>
+      upcomingRestaurant.items.some(
+        (upcomingItem) => upcomingItem._id?.toString() === orderItem.itemId
+      )
+    )
+  );
+  if (!validItems) {
+    console.log('Your cart contains an invalid item');
+    res.status(400);
+    throw new Error('Your cart contains an invalid item');
+  }
+
+  const validOptionalAddons = items.every((orderItem) =>
+    upcomingRestaurants.some((upcomingRestaurant) =>
+      upcomingRestaurant.items.some((upcomingItem) =>
+        orderItem.optionalAddons.length > 0
+          ? upcomingItem.optionalAddons.addable >=
+              orderItem.optionalAddons.length &&
+            orderItem.optionalAddons.every((orderOptionalAddon) =>
+              upcomingItem.optionalAddons.addons
+                .split(',')
+                .some(
+                  (upcomingOptionalAddon) =>
+                    upcomingOptionalAddon.split('-')[0].trim() ===
+                    orderOptionalAddon.split('-')[0].trim().toLowerCase()
+                )
+            )
+          : true
+      )
+    )
+  );
+  if (!validOptionalAddons) {
+    console.log('Your cart contains an item with invalid optional addons');
+    res.status(400);
+    throw new Error('Your cart contains an item with invalid optional addons');
+  }
+
+  const validRequiredAddons = items.every((orderItem) =>
+    upcomingRestaurants.some((upcomingRestaurant) =>
+      upcomingRestaurant.items.some((upcomingItem) =>
+        orderItem.requiredAddons.length > 0
+          ? upcomingItem.requiredAddons.addable ===
+              orderItem.requiredAddons.length &&
+            orderItem.requiredAddons.every((orderRequiredAddon) =>
+              upcomingItem.requiredAddons.addons
+                .split(',')
+                .some(
+                  (upcomingRequiredAddon) =>
+                    upcomingRequiredAddon.split('-')[0].trim() ===
+                    orderRequiredAddon.split('-')[0].trim().toLowerCase()
+                )
+            )
+          : true
+      )
+    )
+  );
+  if (!validRequiredAddons) {
+    console.log('Your cart contains an item with invalid required addons');
+    res.status(400);
+    throw new Error('Your cart contains an item with invalid required addons');
+  }
+
+  const validRemovedIngredients = items.every((orderItem) =>
+    upcomingRestaurants.some((upcomingRestaurant) =>
+      upcomingRestaurant.items.some((upcomingItem) =>
+        orderItem.removedIngredients.length > 0
+          ? orderItem.removedIngredients.every((removedIngredient) =>
+              upcomingItem.removableIngredients
+                .split(',')
+                .some(
+                  (removableIngredient) =>
+                    removableIngredient.trim() ===
+                    removedIngredient.trim().toLowerCase()
+                )
+            )
+          : true
+      )
+    )
+  );
+  if (!validRemovedIngredients) {
+    console.log(
+      'Your cart contains an item with invalid removable ingredients'
+    );
+    res.status(400);
+    throw new Error(
+      'Your cart contains an item with invalid removable ingredients'
+    );
   }
 
   // Create orders
