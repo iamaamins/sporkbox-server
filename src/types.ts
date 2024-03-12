@@ -57,6 +57,7 @@ export interface OrderItem extends GenericItem {
 }
 
 export interface ItemSchema extends GenericItem {
+  _id: Types.ObjectId;
   index: number;
   price: number;
   status: string;
@@ -128,7 +129,7 @@ export interface FavRestaurantItem extends GenericItem {
 }
 
 export interface OrdersPayload {
-  items: {
+  orderItems: {
     itemId: string;
     quantity: number;
     companyId: string;
@@ -190,3 +191,23 @@ export interface CompanySchema extends CompanyDetails {
   address: Address;
   status: 'ACTIVE' | 'ARCHIVED';
 }
+
+export type UpcomingDataMap = {
+  [key: string]: {
+    [key: string]: {
+      [key: string]: {
+        [key: string]: {
+          optionalAddons: {
+            addons: string;
+            addable: number;
+          };
+          requiredAddons: {
+            addons: string;
+            addable: number;
+          };
+          removableIngredients: string;
+        };
+      };
+    };
+  };
+};
