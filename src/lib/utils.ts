@@ -71,7 +71,7 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
   }
 
   try {
-    const response = await Restaurant.find({
+    const scheduledRestaurants = await Restaurant.find({
       schedules: {
         $elemMatch: {
           date: { $gte: now },
@@ -83,24 +83,22 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
       .select('-__v -updatedAt -createdAt -address')
       .lean();
 
-    const upcomingRestaurants = response
-      .map((upcomingWeekRestaurant) => ({
-        ...upcomingWeekRestaurant,
-        items: upcomingWeekRestaurant.items
-          .filter((item) => item.status === 'ACTIVE')
-          .sort((a, b) => a.index - b.index),
-        schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) =>
-            schedule.status === 'ACTIVE' &&
-            dateToMS(schedule.date) >= now &&
-            activeCompany._id.toString() === schedule.company._id.toString()
-        ),
-      }))
-      .map((upcomingWeekRestaurant) =>
-        upcomingWeekRestaurant.schedules.map((schedule) => {
-          const { schedules, ...rest } = upcomingWeekRestaurant;
-          return {
+    const upcomingRestaurants = [];
+    for (const scheduledRestaurant of scheduledRestaurants) {
+      const items = scheduledRestaurant.items
+        .filter((item) => item.status === 'ACTIVE')
+        .sort((a, b) => a.index - b.index);
+
+      const { schedules, ...rest } = scheduledRestaurant;
+      for (const schedule of schedules) {
+        if (
+          schedule.status === 'ACTIVE' &&
+          dateToMS(schedule.date) >= now &&
+          activeCompany._id.toString() === schedule.company._id.toString()
+        ) {
+          const upcomingRestaurant = {
             ...rest,
+            items,
             date: schedule.date,
             company: {
               _id: schedule.company._id,
@@ -108,12 +106,11 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
             },
             scheduledAt: schedule.createdAt,
           };
-        })
-      )
-      .flat(2)
-      .sort(sortByDate);
-
-    return upcomingRestaurants;
+          upcomingRestaurants.push(upcomingRestaurant);
+        }
+      }
+    }
+    return upcomingRestaurants.sort(sortByDate);
   } catch (err) {
     console.log(err);
     throw err;
