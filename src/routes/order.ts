@@ -29,6 +29,30 @@ import { invalidCredentials, unAuthorized } from '../lib/messages';
 
 const router = Router();
 
+// Get vendor's all upcoming orders
+router.get('/vendor/upcoming-orders', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'VENDOR') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const allUpcomingOrders = await Order.find({
+      'restaurant._id': req.user.restaurant,
+      status: 'PROCESSING',
+    })
+      .sort({ 'delivery.date': 1 })
+      .select(
+        'delivery.date item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+      );
+    res.status(200).json(allUpcomingOrders);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Get customer's all upcoming orders
 router.get('/me/upcoming-orders', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
