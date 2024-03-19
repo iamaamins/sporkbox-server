@@ -27,14 +27,14 @@ import {
   unAuthorized,
 } from '../lib/messages';
 
-const router = Router();
-
 interface ItemsIndexPayload {
   reorderedItems: {
     _id: string;
     index: number;
   }[];
 }
+
+const router = Router();
 
 // Get upcoming restaurants
 router.get('/upcoming-restaurants', auth, async (req, res) => {
@@ -186,7 +186,10 @@ router.patch(
   '/:restaurantId/:scheduleId/change-schedule-status',
   auth,
   async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (
+      !req.user ||
+      !(req.user.role === 'ADMIN' || req.user.role === 'VENDOR')
+    ) {
       console.log(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
@@ -650,6 +653,24 @@ router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
       );
     });
     res.status(200).json('Items order updated');
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
+// Get a restaurant
+router.get('/:id', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'VENDOR') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { id } = req.params;
+  try {
+    const restaurant = await Restaurant.findById(id).lean().orFail();
+    res.status(200).json(restaurant);
   } catch (err) {
     console.log(err);
     throw err;
