@@ -14,7 +14,9 @@ import {
 } from '../lib/utils';
 import {
   orderArchiveTemplate,
+  orderCancelTemplate,
   orderDeliveryTemplate,
+  orderRefundTemplate,
 } from '../lib/emailTemplates';
 import mail from '@sendgrid/mail';
 import {
@@ -717,6 +719,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     if (!order.payment.intent) {
       await order.save();
+      await mail.send(orderCancelTemplate(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
@@ -727,20 +730,27 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     if (paid === refunded) {
       await order.save();
+      await mail.send(orderCancelTemplate(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
     if (paid >= totalRefund) {
       await stripeRefund(askingRefund, order.payment.intent);
       await order.save();
-      return res.status(200).json({ message: 'Order cancelled' });
+      await mail.send(orderRefundTemplate(order.toObject(), askingRefund));
+      return res
+        .status(200)
+        .json({ message: `Order cancelled and $${askingRefund} refunded` });
     }
 
     if (paid < totalRefund) {
       const finalRefund = paid - refunded;
       await stripeRefund(finalRefund, order.payment.intent);
       await order.save();
-      return res.status(200).json({ message: 'Order cancelled' });
+      await mail.send(orderRefundTemplate(order.toObject(), finalRefund));
+      return res
+        .status(200)
+        .json({ message: `Order cancelled and $${finalRefund} refunded` });
     }
   } catch (err) {
     console.log(err);

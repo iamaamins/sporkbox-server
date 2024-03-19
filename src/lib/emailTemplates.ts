@@ -85,6 +85,7 @@ export function thursdayOrderReminderTemplate(user: GenericUser) {
         `,
   };
 }
+
 export function fridayOrderReminderTemplate(user: GenericUser) {
   return {
     to: user.email,
@@ -106,6 +107,21 @@ export function fridayOrderReminderTemplate(user: GenericUser) {
         <p>Thanks!</p>
 
         <p>- The Spork Bytes Team</p>
+        `,
+  };
+}
+
+export function orderRefundTemplate(order: OrderForEmail, amount: number) {
+  return {
+    to: order.customer.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Order Status Update`,
+    html: `
+        <p>Hi ${order.customer.firstName} ${
+      order.customer.lastName
+    }, your Sporkbox order of ${order.item.name} from ${
+      order.restaurant.name
+    } is cancelled and $${amount.toFixed(2)} is refunded. </p>
         `,
   };
 }
