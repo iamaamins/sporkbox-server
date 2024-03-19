@@ -659,7 +659,7 @@ router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
   }
 });
 
-// Get a restaurant
+// Get a vendor restaurant
 router.get('/:id', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
     console.log(unAuthorized);
@@ -669,7 +669,10 @@ router.get('/:id', auth, async (req, res) => {
 
   const { id } = req.params;
   try {
-    const restaurant = await Restaurant.findById(id).lean().orFail();
+    const restaurant = await Restaurant.findById(id)
+      .select('-__v -createdAt -updatedAt -items')
+      .lean()
+      .orFail();
     res.status(200).json(restaurant);
   } catch (err) {
     console.log(err);
