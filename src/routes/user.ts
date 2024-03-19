@@ -22,10 +22,6 @@ interface LoginPayload {
   password: string;
 }
 
-interface ResetPasswordPayload {
-  password: string;
-}
-
 // Login user
 router.post('/login', async (req, res) => {
   const { email, password }: LoginPayload = req.body;

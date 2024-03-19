@@ -19,6 +19,25 @@ import {
 
 const router = Router();
 
+// Get all customers
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const customers = await User.find({ role: 'CUSTOMER' }).select(
+      '-__v -updatedAt -password -role'
+    );
+    res.status(200).json(customers);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Register customer
 router.post('/register-customer', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;
@@ -63,25 +82,6 @@ router.post('/register-customer', async (req, res) => {
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
     res.status(201).json(customer);
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-});
-
-// Get all customers
-router.get('', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  try {
-    const customers = await User.find({ role: 'CUSTOMER' }).select(
-      '-__v -updatedAt -password -role'
-    );
-    res.status(200).json(customers);
   } catch (err) {
     console.log(err);
     throw err;

@@ -15,6 +15,55 @@ export interface FavoriteRestaurant {
   items: FavRestaurantItem[];
 }
 
+// Get all favorite
+router.get('/me', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const response = await Favorite.find({
+      customer: req.user._id,
+    })
+      .populate<{ restaurant: FavoriteRestaurant }>(
+        'restaurant',
+        '_id name logo items'
+      )
+      .select('-__v');
+
+    const favorites = response.map((favorite) => {
+      const item = favorite.restaurant.items.find(
+        (item) => item._id.toString() === favorite.item._id.toString()
+      );
+      if (!item) {
+        console.log(noItem);
+        res.status(400);
+        throw new Error(noItem);
+      }
+
+      return {
+        _id: favorite._id,
+        item: {
+          _id: item._id,
+          name: item.name,
+          image: item.image || favorite.restaurant.logo,
+        },
+        customer: favorite.customer,
+        restaurant: {
+          _id: favorite.restaurant._id,
+          name: favorite.restaurant.name,
+        },
+      };
+    });
+    res.status(200).json(favorites);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Add a favorite
 router.post('/add-to-favorite', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
@@ -81,55 +130,6 @@ router.delete('/:favoriteId/remove-from-favorite', auth, async (req, res) => {
       _id: favoriteId,
     });
     res.status(200).json({ message: 'Favorite removed' });
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-});
-
-// Get all favorite
-router.get('/me', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  try {
-    const response = await Favorite.find({
-      customer: req.user._id,
-    })
-      .populate<{ restaurant: FavoriteRestaurant }>(
-        'restaurant',
-        '_id name logo items'
-      )
-      .select('-__v');
-
-    const favorites = response.map((favorite) => {
-      const item = favorite.restaurant.items.find(
-        (item) => item._id.toString() === favorite.item._id.toString()
-      );
-      if (!item) {
-        console.log(noItem);
-        res.status(400);
-        throw new Error(noItem);
-      }
-
-      return {
-        _id: favorite._id,
-        item: {
-          _id: item._id,
-          name: item.name,
-          image: item.image || favorite.restaurant.logo,
-        },
-        customer: favorite.customer,
-        restaurant: {
-          _id: favorite.restaurant._id,
-          name: favorite.restaurant.name,
-        },
-      };
-    });
-    res.status(200).json(favorites);
   } catch (err) {
     console.log(err);
     throw err;

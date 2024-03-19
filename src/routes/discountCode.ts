@@ -6,6 +6,25 @@ import { requiredFields, unAuthorized } from '../lib/messages';
 
 const router = Router();
 
+// Get all discount codes
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const discountCodes = await DiscountCode.find()
+      .select('-__v -createdAt -updatedAt')
+      .lean();
+    res.status(200).json(discountCodes);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Add a discount code
 router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
@@ -30,25 +49,6 @@ router.post('/add', auth, async (req, res) => {
     const discountCode = response.toObject();
     deleteFields(discountCode, ['createdAt']);
     res.status(201).json(discountCode);
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-});
-
-// Get all discount codes
-router.get('/', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  try {
-    const discountCodes = await DiscountCode.find()
-      .select('-__v -createdAt -updatedAt')
-      .lean();
-    res.status(200).json(discountCodes);
   } catch (err) {
     console.log(err);
     throw err;

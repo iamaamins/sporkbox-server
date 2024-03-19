@@ -8,6 +8,26 @@ import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 
 const router = Router();
 
+// Get all companies
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const companies = await Company.find()
+      .select('-__v -updatedAt')
+      .sort({ createdAt: -1 });
+
+    res.status(201).json(companies);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Add a company
 router.post('/add-company', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
@@ -84,26 +104,6 @@ router.post('/add-company', auth, async (req, res) => {
       }
     );
     res.status(200).json(company);
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-});
-
-// Get all companies
-router.get('/', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  try {
-    const companies = await Company.find()
-      .select('-__v -updatedAt')
-      .sort({ createdAt: -1 });
-
-    res.status(201).json(companies);
   } catch (err) {
     console.log(err);
     throw err;
