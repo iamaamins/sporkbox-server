@@ -119,9 +119,9 @@ export function orderRefundTemplate(order: OrderForEmail, amount: number) {
     html: `
         <p>Hi ${order.customer.firstName} ${
       order.customer.lastName
-    }, your Sporkbox order of ${order.item.name} from ${
+    }, your Spork Box order of ${order.item.name} from ${
       order.restaurant.name
-    } is cancelled and $${amount.toFixed(2)} is refunded. </p>
+    } is canceled and $${amount.toFixed(2)} is refunded. </p>
         `,
   };
 }
