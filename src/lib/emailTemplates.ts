@@ -7,7 +7,7 @@ export function orderDeliveryTemplate(order: OrderForEmail) {
     subject: `Your Meal Has Been Delivered! 🍽️`,
     html: `
         <p>
-        Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} has been delivered! Please be sure to take the meal that is labeled with your name.
+        Hi ${order.customer.firstName} ${order.customer.lastName}, your Spork Box order of ${order.item.name} from ${order.restaurant.name} has been delivered! Please be sure to take the meal that is labeled with your name.
         </p>
 
         <p>Enjoy! 😋 </p>
@@ -23,7 +23,7 @@ export function orderArchiveTemplate(order: OrderForEmail) {
     from: process.env.SENDER_EMAIL as string,
     subject: `Order Status Update`,
     html: `
-        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is cancelled. You can reorder for this date now.</p>
+        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Spork Box order of ${order.item.name} from ${order.restaurant.name} is cancelled. You can reorder for this date now.</p>
         `,
   };
 }
@@ -34,7 +34,7 @@ export function orderCancelTemplate(order: OrderForEmail) {
     from: process.env.SENDER_EMAIL as string,
     subject: `Order Status Update`,
     html: `
-        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Sporkbox order of ${order.item.name} from ${order.restaurant.name} is cancelled. </p>
+        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Spork Box order of ${order.item.name} from ${order.restaurant.name} is cancelled. </p>
         `,
   };
 }
@@ -43,7 +43,7 @@ export function passwordResetTemplate(user: GenericUser, link: string) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
-    subject: `Sporkbox Password Reset`,
+    subject: `Spork Box Password Reset`,
     html: `
         <p>Hi ${user.firstName} ${user.lastName}, please reset your password here: ${link}. Please ignore if you haven't requested this change.</p>
         `,
@@ -54,9 +54,9 @@ export function passwordResetConfirmationTemplate(user: GenericUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
-    subject: `Sporkbox Password Reset`,
+    subject: `Spork Box Password Reset`,
     html: `
-        <p>Hi ${user.firstName} ${user.lastName}, your Sporkbox password reset is successful.</p>
+        <p>Hi ${user.firstName} ${user.lastName}, your Spork Box password reset is successful.</p>
         `,
   };
 }
