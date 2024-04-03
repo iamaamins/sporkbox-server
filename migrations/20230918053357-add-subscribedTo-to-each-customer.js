@@ -14,7 +14,6 @@ module.exports = {
         }
       );
     } catch (err) {
-      // Log error
       console.log(err);
     }
   },
@@ -25,7 +24,6 @@ module.exports = {
         .collection('users')
         .updateMany({ role: 'CUSTOMER' }, { $unset: { subscribedTo: '' } });
     } catch (err) {
-      // Log error
       console.log(err);
     }
   },
