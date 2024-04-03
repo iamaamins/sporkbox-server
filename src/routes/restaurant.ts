@@ -614,19 +614,47 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
         returnDocument: 'after',
       }
     ).orFail();
-    await Restaurant.findOneAndUpdate(
+    const restaurant = await Restaurant.findOneAndUpdate(
       {
         _id: restaurantId,
         'items._id': itemId,
-        'items.reviews.customer': { $ne: _id },
       },
       {
         $push: {
           'items.$.reviews': { customer: _id, rating, comment },
         },
-      },
-      { returnDocument: 'after' }
+      }
     ).orFail();
+
+    // Update average rating on a random interval
+    const updateFrequency = 10;
+    const randomFrequency = Math.floor(Math.random() * updateFrequency) + 1;
+    const item = restaurant.items.find(
+      (item) => item._id.toString() === itemId
+    );
+
+    if (item && updateFrequency === randomFrequency) {
+      const totalRating = item.reviews.reduce(
+        (acc, curr) => acc + curr.rating,
+        0
+      );
+      const averageRating = (
+        (totalRating + rating * updateFrequency) /
+        (item.reviews.length + updateFrequency)
+      ).toFixed(2);
+
+      await Restaurant.findOneAndUpdate(
+        {
+          _id: restaurantId,
+          'items._id': itemId,
+        },
+        {
+          $set: {
+            'items.$.averageRating': +averageRating,
+          },
+        }
+      );
+    }
     res.status(201).json(order);
   } catch (err) {
     console.log(err);

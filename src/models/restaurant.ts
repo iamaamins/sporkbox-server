@@ -150,6 +150,7 @@ const restaurantSchema = new Schema<RestaurantSchema>(
             },
           }),
         ],
+        averageRating: Number,
       }),
     ],
   },
