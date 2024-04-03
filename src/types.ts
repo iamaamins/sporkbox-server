@@ -64,6 +64,7 @@ export interface ItemSchema extends GenericItem {
   optionalAddons: Addons;
   requiredAddons: Addons;
   removableIngredients: string;
+  averageRating?: number;
   reviews: Types.DocumentArray<ReviewSchema>;
 }
 
