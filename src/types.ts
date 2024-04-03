@@ -74,6 +74,7 @@ export interface OrderCompany {
 }
 
 export interface OrderForEmail {
+  _id: string;
   item: {
     name: string;
   };

@@ -12,7 +12,7 @@ export function orderDeliveryTemplate(order: OrderForEmail) {
 
         <p>Enjoy! 😋 </p>
 
-        <p>Your feedback is important to us. Please take a few moments to <a href='https://docs.google.com/forms/d/e/1FAIpQLScEX27Y29aUk3af86VlHxUKTRFj9L00GSclzDn5wTqJUwnylw/viewform?usp=sf_link'>leave us a review here</a>.</p>
+        <p>Your feedback is important to us. Please take a few moments to <a href='${process.env.CLIENT_URL}/dashboard/${order._id}'>leave us a review here</a>.</p>
 
         <p>- The Spork Bytes Team</p>
         `,
