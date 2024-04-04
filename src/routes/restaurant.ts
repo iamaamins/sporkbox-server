@@ -627,7 +627,7 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
     ).orFail();
 
     // Update average rating on a random interval
-    const updateFrequency = 10;
+    const updateFrequency = 1;
     const randomFrequency = Math.floor(Math.random() * updateFrequency) + 1;
     const item = restaurant.items.find(
       (item) => item._id.toString() === itemId
