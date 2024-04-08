@@ -89,6 +89,7 @@ interface ReviewSchema {
   customer: Types.ObjectId;
   rating: number;
   comment: string;
+  createdAt: Date;
 }
 
 export interface Addons {

@@ -87,7 +87,13 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
     for (const scheduledRestaurant of scheduledRestaurants) {
       const items = scheduledRestaurant.items
         .filter((item) => item.status === 'ACTIVE')
-        .sort((a, b) => a.index - b.index);
+        .sort((a, b) => a.index - b.index)
+        .map((item) => ({
+          ...item,
+          reviews: item.reviews.sort(
+            (a, b) => dateToMS(b.createdAt) - dateToMS(a.createdAt)
+          ),
+        }));
 
       const { schedules, ...rest } = scheduledRestaurant;
       for (const schedule of schedules) {

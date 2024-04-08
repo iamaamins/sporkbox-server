@@ -11,6 +11,7 @@ import {
   deleteFields,
   checkActions,
   resizeImage,
+  dateToMS,
 } from '../lib/utils';
 import {
   requiredAction,
@@ -227,9 +228,14 @@ router.get('/:limit', auth, async (req, res) => {
         '-__v -updatedAt'
       );
 
-    vendors.forEach((vendor) =>
-      vendor.restaurant.items.sort((a, b) => a.index - b.index)
-    );
+    vendors.forEach((vendor) => {
+      vendor.restaurant.items.sort((a, b) => a.index - b.index);
+      vendor.restaurant.items.forEach((item) => {
+        item.reviews.sort(
+          (a, b) => dateToMS(b.createdAt) - dateToMS(a.createdAt)
+        );
+      });
+    });
     res.status(200).json(vendors);
   } catch (err) {
     console.log(err);

@@ -133,22 +133,25 @@ const restaurantSchema = new Schema<RestaurantSchema>(
           required: [true, 'Please provide removable ingredients'],
         },
         reviews: [
-          new Schema({
-            customer: {
-              type: Schema.Types.ObjectId,
-              ref: 'User',
-              required: [true, 'Please provide a customer'],
+          new Schema(
+            {
+              customer: {
+                type: Schema.Types.ObjectId,
+                ref: 'User',
+                required: [true, 'Please provide a customer'],
+              },
+              rating: {
+                type: Number,
+                required: [true, 'Please provide a rating'],
+              },
+              comment: {
+                type: String,
+                trim: true,
+                required: [true, 'Please provide a rating'],
+              },
             },
-            rating: {
-              type: Number,
-              required: [true, 'Please provide a rating'],
-            },
-            comment: {
-              type: String,
-              trim: true,
-              required: [true, 'Please provide a rating'],
-            },
-          }),
+            { timestamps: true }
+          ),
         ],
         averageRating: Number,
       }),
