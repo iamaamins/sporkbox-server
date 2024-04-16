@@ -67,6 +67,7 @@ const restaurantSchema = new Schema<RestaurantSchema>(
             enum: ['ACTIVE', 'INACTIVE'],
             required: [true, 'Please provide a status'],
           },
+          deactivatedByAdmin: Boolean,
         },
         { timestamps: true }
       ),

@@ -205,26 +205,46 @@ router.patch(
     checkActions(['Activate', 'Deactivate'], action, res);
 
     try {
-      const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        { _id: restaurantId, 'schedules._id': scheduleId },
-        {
-          $set: {
-            'schedules.$.status':
-              action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE',
-          },
-        },
-        {
-          returnDocument: 'after',
-        }
-      )
+      const restaurant = await Restaurant.findOne({
+        _id: restaurantId,
+        'schedules._id': scheduleId,
+      })
         .select('-__v -updatedAt -createdAt -address -items')
-        .lean()
         .orFail();
 
-      const updatedSchedules = updatedRestaurant.schedules.map((schedule) => {
+      let schedule = restaurant.schedules.find(
+        (schedule) => schedule._id?.toString() === scheduleId
+      );
+      if (!schedule) {
+        res.status(400);
+        throw new Error('No schedule found');
+      }
+
+      if (
+        req.user.role === 'VENDOR' &&
+        action === 'Activate' &&
+        schedule.deactivatedByAdmin
+      ) {
+        res.status(400);
+        throw new Error('Schedule deactivated by admin');
+      }
+
+      if (req.user.role === 'ADMIN' && action === 'Deactivate') {
+        schedule.deactivatedByAdmin = true;
+      }
+      if (req.user.role === 'ADMIN' && action === 'Activate') {
+        await Restaurant.updateOne(
+          { _id: restaurantId, 'schedules._id': scheduleId },
+          { $unset: { 'schedules.$.deactivatedByAdmin': 1 } }
+        );
+      }
+      schedule.status = action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE';
+      await restaurant.save();
+
+      const updatedSchedules = restaurant.schedules.map((schedule) => {
         return {
-          _id: updatedRestaurant._id,
-          name: updatedRestaurant.name,
+          _id: restaurant._id,
+          name: restaurant.name,
           scheduleId: schedule._id,
           date: schedule.date,
           status: schedule.status,

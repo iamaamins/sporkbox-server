@@ -102,6 +102,7 @@ interface SchedulesSchema {
   status: string;
   createdAt: string;
   company: OrderCompany;
+  deactivatedByAdmin?: boolean;
 }
 
 export interface RestaurantSchema {
