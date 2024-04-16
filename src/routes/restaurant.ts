@@ -212,7 +212,7 @@ router.patch(
         .select('-__v -updatedAt -createdAt -address -items')
         .orFail();
 
-      let schedule = restaurant.schedules.find(
+      const schedule = restaurant.schedules.find(
         (schedule) => schedule._id?.toString() === scheduleId
       );
       if (!schedule) {
@@ -229,7 +229,11 @@ router.patch(
         throw new Error('Schedule deactivated by admin');
       }
 
-      if (req.user.role === 'ADMIN' && action === 'Deactivate') {
+      if (
+        req.user.role === 'ADMIN' &&
+        action === 'Deactivate' &&
+        !schedule.deactivatedByAdmin
+      ) {
         schedule.deactivatedByAdmin = true;
       }
       if (
