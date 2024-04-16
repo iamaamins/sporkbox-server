@@ -232,7 +232,11 @@ router.patch(
       if (req.user.role === 'ADMIN' && action === 'Deactivate') {
         schedule.deactivatedByAdmin = true;
       }
-      if (req.user.role === 'ADMIN' && action === 'Activate') {
+      if (
+        req.user.role === 'ADMIN' &&
+        action === 'Activate' &&
+        schedule.deactivatedByAdmin
+      ) {
         await Restaurant.updateOne(
           { _id: restaurantId, 'schedules._id': scheduleId },
           { $unset: { 'schedules.$.deactivatedByAdmin': 1 } }
