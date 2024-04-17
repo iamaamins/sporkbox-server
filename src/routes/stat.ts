@@ -8,6 +8,14 @@ import { unAuthorized } from '../lib/messages';
 const router = Router();
 
 async function getDeliveredOrders() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+
+  const from = `${year}-01-01`;
+  const to = `${year}-${month}-${day}`;
+
   try {
     const orders = await Order.find({
       status: 'DELIVERED',
@@ -15,8 +23,8 @@ async function getDeliveredOrders() {
         $in: ['643dec49e88d25d4249723ef', '643e162fe88d25d424972a55'],
       },
       'delivery.date': {
-        $gte: '2023-01-01',
-        $lte: '2023-12-31',
+        $gte: from,
+        $lte: to,
       },
     })
       .lean()
