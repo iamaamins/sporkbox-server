@@ -8,13 +8,13 @@ import { unAuthorized } from '../lib/messages';
 const router = Router();
 
 async function getDeliveredOrders() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
+  const newDate = new Date();
+  const year = newDate.getFullYear();
+  const month = `${newDate.getMonth() + 1}`.padStart(2, '0');
+  const date = `${newDate.getDate()}`.padStart(2, '0');
 
   const from = `${year}-01-01`;
-  const to = `${year}-${month}-${day}`;
+  const to = `${year}-${month}-${date}`;
 
   try {
     const orders = await Order.find({
