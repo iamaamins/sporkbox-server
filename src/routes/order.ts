@@ -46,7 +46,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'delivery.date item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
