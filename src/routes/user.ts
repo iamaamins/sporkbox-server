@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import mail from '@sendgrid/mail';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/user';
 import auth from '../middleware/auth';
 import { setCookie, deleteFields } from '../lib/utils';
@@ -86,9 +86,11 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const user = await User.findOne({ email }).orFail();
-
-    const jwtSecret = process.env.JWT_SECRET + user.password;
-    const token = jwt.sign({ _id: user._id }, jwtSecret, { expiresIn: '15m' });
+    const token = jwt.sign(
+      { password: user.password },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '15m' }
+    );
     const link = `${process.env.CLIENT_URL}/reset-password/${user._id}/${token}`;
 
     await mail.send(passwordResetTemplate(user.toObject(), link));
@@ -111,8 +113,15 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
   const { userId, token } = req.params;
   try {
     const user = await User.findById(userId).orFail();
-    const jwtSecret = process.env.JWT_SECRET + user.password;
-    jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload;
+    if (decoded.password !== user.password) {
+      console.log('Invalid token');
+      res.status(400);
+      throw new Error('Invalid token');
+    }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
