@@ -4,6 +4,7 @@ import { ItemStat, OrderStat } from '../types';
 import auth from '../middleware/auth';
 import { dateToMS } from '../lib/utils';
 import { unAuthorized } from '../lib/messages';
+import Restaurant from '../models/restaurant';
 
 const router = Router();
 
@@ -162,6 +163,34 @@ router.get('/people', auth, async (req, res) => {
   }, [] as { date: number; customers: string[] }[]);
 
   res.status(200).json(results);
+});
+
+router.get('/restaurant-items', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const restaurants = await Restaurant.find().lean().orFail();
+    const items = [];
+    for (const restaurant of restaurants) {
+      for (const item of restaurant.items) {
+        if (item.status === 'ACTIVE') {
+          items.push({
+            restaurant: restaurant.name,
+            name: item.name,
+            price: item.price,
+          });
+        }
+      }
+    }
+    res.status(200).json(items);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 });
 
 export default router;
