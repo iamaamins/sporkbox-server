@@ -255,17 +255,12 @@ router.patch(
       schedule.status = action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE';
       await restaurant.save();
 
-      const updatedSchedules = restaurant.schedules.map((schedule) => {
-        return {
-          _id: schedule._id,
-          date: schedule.date,
-          status: schedule.status,
-          company: schedule.company,
-          restaurantId: restaurant._id,
-          restaurantName: restaurant.name,
-        };
-      });
-      res.status(201).json(updatedSchedules);
+      const schedules = restaurant.schedules.map((schedule) => ({
+        _id: schedule._id,
+        status: schedule.status,
+        date: schedule.date,
+      }));
+      res.status(201).json(schedules);
     } catch (err) {
       console.log(err);
       throw err;
