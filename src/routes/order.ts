@@ -152,7 +152,7 @@ router.post('/create-orders', auth, async (req, res) => {
   // Create data map
   const upcomingDataMap: UpcomingDataMap = {};
   for (const upcomingRestaurant of upcomingRestaurants) {
-    const deliveryDate = dateToMS(upcomingRestaurant.date);
+    const deliveryDate = dateToMS(upcomingRestaurant.schedule.date);
     if (!upcomingDataMap[deliveryDate]) upcomingDataMap[deliveryDate] = {};
 
     const company = upcomingRestaurant.company._id.toString();
@@ -392,7 +392,7 @@ router.post('/create-orders', auth, async (req, res) => {
   // Dates will be used to get the upcoming orders
   const upcomingDetails = upcomingRestaurants
     .map((upcomingRestaurant) => ({
-      date: dateToMS(upcomingRestaurant.date),
+      date: dateToMS(upcomingRestaurant.schedule.date),
       companyId: upcomingRestaurant.company._id,
     }))
     .filter(

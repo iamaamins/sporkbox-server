@@ -69,31 +69,32 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
   }
 
   try {
-    const response = await Restaurant.find({
+    const restaurants = await Restaurant.find({
       'schedules.date': {
         $gte: now,
       },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
-    const scheduledRestaurants = response
-      .map((scheduledRestaurant) =>
-        scheduledRestaurant.schedules.map((schedule) => {
-          const { schedules, ...rest } = scheduledRestaurant.toObject();
-
-          return {
+    const scheduledRestaurants = [];
+    for (const restaurant of restaurants) {
+      const { schedules, ...rest } = restaurant.toObject();
+      for (const schedule of schedules) {
+        if (dateToMS(schedule.date) >= now) {
+          const scheduledRestaurant = {
             ...rest,
-            scheduleId: schedule._id,
-            date: schedule.date,
-            status: schedule.status,
             company: schedule.company,
+            schedule: {
+              _id: schedule._id,
+              date: schedule.date,
+              status: schedule.status,
+            },
           };
-        })
-      )
-      .flat(2)
-      .filter(
-        (scheduledRestaurant) => dateToMS(scheduledRestaurant.date) >= now
-      )
-      .sort(sortByDate);
+          scheduledRestaurants.push(scheduledRestaurant);
+        }
+      }
+    }
+    scheduledRestaurants.sort(sortByDate);
+
     res.status(200).json(scheduledRestaurants);
   } catch (err) {
     console.log(err);

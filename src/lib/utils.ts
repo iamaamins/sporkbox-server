@@ -16,7 +16,9 @@ import {
 import { invalidShift } from './messages';
 
 type SortScheduledRestaurant = {
-  date: Date;
+  schedule: {
+    date: Date;
+  };
 };
 
 type OrderReminderTemplate = (customer: GenericUser) => {
@@ -56,7 +58,7 @@ export const dateToMS = (date: Date | string): number =>
 export const sortByDate = (
   a: SortScheduledRestaurant,
   b: SortScheduledRestaurant
-): number => dateToMS(a.date) - dateToMS(b.date);
+): number => dateToMS(a.schedule.date) - dateToMS(b.schedule.date);
 
 export const now = Date.now();
 
@@ -108,13 +110,14 @@ export async function getUpcomingRestaurants(
           const upcomingRestaurant = {
             ...rest,
             items,
-            date: schedule.date,
             company: {
               _id: schedule.company._id,
               shift: schedule.company.shift,
             },
-            scheduledAt: schedule.createdAt,
-            scheduleStatus: schedule.status,
+            schedule: {
+              date: schedule.date,
+              status: schedule.status,
+            },
           };
           upcomingRestaurants.push(upcomingRestaurant);
         }
