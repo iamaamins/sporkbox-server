@@ -143,8 +143,8 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
 
     const isScheduled = updatedRestaurant.schedules.some(
       (schedule) =>
-        companyId === schedule.company._id.toString() &&
-        dateToMS(schedule.date) === dateToMS(date)
+        dateToMS(schedule.date) === dateToMS(date) &&
+        companyId === schedule.company._id.toString()
     );
     if (isScheduled) {
       console.log('Already scheduled on the provided date');
@@ -153,14 +153,16 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
     }
 
     const company = await Company.findById(companyId).orFail();
+    const scheduleCompany = {
+      _id: company._id,
+      name: company.name,
+      shift: company.shift,
+    };
+
     const schedule = {
       date,
       status: 'ACTIVE',
-      company: {
-        _id: company.id,
-        name: company.name,
-        shift: company.shift,
-      },
+      company: scheduleCompany,
     };
     updatedRestaurant.schedules.push(schedule);
     await updatedRestaurant.save();
@@ -170,10 +172,13 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
     const { schedules, ...rest } = updatedRestaurant.toObject();
     const scheduledRestaurant = {
       ...rest,
-      ...schedule,
-      scheduleId: addedSchedule._id,
+      company: scheduleCompany,
+      schedule: {
+        _id: addedSchedule._id,
+        date,
+        status: 'ACTIVE',
+      },
     };
-
     deleteFields(scheduledRestaurant);
     res.status(201).json(scheduledRestaurant);
   } catch (err) {
