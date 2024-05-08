@@ -252,12 +252,12 @@ router.patch(
 
       const updatedSchedules = restaurant.schedules.map((schedule) => {
         return {
-          _id: restaurant._id,
-          name: restaurant.name,
-          scheduleId: schedule._id,
+          _id: schedule._id,
           date: schedule.date,
           status: schedule.status,
           company: schedule.company,
+          restaurantId: restaurant._id,
+          restaurantName: restaurant.name,
         };
       });
       res.status(201).json(updatedSchedules);
