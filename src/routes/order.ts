@@ -143,7 +143,11 @@ router.post('/create-orders', auth, async (req, res) => {
   // to validate the orders,
   // to get the order item details, and
   // to get scheduled dates and company ids
-  const upcomingRestaurants = await getUpcomingRestaurants(companies);
+  const getActiveSchedules = true;
+  const upcomingRestaurants = await getUpcomingRestaurants(
+    companies,
+    getActiveSchedules
+  );
 
   // Create data map
   const upcomingDataMap: UpcomingDataMap = {};

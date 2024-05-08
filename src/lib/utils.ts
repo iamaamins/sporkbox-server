@@ -60,7 +60,10 @@ export const sortByDate = (
 
 export const now = Date.now();
 
-export async function getUpcomingRestaurants(companies: UserCompany[]) {
+export async function getUpcomingRestaurants(
+  companies: UserCompany[],
+  getActiveSchedules?: boolean
+) {
   const activeCompany = companies.find(
     (company) => company.status === 'ACTIVE'
   );
@@ -75,8 +78,8 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
       schedules: {
         $elemMatch: {
           date: { $gte: now },
-          status: 'ACTIVE',
           'company._id': activeCompany._id,
+          ...(getActiveSchedules && { status: 'ACTIVE' }),
         },
       },
     })
@@ -98,8 +101,8 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
       const { schedules, ...rest } = scheduledRestaurant;
       for (const schedule of schedules) {
         if (
-          schedule.status === 'ACTIVE' &&
           dateToMS(schedule.date) >= now &&
+          (getActiveSchedules ? schedule.status === 'ACTIVE' : true) &&
           activeCompany._id.toString() === schedule.company._id.toString()
         ) {
           const upcomingRestaurant = {
@@ -111,6 +114,7 @@ export async function getUpcomingRestaurants(companies: UserCompany[]) {
               shift: schedule.company.shift,
             },
             scheduledAt: schedule.createdAt,
+            scheduleStatus: schedule.status,
           };
           upcomingRestaurants.push(upcomingRestaurant);
         }
