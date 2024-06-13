@@ -396,7 +396,7 @@ export async function getActiveOrders(
   }
 }
 
-export async function checkOrderCapacity(
+export function checkOrderCapacity(
   companyId: string,
   deliveryDate: number,
   restaurantId: string,
@@ -415,4 +415,50 @@ export async function checkOrderCapacity(
     }
   }
   return orderCapacity + 5 >= activeQuantity + currQuantity;
+}
+
+export async function updateRestaurantStatus(
+  activeOrders: ActiveOrder[],
+  upcomingRestaurants: {
+    _id: Types.ObjectId;
+    scheduledOn: Date;
+    orderCapacity: number;
+    companyId: Types.ObjectId;
+  }[]
+) {
+  for (const upcomingRestaurant of upcomingRestaurants) {
+    let totalQuantity = 0;
+    for (const activeOrder of activeOrders) {
+      if (
+        activeOrder.company._id.toString() ===
+          upcomingRestaurant.companyId.toString() &&
+        dateToMS(activeOrder.delivery.date) ===
+          dateToMS(upcomingRestaurant.scheduledOn) &&
+        activeOrder.restaurant._id.toString() ===
+          upcomingRestaurant._id.toString()
+      ) {
+        totalQuantity += activeOrder.item.quantity;
+      }
+    }
+
+    if (totalQuantity === upcomingRestaurant.orderCapacity) {
+      try {
+        const restaurant = await Restaurant.findById(
+          upcomingRestaurant._id
+        ).orFail();
+
+        for (const schedule of restaurant.schedules) {
+          if (
+            dateToMS(schedule.date) === dateToMS(upcomingRestaurant.scheduledOn)
+          ) {
+            schedule.status = 'INACTIVE';
+          }
+        }
+        await restaurant.save();
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    }
+  }
 }

@@ -13,6 +13,7 @@ import {
   getAddonsPrice,
   getActiveOrders,
   checkOrderCapacity,
+  updateRestaurantStatus,
 } from '../lib/utils';
 import {
   orderArchiveTemplate,
@@ -622,6 +623,21 @@ router.post('/create-orders', auth, async (req, res) => {
             },
           }
         ));
+
+      // Update restaurants' status
+      const latestActiveOrders = await getActiveOrders(
+        companyIds,
+        restaurantIds,
+        deliveryDates
+      );
+      const restaurants = upcomingRestaurants.map((restaurant) => ({
+        _id: restaurant._id,
+        scheduledOn: restaurant.schedule.date,
+        orderCapacity: restaurant.orderCapacity,
+        companyId: restaurant.company._id,
+      }));
+      await updateRestaurantStatus(latestActiveOrders, restaurants);
+
       res.status(201).json(ordersForCustomers);
     }
   } catch (err) {
