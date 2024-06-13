@@ -89,7 +89,7 @@ router.post('/register-vendor', upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
-      orderCapacity,
+      orderCapacity: orderCapacity || Infinity,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -184,7 +184,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
-      orderCapacity,
+      orderCapacity: orderCapacity || Infinity,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -323,7 +323,7 @@ router.patch(
             addressLine1,
             addressLine2,
           },
-          orderCapacity,
+          orderCapacity: orderCapacity || Infinity,
         },
         {
           returnDocument: 'after',

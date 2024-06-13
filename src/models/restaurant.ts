@@ -41,6 +41,7 @@ const restaurantSchema = new Schema<RestaurantSchema>(
     },
     orderCapacity: {
       type: Number,
+      default: Infinity,
     },
     schedules: [
       new Schema(
