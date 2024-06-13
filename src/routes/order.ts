@@ -246,6 +246,7 @@ router.post('/create-orders', auth, async (req, res) => {
       orderItem.companyId,
       orderItem.deliveryDate,
       orderItem.restaurantId,
+      orderItem.quantity,
       orderCapacity,
       activeOrders
     );

@@ -400,18 +400,19 @@ export async function checkOrderCapacity(
   companyId: string,
   deliveryDate: number,
   restaurantId: string,
+  currQuantity: number,
   orderCapacity: number,
   activeOrders: ActiveOrder[]
 ) {
-  let totalQuantity = 0;
+  let activeQuantity = 0;
   for (const activeOrder of activeOrders) {
     if (
       activeOrder.company._id.toString() === companyId &&
       dateToMS(activeOrder.delivery.date) === deliveryDate &&
       activeOrder.restaurant._id.toString() === restaurantId
     ) {
-      totalQuantity += activeOrder.item.quantity;
+      activeQuantity += activeOrder.item.quantity;
     }
   }
-  return orderCapacity + 5 >= totalQuantity;
+  return orderCapacity + 5 >= activeQuantity + currQuantity;
 }
