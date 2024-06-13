@@ -28,6 +28,22 @@ type OrderReminderTemplate = (customer: GenericUser) => {
   html: string;
 };
 
+type ActiveOrder = {
+  _id: Types.ObjectId;
+  company: {
+    _id: Types.ObjectId;
+  };
+  delivery: {
+    date: Date;
+  };
+  restaurant: {
+    _id: Types.ObjectId;
+  };
+  item: {
+    quantity: number;
+  };
+};
+
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
     expiresIn: '7d',
@@ -358,3 +374,44 @@ export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
 export const subscriptions = {
   orderReminder: true,
 };
+
+export async function getActiveOrders(
+  companyIds: string[],
+  restaurantIds: string[],
+  deliveryDates: Date[]
+): Promise<ActiveOrder[]> {
+  try {
+    const activeOrders = await Order.find({
+      status: 'PROCESSING',
+      'company._id': { $in: companyIds },
+      'delivery.date': { $in: deliveryDates },
+      'restaurant._id': { $in: restaurantIds },
+    })
+      .select('company._id delivery.date restaurant._id item.quantity')
+      .lean();
+    return activeOrders;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
+
+export async function checkOrderCapacity(
+  companyId: string,
+  deliveryDate: number,
+  restaurantId: string,
+  orderCapacity: number,
+  activeOrders: ActiveOrder[]
+) {
+  let totalQuantity = 0;
+  for (const activeOrder of activeOrders) {
+    if (
+      activeOrder.company._id.toString() === companyId &&
+      dateToMS(activeOrder.delivery.date) === deliveryDate &&
+      activeOrder.restaurant._id.toString() === restaurantId
+    ) {
+      totalQuantity += activeOrder.item.quantity;
+    }
+  }
+  return orderCapacity + 5 >= totalQuantity;
+}

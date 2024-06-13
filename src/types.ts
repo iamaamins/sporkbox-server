@@ -198,19 +198,22 @@ export interface CompanySchema extends CompanyDetails {
 }
 
 export type UpcomingDataMap = {
-  [key: string]: {
-    [key: string]: {
-      [key: string]: {
-        [key: string]: {
-          optionalAddons: {
-            addons: string;
-            addable: number;
+  [date: string]: {
+    [company: string]: {
+      [restaurant: string]: {
+        orderCapacity: number;
+        item: {
+          [id: string]: {
+            optionalAddons: {
+              addons: string;
+              addable: number;
+            };
+            requiredAddons: {
+              addons: string;
+              addable: number;
+            };
+            removableIngredients: string;
           };
-          requiredAddons: {
-            addons: string;
-            addable: number;
-          };
-          removableIngredients: string;
         };
       };
     };

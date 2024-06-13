@@ -11,6 +11,8 @@ import {
   getDateTotal,
   createAddons,
   getAddonsPrice,
+  getActiveOrders,
+  checkOrderCapacity,
 } from '../lib/utils';
 import {
   orderArchiveTemplate,
@@ -148,6 +150,30 @@ router.post('/create-orders', auth, async (req, res) => {
     companies,
     getActiveSchedules
   );
+  const companyIds: string[] = [];
+  for (const restaurant of upcomingRestaurants) {
+    const companyId = restaurant.company._id.toString();
+    if (!companyIds.includes(companyId)) companyIds.push(companyId);
+  }
+  const deliveryDates: Date[] = [];
+  for (const restaurant of upcomingRestaurants) {
+    const deliveryDate = restaurant.schedule.date;
+    if (!deliveryDates.includes(deliveryDate)) deliveryDates.push(deliveryDate);
+  }
+  const restaurantIds: string[] = [];
+  for (const restaurant of upcomingRestaurants) {
+    const restaurantId = restaurant._id.toString();
+    if (!restaurantIds.includes(restaurantId)) restaurantIds.push(restaurantId);
+  }
+
+  // Get active orders for scheduled
+  // restaurants with companies and delivery dates
+  // to validate order capacity
+  const activeOrders = await getActiveOrders(
+    companyIds,
+    restaurantIds,
+    deliveryDates
+  );
 
   // Create data map
   const upcomingDataMap: UpcomingDataMap = {};
@@ -161,15 +187,19 @@ router.post('/create-orders', auth, async (req, res) => {
 
     const restaurant = upcomingRestaurant._id.toString();
     if (!upcomingDataMap[deliveryDate][company][restaurant])
-      upcomingDataMap[deliveryDate][company][restaurant] = {};
+      upcomingDataMap[deliveryDate][company][restaurant] = {
+        item: {},
+        orderCapacity: upcomingRestaurant.orderCapacity,
+      };
 
     for (const item of upcomingRestaurant.items) {
-      upcomingDataMap[deliveryDate][company][restaurant][item._id.toString()] =
-        {
-          optionalAddons: item.optionalAddons,
-          requiredAddons: item.requiredAddons,
-          removableIngredients: item.removableIngredients,
-        };
+      upcomingDataMap[deliveryDate][company][restaurant].item[
+        item._id.toString()
+      ] = {
+        optionalAddons: item.optionalAddons,
+        requiredAddons: item.requiredAddons,
+        removableIngredients: item.removableIngredients,
+      };
     }
   }
 
@@ -208,10 +238,40 @@ router.post('/create-orders', auth, async (req, res) => {
       );
     }
 
+    const orderCapacity =
+      upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+        orderItem.restaurantId
+      ].orderCapacity;
+    const hasOrderCapacity = checkOrderCapacity(
+      orderItem.companyId,
+      orderItem.deliveryDate,
+      orderItem.restaurantId,
+      orderCapacity,
+      activeOrders
+    );
+    if (!hasOrderCapacity) {
+      const restaurant = upcomingRestaurants.find(
+        (restaurant) =>
+          restaurant._id.toString() === orderItem.restaurantId &&
+          dateToMS(restaurant.schedule.date) === orderItem.deliveryDate
+      );
+
+      if (restaurant) {
+        const message = `${
+          restaurant.name
+        } has reached order capacity on ${dateToText(
+          restaurant.schedule.date
+        )}`;
+        console.log(message);
+        res.status(400);
+        throw new Error(message);
+      }
+    }
+
     const validItem =
       upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
         orderItem.restaurantId
-      ][orderItem.itemId];
+      ].item[orderItem.itemId];
     if (!validItem) {
       console.log('Your cart contains an invalid item');
       res.status(400);
@@ -222,7 +282,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingOptionalAddons =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ][orderItem.itemId].optionalAddons;
+        ].item[orderItem.itemId].optionalAddons;
 
       for (const orderOptionalAddon of orderItem.optionalAddons) {
         const validOptionalAddons = upcomingOptionalAddons.addons
@@ -252,7 +312,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingRequiredAddons =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ][orderItem.itemId].requiredAddons;
+        ].item[orderItem.itemId].requiredAddons;
 
       for (const orderRequiredAddon of orderItem.requiredAddons) {
         const validRequiredAddons = upcomingRequiredAddons.addons
@@ -282,7 +342,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingRemovableIngredients =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ][orderItem.itemId].removableIngredients;
+        ].item[orderItem.itemId].removableIngredients;
 
       for (const removedIngredient of orderItem.removedIngredients) {
         const validRemovableIngredients = upcomingRemovableIngredients
@@ -404,7 +464,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
   try {
     // Get customer upcoming orders
-    const upcomingOrders = await Order.find({
+    const customerUpcomingOrders = await Order.find({
       'customer._id': _id,
       status: {
         $nin: ['PENDING', 'ARCHIVED', 'CANCELLED'],
@@ -419,7 +479,7 @@ router.post('/create-orders', auth, async (req, res) => {
       .lean();
 
     // Get upcoming orders that matches order item dates
-    const upcomingDateTotalDetails = upcomingOrders
+    const upcomingDateTotalDetails = customerUpcomingOrders
       .filter((upcomingOrder) =>
         orders.some(
           (order) =>
