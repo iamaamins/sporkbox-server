@@ -441,12 +441,11 @@ export async function updateRestaurantStatus(
       }
     }
 
-    if (totalQuantity === upcomingRestaurant.orderCapacity) {
+    if (totalQuantity >= upcomingRestaurant.orderCapacity) {
       try {
         const restaurant = await Restaurant.findById(
           upcomingRestaurant._id
         ).orFail();
-
         for (const schedule of restaurant.schedules) {
           if (
             dateToMS(schedule.date) === dateToMS(upcomingRestaurant.scheduledOn)

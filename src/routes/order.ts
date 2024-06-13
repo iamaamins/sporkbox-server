@@ -623,8 +623,11 @@ router.post('/create-orders', auth, async (req, res) => {
             },
           }
         ));
+      res.status(201).json(ordersForCustomers);
+    }
 
-      // Update restaurants' status
+    // Update restaurants' status
+    setTimeout(async () => {
       const latestActiveOrders = await getActiveOrders(
         companyIds,
         restaurantIds,
@@ -637,9 +640,7 @@ router.post('/create-orders', auth, async (req, res) => {
         companyId: restaurant.company._id,
       }));
       await updateRestaurantStatus(latestActiveOrders, restaurants);
-
-      res.status(201).json(ordersForCustomers);
-    }
+    }, 60 * 1000);
   } catch (err) {
     console.log(err);
     throw err;

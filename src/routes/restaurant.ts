@@ -361,7 +361,8 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     !index ||
     !description ||
     !optionalAddons ||
-    !requiredAddons
+    !requiredAddons ||
+    !removableIngredients
   ) {
     console.log(requiredFields);
     res.status(400);
@@ -463,7 +464,8 @@ router.patch(
       !price ||
       !description ||
       !optionalAddons ||
-      !requiredAddons
+      !requiredAddons ||
+      !removableIngredients
     ) {
       console.log(requiredFields);
       res.status(400);
