@@ -26,6 +26,7 @@ const router = Router();
 interface VendorPayload extends GenericUser, Address {
   password?: string;
   logo?: string;
+  orderCapacity?: number;
   restaurantName: string;
 }
 
@@ -41,6 +42,7 @@ router.post('/register-vendor', upload, async (req, res) => {
     firstName,
     addressLine1,
     addressLine2,
+    orderCapacity,
     restaurantName,
   }: VendorPayload = req.body;
   if (
@@ -87,6 +89,7 @@ router.post('/register-vendor', upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      orderCapacity,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -134,6 +137,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     firstName,
     addressLine1,
     addressLine2,
+    orderCapacity,
     restaurantName,
   } = req.body;
   if (
@@ -180,6 +184,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      orderCapacity,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -266,6 +271,7 @@ router.patch(
       lastName,
       addressLine1,
       addressLine2,
+      orderCapacity,
       restaurantName,
     } = req.body;
     if (
@@ -317,6 +323,7 @@ router.patch(
             addressLine1,
             addressLine2,
           },
+          orderCapacity,
         },
         {
           returnDocument: 'after',

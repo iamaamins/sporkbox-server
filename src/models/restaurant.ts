@@ -39,6 +39,9 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
+    orderCapacity: {
+      type: Number,
+    },
     schedules: [
       new Schema(
         {
