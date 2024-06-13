@@ -456,7 +456,6 @@ export async function updateRestaurantStatus(
         await restaurant.save();
       } catch (err) {
         console.log(err);
-        throw err;
       }
     }
   }
