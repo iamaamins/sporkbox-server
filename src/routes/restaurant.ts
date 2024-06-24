@@ -192,10 +192,7 @@ router.patch(
   '/:restaurantId/:scheduleId/change-schedule-status',
   auth,
   async (req, res) => {
-    if (
-      !req.user ||
-      !(req.user.role === 'ADMIN' || req.user.role === 'VENDOR')
-    ) {
+    if (!req.user || req.user.role !== 'ADMIN') {
       console.log(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
@@ -226,27 +223,8 @@ router.patch(
         throw new Error('No schedule found');
       }
 
-      if (
-        req.user.role === 'VENDOR' &&
-        action === 'Activate' &&
-        schedule.deactivatedByAdmin
-      ) {
-        res.status(400);
-        throw new Error('Schedule deactivated by admin');
-      }
-
-      if (
-        req.user.role === 'ADMIN' &&
-        action === 'Deactivate' &&
-        !schedule.deactivatedByAdmin
-      ) {
-        schedule.deactivatedByAdmin = true;
-      }
-      if (
-        req.user.role === 'ADMIN' &&
-        action === 'Activate' &&
-        schedule.deactivatedByAdmin
-      ) {
+      if (action === 'Deactivate') schedule.deactivatedByAdmin = true;
+      if (action === 'Activate' && schedule.deactivatedByAdmin) {
         await Restaurant.updateOne(
           { _id: restaurantId, 'schedules._id': scheduleId },
           { $unset: { 'schedules.$.deactivatedByAdmin': 1 } }
