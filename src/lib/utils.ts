@@ -40,6 +40,7 @@ type ActiveOrder = {
     _id: Types.ObjectId;
   };
   item: {
+    _id: Types.ObjectId;
     quantity: number;
   };
 };
@@ -85,7 +86,6 @@ export async function getUpcomingRestaurants(
   const activeCompany = companies.find(
     (company) => company.status === 'ACTIVE'
   );
-
   if (!activeCompany) {
     console.log('No enrolled shift found');
     throw new Error('No enrolled shift found');
@@ -387,7 +387,7 @@ export async function getActiveOrders(
       'delivery.date': { $in: deliveryDates },
       'restaurant._id': { $in: restaurantIds },
     })
-      .select('company._id delivery.date restaurant._id item.quantity')
+      .select('company._id delivery.date restaurant._id item._id item.quantity')
       .lean();
     return activeOrders;
   } catch (err) {
@@ -400,6 +400,7 @@ export function checkOrderCapacity(
   companyId: string,
   deliveryDate: number,
   restaurantId: string,
+  itemId: string,
   currQuantity: number,
   orderCapacity: number,
   activeOrders: ActiveOrder[]
@@ -407,55 +408,59 @@ export function checkOrderCapacity(
   let activeQuantity = 0;
   for (const activeOrder of activeOrders) {
     if (
-      activeOrder.company._id.toString() === companyId &&
       dateToMS(activeOrder.delivery.date) === deliveryDate &&
-      activeOrder.restaurant._id.toString() === restaurantId
+      activeOrder.company._id.toString() === companyId &&
+      activeOrder.restaurant._id.toString() === restaurantId &&
+      activeOrder.item._id.toString() === itemId
     ) {
       activeQuantity += activeOrder.item.quantity;
     }
   }
-  return orderCapacity + 5 >= activeQuantity + currQuantity;
+  return orderCapacity + 3 >= activeQuantity + currQuantity;
 }
 
-export async function updateRestaurantStatus(
+export async function updateItemStatus(
   activeOrders: ActiveOrder[],
   upcomingRestaurants: {
     _id: Types.ObjectId;
     scheduledOn: Date;
-    orderCapacity: number;
     companyId: Types.ObjectId;
+    items: { _id: Types.ObjectId; orderCapacity: number }[];
   }[]
 ) {
   for (const upcomingRestaurant of upcomingRestaurants) {
-    let totalQuantity = 0;
-    for (const activeOrder of activeOrders) {
-      if (
-        activeOrder.company._id.toString() ===
-          upcomingRestaurant.companyId.toString() &&
-        dateToMS(activeOrder.delivery.date) ===
-          dateToMS(upcomingRestaurant.scheduledOn) &&
-        activeOrder.restaurant._id.toString() ===
-          upcomingRestaurant._id.toString()
-      ) {
-        totalQuantity += activeOrder.item.quantity;
-      }
-    }
-
-    if (totalQuantity >= upcomingRestaurant.orderCapacity) {
-      try {
-        const restaurant = await Restaurant.findById(
-          upcomingRestaurant._id
-        ).orFail();
-        for (const schedule of restaurant.schedules) {
-          if (
-            dateToMS(schedule.date) === dateToMS(upcomingRestaurant.scheduledOn)
-          ) {
-            schedule.status = 'INACTIVE';
-          }
+    for (const upcomingRestaurantItem of upcomingRestaurant.items) {
+      let orderedQuantity = 0;
+      for (const activeOrder of activeOrders) {
+        if (
+          dateToMS(upcomingRestaurant.scheduledOn) ===
+            dateToMS(activeOrder.delivery.date) &&
+          upcomingRestaurant.companyId.toString() ===
+            activeOrder.company._id.toString() &&
+          upcomingRestaurant._id.toString() ===
+            activeOrder.restaurant._id.toString() &&
+          activeOrder.item._id.toString() ===
+            upcomingRestaurantItem._id.toString()
+        ) {
+          orderedQuantity += activeOrder.item.quantity;
         }
-        await restaurant.save();
-      } catch (err) {
-        console.log(err);
+      }
+
+      if (orderedQuantity >= upcomingRestaurantItem.orderCapacity) {
+        try {
+          const restaurant = await Restaurant.findById(
+            upcomingRestaurant._id
+          ).orFail();
+
+          const item = restaurant.items.find(
+            (item) =>
+              item._id.toString() === upcomingRestaurantItem._id.toString()
+          );
+          if (item) item.status = 'ARCHIVED';
+          await restaurant.save();
+        } catch (err) {
+          console.log(err);
+        }
       }
     }
   }

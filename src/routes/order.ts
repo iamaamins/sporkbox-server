@@ -13,7 +13,7 @@ import {
   getAddonsPrice,
   getActiveOrders,
   checkOrderCapacity,
-  updateRestaurantStatus,
+  updateItemStatus,
 } from '../lib/utils';
 import {
   orderArchiveTemplate,
@@ -188,19 +188,16 @@ router.post('/create-orders', auth, async (req, res) => {
 
     const restaurant = upcomingRestaurant._id.toString();
     if (!upcomingDataMap[deliveryDate][company][restaurant])
-      upcomingDataMap[deliveryDate][company][restaurant] = {
-        item: {},
-        orderCapacity: upcomingRestaurant.orderCapacity,
-      };
+      upcomingDataMap[deliveryDate][company][restaurant] = {};
 
     for (const item of upcomingRestaurant.items) {
-      upcomingDataMap[deliveryDate][company][restaurant].item[
-        item._id.toString()
-      ] = {
-        optionalAddons: item.optionalAddons,
-        requiredAddons: item.requiredAddons,
-        removableIngredients: item.removableIngredients,
-      };
+      upcomingDataMap[deliveryDate][company][restaurant][item._id.toString()] =
+        {
+          orderCapacity: item.orderCapacity,
+          optionalAddons: item.optionalAddons,
+          requiredAddons: item.requiredAddons,
+          removableIngredients: item.removableIngredients,
+        };
     }
   }
 
@@ -242,38 +239,26 @@ router.post('/create-orders', auth, async (req, res) => {
     const orderCapacity =
       upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
         orderItem.restaurantId
-      ].orderCapacity;
+      ][orderItem.itemId].orderCapacity;
     const hasOrderCapacity = checkOrderCapacity(
       orderItem.companyId,
       orderItem.deliveryDate,
       orderItem.restaurantId,
+      orderItem.itemId,
       orderItem.quantity,
       orderCapacity,
       activeOrders
     );
     if (!hasOrderCapacity) {
-      const restaurant = upcomingRestaurants.find(
-        (restaurant) =>
-          restaurant._id.toString() === orderItem.restaurantId &&
-          dateToMS(restaurant.schedule.date) === orderItem.deliveryDate
-      );
-
-      if (restaurant) {
-        const message = `${
-          restaurant.name
-        } has reached order capacity on ${dateToText(
-          restaurant.schedule.date
-        )}`;
-        console.log(message);
-        res.status(400);
-        throw new Error(message);
-      }
+      console.log('One of your cart item has reached order capacity');
+      res.status(400);
+      throw new Error('One of your cart item has reached order capacity');
     }
 
     const validItem =
       upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
         orderItem.restaurantId
-      ].item[orderItem.itemId];
+      ][orderItem.itemId];
     if (!validItem) {
       console.log('Your cart contains an invalid item');
       res.status(400);
@@ -284,7 +269,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingOptionalAddons =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ].item[orderItem.itemId].optionalAddons;
+        ][orderItem.itemId].optionalAddons;
 
       for (const orderOptionalAddon of orderItem.optionalAddons) {
         const validOptionalAddons = upcomingOptionalAddons.addons
@@ -314,7 +299,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingRequiredAddons =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ].item[orderItem.itemId].requiredAddons;
+        ][orderItem.itemId].requiredAddons;
 
       for (const orderRequiredAddon of orderItem.requiredAddons) {
         const validRequiredAddons = upcomingRequiredAddons.addons
@@ -344,7 +329,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const upcomingRemovableIngredients =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ].item[orderItem.itemId].removableIngredients;
+        ][orderItem.itemId].removableIngredients;
 
       for (const removedIngredient of orderItem.removedIngredients) {
         const validRemovableIngredients = upcomingRemovableIngredients
@@ -627,7 +612,7 @@ router.post('/create-orders', auth, async (req, res) => {
       res.status(201).json(ordersForCustomers);
     }
 
-    // Update restaurants' status after 3 minutes
+    // Update items' status after 3 minutes
     setTimeout(async () => {
       const latestActiveOrders = await getActiveOrders(
         companyIds,
@@ -636,11 +621,14 @@ router.post('/create-orders', auth, async (req, res) => {
       );
       const restaurants = upcomingRestaurants.map((restaurant) => ({
         _id: restaurant._id,
-        scheduledOn: restaurant.schedule.date,
-        orderCapacity: restaurant.orderCapacity,
         companyId: restaurant.company._id,
+        scheduledOn: restaurant.schedule.date,
+        items: restaurant.items.map((item) => ({
+          _id: item._id,
+          orderCapacity: item.orderCapacity,
+        })),
       }));
-      await updateRestaurantStatus(latestActiveOrders, restaurants);
+      await updateItemStatus(latestActiveOrders, restaurants);
     }, 3 * 60 * 1000);
   } catch (err) {
     console.log(err);

@@ -39,10 +39,6 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
-    orderCapacity: {
-      type: Number,
-      default: Infinity,
-    },
     schedules: [
       new Schema(
         {
@@ -163,6 +159,10 @@ const restaurantSchema = new Schema<RestaurantSchema>(
             { timestamps: true }
           ),
         ],
+        orderCapacity: {
+          type: Number,
+          default: Infinity,
+        },
         averageRating: Number,
       }),
     ],
