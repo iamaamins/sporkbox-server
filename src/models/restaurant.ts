@@ -60,6 +60,11 @@ const restaurantSchema = new Schema<RestaurantSchema>(
               trim: true,
               required: [true, 'Please provide a company name'],
             },
+            code: {
+              type: String,
+              trim: true,
+              required: [true, 'Please provide company code'],
+            },
             shift: {
               type: String,
               trim: true,

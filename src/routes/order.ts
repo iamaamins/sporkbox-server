@@ -49,7 +49,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -420,6 +420,7 @@ router.post('/create-orders', auth, async (req, res) => {
       company: {
         _id: company._id,
         name: company.name,
+        code: company.code,
         shift: company.shift,
       },
       delivery: {

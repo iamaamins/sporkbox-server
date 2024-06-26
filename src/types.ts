@@ -71,6 +71,7 @@ export interface ItemSchema extends GenericItem {
 export interface OrderCompany {
   _id: Types.ObjectId;
   name: string;
+  code: string;
   shift: string;
 }
 

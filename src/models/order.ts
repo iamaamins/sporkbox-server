@@ -71,6 +71,11 @@ const orderSchema = new Schema<OrderSchema>(
         trim: true,
         required: [true, 'Please provide company name'],
       },
+      code: {
+        type: String,
+        trim: true,
+        required: [true, 'Please provide company code'],
+      },
       shift: {
         type: String,
         trim: true,

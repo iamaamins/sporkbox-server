@@ -156,6 +156,7 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
     const scheduleCompany = {
       _id: company._id,
       name: company.name,
+      code: company.code,
       shift: company.shift,
     };
 
@@ -187,19 +188,22 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
   }
 });
 
-// Change schedule status
+// Change schedule statues
 router.patch(
-  '/:restaurantId/:scheduleId/change-schedule-status',
+  '/:restaurantId/:date/:companyCode/change-schedule-status',
   auth,
   async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (
+      !req.user ||
+      !(req.user.role === 'ADMIN' || req.user.role === 'VENDOR')
+    ) {
       console.log(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
 
-    const { restaurantId, scheduleId } = req.params;
     const { action } = req.body;
+    const { restaurantId, date, companyCode } = req.params;
     if (!action) {
       console.log(requiredAction);
       res.status(400);
@@ -210,35 +214,62 @@ router.patch(
     try {
       const restaurant = await Restaurant.findOne({
         _id: restaurantId,
-        'schedules._id': scheduleId,
+        'schedules.date': +date,
+        'schedules.company.code': companyCode,
       })
         .select('-__v -updatedAt -createdAt -address -items')
         .orFail();
 
-      const schedule = restaurant.schedules.find(
-        (schedule) => schedule._id?.toString() === scheduleId
+      const schedules = restaurant.schedules.filter(
+        (schedule) =>
+          dateToMS(schedule.date) === +date &&
+          schedule.company.code === companyCode
       );
-      if (!schedule) {
+      if (!schedules.length) {
+        console.log('No schedule found');
         res.status(400);
         throw new Error('No schedule found');
       }
 
-      if (action === 'Deactivate') schedule.deactivatedByAdmin = true;
-      if (action === 'Activate' && schedule.deactivatedByAdmin) {
-        await Restaurant.updateOne(
-          { _id: restaurantId, 'schedules._id': scheduleId },
-          { $unset: { 'schedules.$.deactivatedByAdmin': 1 } }
-        );
+      const areDeactivatedByAdmin = schedules.some(
+        (schedule) => schedule.deactivatedByAdmin
+      );
+      if (
+        req.user.role === 'VENDOR' &&
+        areDeactivatedByAdmin &&
+        action === 'Activate'
+      ) {
+        console.log('Restaurant is deactivated by admin');
+        res.status(400);
+        throw new Error('Restaurant is deactivated by admin');
       }
-      schedule.status = action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE';
+
+      for (const schedule of schedules) {
+        if (req.user.role === 'ADMIN') {
+          if (action === 'Deactivate') {
+            schedule.status = 'INACTIVE';
+            schedule.deactivatedByAdmin = true;
+          }
+          if (action === 'Activate') {
+            schedule.status = 'ACTIVE';
+            schedule.deactivatedByAdmin = false;
+          }
+        }
+        if (req.user.role === 'VENDOR')
+          schedule.status = action === 'Deactivate' ? 'INACTIVE' : 'ACTIVE';
+      }
       await restaurant.save();
 
-      const schedules = restaurant.schedules.map((schedule) => ({
+      const allSchedules = restaurant.schedules.map((schedule) => ({
         _id: schedule._id,
         status: schedule.status,
         date: schedule.date,
+        company: {
+          code: schedule.company.code,
+          shift: schedule.company.shift,
+        },
       }));
-      res.status(201).json(schedules);
+      res.status(201).json(allSchedules);
     } catch (err) {
       console.log(err);
       throw err;
