@@ -419,7 +419,7 @@ export function checkOrderCapacity(
   return orderCapacity + 3 >= activeQuantity + currQuantity;
 }
 
-export async function updateItemStatus(
+export async function updateItemSoldOutStat(
   activeOrders: ActiveOrder[],
   upcomingRestaurants: {
     _id: Types.ObjectId;
@@ -456,7 +456,22 @@ export async function updateItemStatus(
             (item) =>
               item._id.toString() === upcomingRestaurantItem._id.toString()
           );
-          if (item) item.status = 'ARCHIVED';
+          if (item) {
+            const hasSoldOutEntry = item.soldOutStat?.some(
+              (el) =>
+                dateToMS(el.date) ===
+                  dateToMS(upcomingRestaurant.scheduledOn) &&
+                el.company.toString() ===
+                  upcomingRestaurant.companyId.toString()
+            );
+
+            if (!hasSoldOutEntry)
+              item.soldOutStat?.push({
+                date: upcomingRestaurant.scheduledOn,
+                company: upcomingRestaurant.companyId,
+              });
+          }
+
           await restaurant.save();
         } catch (err) {
           console.log(err);

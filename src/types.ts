@@ -67,6 +67,7 @@ export interface ItemSchema extends GenericItem {
   averageRating?: number;
   orderCapacity: number;
   reviews: Types.DocumentArray<ReviewSchema>;
+  soldOutStat?: Types.DocumentArray<SoldOutStatSchema>;
 }
 
 export interface OrderCompany {
@@ -87,11 +88,16 @@ export interface OrderForEmail {
   };
 }
 
-interface ReviewSchema {
+export interface ReviewSchema {
   customer: Types.ObjectId;
   rating: number;
   comment: string;
   createdAt: Date;
+}
+
+export interface SoldOutStatSchema {
+  date: Date;
+  company: Types.ObjectId;
 }
 
 export interface Addons {
@@ -99,7 +105,7 @@ export interface Addons {
   addable: number;
 }
 
-interface SchedulesSchema {
+export interface SchedulesSchema {
   date: Date;
   status: string;
   createdAt: string;
