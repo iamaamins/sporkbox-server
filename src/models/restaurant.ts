@@ -96,7 +96,6 @@ const itemSchema = new Schema<ItemSchema>({
     type: String,
     trim: true,
     lowercase: true,
-    required: [true, 'Please provide removable ingredients'],
   },
   reviews: [reviewSchema],
   orderCapacity: {

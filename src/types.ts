@@ -63,7 +63,7 @@ export interface ItemSchema extends GenericItem {
   status: string;
   optionalAddons: Addons;
   requiredAddons: Addons;
-  removableIngredients: string;
+  removableIngredients?: string;
   averageRating?: number;
   orderCapacity: number;
   reviews: Types.DocumentArray<ReviewSchema>;
@@ -218,7 +218,7 @@ export type UpcomingDataMap = {
             addons: string;
             addable: number;
           };
-          removableIngredients: string;
+          removableIngredients?: string;
         };
       };
     };

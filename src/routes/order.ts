@@ -31,7 +31,6 @@ import DiscountCode from '../models/discountCode';
 import { OrdersPayload, UpcomingDataMap } from '../types';
 import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
-import restaurant from '../models/restaurant';
 
 const router = Router();
 
@@ -322,7 +321,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
       for (const removedIngredient of orderItem.removedIngredients) {
         const validRemovableIngredients = upcomingRemovableIngredients
-          .split(',')
+          ?.split(',')
           .some(
             (removableIngredient) =>
               removableIngredient.trim() ===
