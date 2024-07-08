@@ -648,11 +648,11 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
     const order = await Order.findOneAndUpdate(
       {
         _id: orderId,
-        hasReviewed: false,
+        isReviewed: false,
         status: 'DELIVERED',
         'customer._id': _id,
       },
-      { $set: { hasReviewed: true } },
+      { $set: { isReviewed: true } },
       {
         returnDocument: 'after',
       }

@@ -23,7 +23,7 @@ interface OrderSchema {
   };
   item: OrderItem;
   createdAt: Date;
-  hasReviewed: boolean;
+  isReviewed: boolean;
   discount?: Discount;
   pendingOrderId?: string;
 }
@@ -120,7 +120,7 @@ const orderSchema = new Schema<OrderSchema>(
       intent: String,
       amount: Number,
     },
-    hasReviewed: {
+    isReviewed: {
       type: Boolean,
       default: false,
     },

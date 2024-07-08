@@ -643,7 +643,7 @@ router.post('/create-orders', auth, async (req, res) => {
         delivery: {
           date: order.delivery.date,
         },
-        hasReviewed: order.hasReviewed,
+        isReviewed: order.isReviewed,
         company: { shift: order.company.shift },
       }));
 
