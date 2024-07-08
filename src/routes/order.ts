@@ -630,8 +630,9 @@ router.post('/create-orders', auth, async (req, res) => {
       res.status(200).json(session.url);
     } else {
       if (discount) {
-        discount.distributed =
-          Math.min(totalPayableAmount, discountAmount) / orders.length;
+        discount.distributed = +(
+          Math.min(totalPayableAmount, discountAmount) / orderItems.length
+        ).toFixed(2);
       }
       const response = await Order.insertMany(orders);
       const ordersForCustomers = response.map((order) => ({
