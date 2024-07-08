@@ -28,7 +28,7 @@ import {
   stripeRefundAmount,
 } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
-import { OrdersPayload, UpcomingDataMap } from '../types';
+import { Discount, OrdersPayload, UpcomingDataMap } from '../types';
 import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
 
@@ -379,104 +379,134 @@ router.post('/create-orders', auth, async (req, res) => {
     }
   }
 
-  // Create orders
-  const orders = orderItems.map((orderItem) => {
-    const restaurant = upcomingRestaurants.find(
-      (upcomingRestaurant) =>
-        upcomingRestaurant._id.toString() === orderItem.restaurantId
-    );
-    const company = companies.find(
-      (company) => company._id.toString() === orderItem.companyId
-    );
-
-    if (!restaurant || !company) {
-      console.log('Invalid restaurant or company');
-      res.status(400);
-      throw new Error('Invalid restaurant or company');
-    }
-
-    const item = restaurant.items.find(
-      (item) => item._id?.toString() === orderItem.itemId
-    );
-    if (!item) {
-      console.log('Item is not found');
-      res.status(400);
-      throw new Error('Item is not found');
-    }
-
-    const optionalAddons = createAddons(orderItem.optionalAddons);
-    const requiredAddons = createAddons(orderItem.requiredAddons);
-    const optionalAddonsPrice = getAddonsPrice(
-      item.optionalAddons.addons,
-      optionalAddons
-    );
-    const requiredAddonsPrice = getAddonsPrice(
-      item.requiredAddons.addons,
-      requiredAddons
-    );
-    const totalAddonsPrice =
-      (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
-
-    return {
-      customer: {
-        _id: _id,
-        firstName,
-        lastName,
-        email,
-      },
-      restaurant: {
-        _id: orderItem.restaurantId,
-        name: restaurant.name,
-      },
-      company: {
-        _id: company._id,
-        name: company.name,
-        code: company.code,
-        shift: company.shift,
-      },
-      delivery: {
-        date: orderItem.deliveryDate,
-        address: {
-          city: company.address.city,
-          state: company.address.state,
-          zip: company.address.zip,
-          addressLine1: company.address.addressLine1,
-          addressLine2: company.address.addressLine2,
-        },
-      },
-      status: 'PROCESSING',
-      item: {
-        _id: orderItem.itemId,
-        name: item.name,
-        tags: item.tags,
-        description: item.description,
-        quantity: orderItem.quantity,
-        image: item.image || restaurant.logo,
-        optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
-        requiredAddons: requiredAddons.sort(sortIngredients).join(', '),
-        removedIngredients: orderItem.removedIngredients
-          .sort(sortIngredients)
-          .join(', '),
-        total: toUSNumber((item.price + totalAddonsPrice) * orderItem.quantity),
-      },
-    };
-  });
-
-  // Get unique upcoming dates and company ids
-  // Dates will be used to get the upcoming orders
-  const upcomingDetails = upcomingRestaurants
-    .map((upcomingRestaurant) => ({
-      date: dateToMS(upcomingRestaurant.schedule.date),
-      companyId: upcomingRestaurant.company._id,
-    }))
-    .filter(
-      (detail, index, details) =>
-        details.findIndex(
-          (el) => el.date === detail.date && el.companyId === detail.companyId
-        ) === index
-    );
-
   try {
+    // Validate applied discount
+    let discount: Discount | null = null;
+    if (discountCodeId) {
+      const discountCode = await DiscountCode.findById(discountCodeId)
+        .select('code value redeemability totalRedeem')
+        .lean();
+      if (!discountCode) {
+        console.log('Invalid discount code');
+        res.status(400);
+        throw new Error('Invalid discount code');
+      }
+
+      const totalRedeem = discountCode.totalRedeem;
+      const redeemability = discountCode.redeemability;
+      if (redeemability === 'once' && totalRedeem >= 1) {
+        console.log('Invalid discount code');
+        res.status(400);
+        throw new Error('Invalid discount code');
+      }
+      discount = {
+        _id: discountCode._id,
+        code: discountCode.code,
+        value: discountCode.value,
+        distributed: +(discountCode.value / orderItems.length).toFixed(2),
+      };
+    }
+
+    // Create orders
+    const orders = orderItems.map((orderItem) => {
+      const restaurant = upcomingRestaurants.find(
+        (upcomingRestaurant) =>
+          upcomingRestaurant._id.toString() === orderItem.restaurantId
+      );
+      const company = companies.find(
+        (company) => company._id.toString() === orderItem.companyId
+      );
+
+      if (!restaurant || !company) {
+        console.log('Invalid restaurant or company');
+        res.status(400);
+        throw new Error('Invalid restaurant or company');
+      }
+
+      const item = restaurant.items.find(
+        (item) => item._id?.toString() === orderItem.itemId
+      );
+      if (!item) {
+        console.log('Item is not found');
+        res.status(400);
+        throw new Error('Item is not found');
+      }
+
+      const optionalAddons = createAddons(orderItem.optionalAddons);
+      const requiredAddons = createAddons(orderItem.requiredAddons);
+      const optionalAddonsPrice = getAddonsPrice(
+        item.optionalAddons.addons,
+        optionalAddons
+      );
+      const requiredAddonsPrice = getAddonsPrice(
+        item.requiredAddons.addons,
+        requiredAddons
+      );
+      const totalAddonsPrice =
+        (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
+
+      return {
+        customer: {
+          _id: _id,
+          firstName,
+          lastName,
+          email,
+        },
+        restaurant: {
+          _id: orderItem.restaurantId,
+          name: restaurant.name,
+        },
+        company: {
+          _id: company._id,
+          name: company.name,
+          code: company.code,
+          shift: company.shift,
+        },
+        delivery: {
+          date: orderItem.deliveryDate,
+          address: {
+            city: company.address.city,
+            state: company.address.state,
+            zip: company.address.zip,
+            addressLine1: company.address.addressLine1,
+            addressLine2: company.address.addressLine2,
+          },
+        },
+        discount,
+        status: 'PROCESSING',
+        item: {
+          _id: orderItem.itemId,
+          name: item.name,
+          tags: item.tags,
+          description: item.description,
+          quantity: orderItem.quantity,
+          image: item.image || restaurant.logo,
+          optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
+          requiredAddons: requiredAddons.sort(sortIngredients).join(', '),
+          removedIngredients: orderItem.removedIngredients
+            .sort(sortIngredients)
+            .join(', '),
+          total: toUSNumber(
+            (item.price + totalAddonsPrice) * orderItem.quantity
+          ),
+        },
+      };
+    });
+
+    // Get unique upcoming dates and company ids
+    // Dates will be used to get the upcoming orders
+    const upcomingDetails = upcomingRestaurants
+      .map((upcomingRestaurant) => ({
+        date: dateToMS(upcomingRestaurant.schedule.date),
+        companyId: upcomingRestaurant.company._id,
+      }))
+      .filter(
+        (detail, index, details) =>
+          details.findIndex(
+            (el) => el.date === detail.date && el.companyId === detail.companyId
+          ) === index
+      );
+
     // Get customer upcoming orders
     const customerUpcomingOrders = await Order.find({
       'customer._id': _id,
@@ -522,11 +552,9 @@ router.post('/create-orders', auth, async (req, res) => {
     const orderItemDetails = getDateTotal(orderDateTotalDetails);
     const company = companies.find((company) => company.status === 'ACTIVE');
     const shiftBudget = company?.shiftBudget || 0;
-
     const payableDetails = orderItemDetails
       .map((orderItemDetail) => {
         const { total, ...rest } = orderItemDetail;
-
         if (
           !upcomingOrderDetails.some(
             (upcomingOrderDetail) =>
@@ -554,27 +582,13 @@ router.post('/create-orders', auth, async (req, res) => {
       })
       .filter((detail) => detail.payable > 0);
 
-    let discountAmount = 0;
-    if (discountCodeId && payableDetails.length > 0) {
-      const discountCode = await DiscountCode.findById(discountCodeId)
-        .select('value redeemability totalRedeem')
-        .lean()
-        .orFail();
-
-      const redeemability = discountCode.redeemability;
-      if (
-        redeemability === 'unlimited' ||
-        (redeemability === 'once' && discountCode.totalRedeem < 1)
-      ) {
-        discountAmount = discountCode.value;
-      }
-    }
     const totalPayableAmount = payableDetails.reduce(
       (acc, curr) => acc + curr.payable,
       0
     );
-
+    const discountAmount = discount?.value || 0;
     const hasPayableItems = totalPayableAmount > discountAmount;
+
     if (hasPayableItems) {
       const payableOrders = payableDetails.map((payableDetail) => ({
         date: `${dateToText(
@@ -591,9 +605,9 @@ router.post('/create-orders', auth, async (req, res) => {
           .map((order) => order.item.name),
         amount: payableDetail.payable - discountAmount / payableDetails.length,
       }));
-      const pendingOrderId = generateRandomString();
 
       // Create stripe checkout sessions
+      const pendingOrderId = generateRandomString();
       const session = await stripeCheckout(
         email,
         pendingOrderId,
@@ -607,10 +621,13 @@ router.post('/create-orders', auth, async (req, res) => {
         pendingOrderId,
         status: 'PENDING',
       }));
-
       await Order.insertMany(pendingOrders);
       res.status(200).json(session.url);
     } else {
+      if (discount) {
+        discount.distributed =
+          Math.min(totalPayableAmount, discountAmount) / orders.length;
+      }
       const response = await Order.insertMany(orders);
       const ordersForCustomers = response.map((order) => ({
         _id: order._id,
@@ -626,15 +643,16 @@ router.post('/create-orders', auth, async (req, res) => {
       }));
 
       // Update total redeem amount
-      discountAmount > 0 &&
-        (await DiscountCode.updateOne(
+      if (discount) {
+        await DiscountCode.updateOne(
           { _id: discountCodeId },
           {
             $inc: {
               totalRedeem: 1,
             },
           }
-        ));
+        );
+      }
       res.status(201).json(ordersForCustomers);
     }
 

@@ -1,6 +1,7 @@
 import { Schema, model } from 'mongoose';
 import {
   Address,
+  Discount,
   OrderItem,
   OrderCompany,
   OrderCustomer,
@@ -23,6 +24,7 @@ interface OrderSchema {
   item: OrderItem;
   createdAt: Date;
   hasReviewed: boolean;
+  discount?: Discount;
   pendingOrderId?: string;
 }
 
@@ -127,6 +129,12 @@ const orderSchema = new Schema<OrderSchema>(
       type: String,
       enum: ['PENDING', 'PROCESSING', 'DELIVERED', 'ARCHIVED', 'CANCELLED'],
       required: [true, 'Please provide a status'],
+    },
+    discount: {
+      _id: Schema.Types.ObjectId,
+      code: String,
+      value: Number,
+      distributed: Number,
     },
     item: {
       _id: {
