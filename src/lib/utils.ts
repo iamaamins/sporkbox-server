@@ -80,6 +80,7 @@ export const sortByDate = (
 export const now = Date.now();
 
 export async function getUpcomingRestaurants(
+  res: Response,
   companies: UserCompany[],
   getActiveSchedules?: boolean
 ) {
@@ -88,6 +89,7 @@ export async function getUpcomingRestaurants(
   );
   if (!activeCompany) {
     console.log('No enrolled shift found');
+    res.status(400);
     throw new Error('No enrolled shift found');
   }
 
@@ -102,7 +104,8 @@ export async function getUpcomingRestaurants(
       },
     })
       .select('-__v -updatedAt -createdAt -address')
-      .lean();
+      .lean()
+      .orFail();
 
     const upcomingRestaurants = [];
     for (const scheduledRestaurant of scheduledRestaurants) {
@@ -297,7 +300,6 @@ export async function sendOrderReminderEmails(
         async (customer) => await mail.send(orderReminderTemplate(customer))
       )
     );
-
     console.log(
       `Order reminder sent to ${customersWithNoOrder.length} customers`
     );
@@ -388,7 +390,8 @@ export async function getActiveOrders(
       'restaurant._id': { $in: restaurantIds },
     })
       .select('company._id delivery.date restaurant._id item._id item.quantity')
-      .lean();
+      .lean()
+      .orFail();
     return activeOrders;
   } catch (err) {
     console.log(err);
@@ -464,14 +467,12 @@ export async function updateItemSoldOutStat(
                 el.company.toString() ===
                   upcomingRestaurant.companyId.toString()
             );
-
             if (!hasSoldOutEntry)
               item.soldOutStat?.push({
                 date: upcomingRestaurant.scheduledOn,
                 company: upcomingRestaurant.companyId,
               });
           }
-
           await restaurant.save();
         } catch (err) {
           console.log(err);

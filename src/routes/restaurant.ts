@@ -52,7 +52,7 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
   }
 
   try {
-    const upcomingRestaurants = await getUpcomingRestaurants(companies);
+    const upcomingRestaurants = await getUpcomingRestaurants(res, companies);
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
     console.log(err);

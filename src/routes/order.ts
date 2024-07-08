@@ -142,244 +142,249 @@ router.post('/create-orders', auth, async (req, res) => {
     throw new Error('Please provide valid orders data');
   }
 
-  // Get upcoming week restaurants
-  // to validate the orders,
-  // to get the order item details, and
-  // to get scheduled dates and company ids
-  const getActiveSchedules = true;
-  const upcomingRestaurants = await getUpcomingRestaurants(
-    companies,
-    getActiveSchedules
-  );
-  const companyIds: string[] = [];
-  for (const restaurant of upcomingRestaurants) {
-    const companyId = restaurant.company._id.toString();
-    if (!companyIds.includes(companyId)) companyIds.push(companyId);
-  }
-  const deliveryDates: Date[] = [];
-  for (const restaurant of upcomingRestaurants) {
-    const deliveryDate = restaurant.schedule.date;
-    if (!deliveryDates.includes(deliveryDate)) deliveryDates.push(deliveryDate);
-  }
-  const restaurantIds: string[] = [];
-  for (const restaurant of upcomingRestaurants) {
-    const restaurantId = restaurant._id.toString();
-    if (!restaurantIds.includes(restaurantId)) restaurantIds.push(restaurantId);
-  }
+  try {
+    // Get upcoming week restaurants
+    // to validate the orders,
+    // to get the order item details, and
+    // to get scheduled dates and company ids
+    const getActiveSchedules = true;
+    const upcomingRestaurants = await getUpcomingRestaurants(
+      res,
+      companies,
+      getActiveSchedules
+    );
+    const companyIds: string[] = [];
+    for (const restaurant of upcomingRestaurants) {
+      const companyId = restaurant.company._id.toString();
+      if (!companyIds.includes(companyId)) companyIds.push(companyId);
+    }
+    const deliveryDates: Date[] = [];
+    for (const restaurant of upcomingRestaurants) {
+      const deliveryDate = restaurant.schedule.date;
+      if (!deliveryDates.includes(deliveryDate))
+        deliveryDates.push(deliveryDate);
+    }
+    const restaurantIds: string[] = [];
+    for (const restaurant of upcomingRestaurants) {
+      const restaurantId = restaurant._id.toString();
+      if (!restaurantIds.includes(restaurantId))
+        restaurantIds.push(restaurantId);
+    }
 
-  // Get active orders for scheduled
-  // restaurants with companies and delivery dates
-  // to validate order capacity
-  const activeOrders = await getActiveOrders(
-    companyIds,
-    restaurantIds,
-    deliveryDates
-  );
+    // Get active orders for scheduled
+    // restaurants with companies and delivery dates
+    // to validate order capacity
+    const activeOrders = await getActiveOrders(
+      companyIds,
+      restaurantIds,
+      deliveryDates
+    );
 
-  // Create data map
-  const upcomingDataMap: UpcomingDataMap = {};
-  for (const upcomingRestaurant of upcomingRestaurants) {
-    const deliveryDate = dateToMS(upcomingRestaurant.schedule.date);
-    if (!upcomingDataMap[deliveryDate]) upcomingDataMap[deliveryDate] = {};
+    // Create data map
+    const upcomingDataMap: UpcomingDataMap = {};
+    for (const upcomingRestaurant of upcomingRestaurants) {
+      const deliveryDate = dateToMS(upcomingRestaurant.schedule.date);
+      if (!upcomingDataMap[deliveryDate]) upcomingDataMap[deliveryDate] = {};
 
-    const company = upcomingRestaurant.company._id.toString();
-    if (!upcomingDataMap[deliveryDate][company])
-      upcomingDataMap[deliveryDate][company] = {};
+      const company = upcomingRestaurant.company._id.toString();
+      if (!upcomingDataMap[deliveryDate][company])
+        upcomingDataMap[deliveryDate][company] = {};
 
-    const restaurant = upcomingRestaurant._id.toString();
-    if (!upcomingDataMap[deliveryDate][company][restaurant])
-      upcomingDataMap[deliveryDate][company][restaurant] = {};
+      const restaurant = upcomingRestaurant._id.toString();
+      if (!upcomingDataMap[deliveryDate][company][restaurant])
+        upcomingDataMap[deliveryDate][company][restaurant] = {};
 
-    for (const item of upcomingRestaurant.items) {
-      upcomingDataMap[deliveryDate][company][restaurant][item._id.toString()] =
-        {
+      for (const item of upcomingRestaurant.items) {
+        upcomingDataMap[deliveryDate][company][restaurant][
+          item._id.toString()
+        ] = {
           orderCapacity: item.orderCapacity,
           optionalAddons: item.optionalAddons,
           requiredAddons: item.requiredAddons,
           removableIngredients: item.removableIngredients,
         };
-    }
-  }
-
-  // Validate order items
-  for (const orderItem of orderItems) {
-    // Check delivery date's validity
-    const isValidDate = upcomingDataMap[orderItem.deliveryDate];
-    if (!isValidDate) {
-      console.log('Your cart contains an item from a day that is closed');
-      res.status(400);
-      throw new Error('Your cart contains an item from a day that is closed');
-    }
-
-    // Check company validity
-    const isValidCompany =
-      upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
-    if (!isValidCompany) {
-      console.log(
-        'Your cart contains an item from a restaurant that is not available for your company'
-      );
-      res.status(400);
-      throw new Error(
-        'Your cart contains an item from a restaurant that is not available for your company'
-      );
-    }
-
-    // Check restaurant's validity
-    const isValidRestaurant =
-      upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-        orderItem.restaurantId
-      ];
-    if (!isValidRestaurant) {
-      console.log(
-        'Your cart contains an item from a restaurant that is closed'
-      );
-      res.status(400);
-      throw new Error(
-        'Your cart contains an item from a restaurant that is closed'
-      );
-    }
-
-    // Check item's validity
-    const isValidItem =
-      upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-        orderItem.restaurantId
-      ][orderItem.itemId];
-    if (!isValidItem) {
-      console.log('Your cart contains an invalid item');
-      res.status(400);
-      throw new Error('Your cart contains an invalid item');
-    }
-
-    // Check optional addons' validity
-    if (orderItem.optionalAddons.length > 0) {
-      const upcomingOptionalAddons =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ][orderItem.itemId].optionalAddons;
-
-      for (const orderOptionalAddon of orderItem.optionalAddons) {
-        const validOptionalAddons = upcomingOptionalAddons.addons
-          .split(',')
-          .some(
-            (upcomingOptionalAddon) =>
-              upcomingOptionalAddon.split('-')[0].trim() ===
-              orderOptionalAddon.split('-')[0].trim().toLowerCase()
-          );
-
-        if (
-          orderItem.optionalAddons.length > upcomingOptionalAddons.addable ||
-          !validOptionalAddons
-        ) {
-          console.log(
-            'Your cart contains an item with invalid optional addons'
-          );
-          res.status(400);
-          throw new Error(
-            'Your cart contains an item with invalid optional addons'
-          );
-        }
       }
     }
 
-    // Check required addons validity
-    if (orderItem.requiredAddons.length > 0) {
-      const upcomingRequiredAddons =
+    // Validate order items
+    for (const orderItem of orderItems) {
+      // Check delivery date's validity
+      const isValidDate = upcomingDataMap[orderItem.deliveryDate];
+      if (!isValidDate) {
+        console.log('Your cart contains an item from a day that is closed');
+        res.status(400);
+        throw new Error('Your cart contains an item from a day that is closed');
+      }
+
+      // Check company validity
+      const isValidCompany =
+        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
+      if (!isValidCompany) {
+        console.log(
+          'Your cart contains an item from a restaurant that is not available for your company'
+        );
+        res.status(400);
+        throw new Error(
+          'Your cart contains an item from a restaurant that is not available for your company'
+        );
+      }
+
+      // Check restaurant's validity
+      const isValidRestaurant =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ][orderItem.itemId].requiredAddons;
+        ];
+      if (!isValidRestaurant) {
+        console.log(
+          'Your cart contains an item from a restaurant that is closed'
+        );
+        res.status(400);
+        throw new Error(
+          'Your cart contains an item from a restaurant that is closed'
+        );
+      }
 
-      for (const orderRequiredAddon of orderItem.requiredAddons) {
-        const validRequiredAddons = upcomingRequiredAddons.addons
-          .split(',')
-          .some(
-            (upcomingOptionalAddon) =>
-              upcomingOptionalAddon.split('-')[0].trim() ===
-              orderRequiredAddon.split('-')[0].trim().toLowerCase()
-          );
+      // Check item's validity
+      const isValidItem =
+        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+          orderItem.restaurantId
+        ][orderItem.itemId];
+      if (!isValidItem) {
+        console.log('Your cart contains an invalid item');
+        res.status(400);
+        throw new Error('Your cart contains an invalid item');
+      }
 
-        if (
-          orderItem.requiredAddons.length !== upcomingRequiredAddons.addable ||
-          !validRequiredAddons
-        ) {
-          console.log(
-            'Your cart contains an item with invalid required addons'
-          );
-          res.status(400);
-          throw new Error(
-            'Your cart contains an item with invalid required addons'
-          );
+      // Check optional addons' validity
+      if (orderItem.optionalAddons.length > 0) {
+        const upcomingOptionalAddons =
+          upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+            orderItem.restaurantId
+          ][orderItem.itemId].optionalAddons;
+
+        for (const orderOptionalAddon of orderItem.optionalAddons) {
+          const validOptionalAddons = upcomingOptionalAddons.addons
+            .split(',')
+            .some(
+              (upcomingOptionalAddon) =>
+                upcomingOptionalAddon.split('-')[0].trim() ===
+                orderOptionalAddon.split('-')[0].trim().toLowerCase()
+            );
+
+          if (
+            orderItem.optionalAddons.length > upcomingOptionalAddons.addable ||
+            !validOptionalAddons
+          ) {
+            console.log(
+              'Your cart contains an item with invalid optional addons'
+            );
+            res.status(400);
+            throw new Error(
+              'Your cart contains an item with invalid optional addons'
+            );
+          }
         }
+      }
+
+      // Check required addons validity
+      if (orderItem.requiredAddons.length > 0) {
+        const upcomingRequiredAddons =
+          upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+            orderItem.restaurantId
+          ][orderItem.itemId].requiredAddons;
+
+        for (const orderRequiredAddon of orderItem.requiredAddons) {
+          const validRequiredAddons = upcomingRequiredAddons.addons
+            .split(',')
+            .some(
+              (upcomingOptionalAddon) =>
+                upcomingOptionalAddon.split('-')[0].trim() ===
+                orderRequiredAddon.split('-')[0].trim().toLowerCase()
+            );
+
+          if (
+            orderItem.requiredAddons.length !==
+              upcomingRequiredAddons.addable ||
+            !validRequiredAddons
+          ) {
+            console.log(
+              'Your cart contains an item with invalid required addons'
+            );
+            res.status(400);
+            throw new Error(
+              'Your cart contains an item with invalid required addons'
+            );
+          }
+        }
+      }
+
+      // Check removed ingredients validity
+      if (orderItem.removedIngredients.length > 0) {
+        const upcomingRemovableIngredients =
+          upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+            orderItem.restaurantId
+          ][orderItem.itemId].removableIngredients;
+
+        for (const removedIngredient of orderItem.removedIngredients) {
+          const validRemovableIngredients = upcomingRemovableIngredients
+            ?.split(',')
+            .some(
+              (removableIngredient) =>
+                removableIngredient.trim() ===
+                removedIngredient.trim().toLowerCase()
+            );
+
+          if (!validRemovableIngredients) {
+            console.log(
+              'Your cart contains an item with invalid removable ingredients'
+            );
+            res.status(400);
+            throw new Error(
+              'Your cart contains an item with invalid removable ingredients'
+            );
+          }
+        }
+      }
+
+      // Check item's sold out status and order capacity
+      const orderCapacity =
+        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+          orderItem.restaurantId
+        ][orderItem.itemId].orderCapacity;
+      const hasOrderCapacity = checkOrderCapacity(
+        orderItem.companyId,
+        orderItem.deliveryDate,
+        orderItem.restaurantId,
+        orderItem.itemId,
+        orderItem.quantity,
+        orderCapacity,
+        activeOrders
+      );
+      const item = upcomingRestaurants
+        .find(
+          (restaurant) => restaurant._id.toString() === orderItem.restaurantId
+        )
+        ?.items.find((item) => item._id.toString() === orderItem.itemId);
+      const isSoldOut = item?.soldOutStat?.some(
+        (el) =>
+          dateToMS(el.date) === orderItem.deliveryDate &&
+          el.company.toString() === orderItem.companyId
+      );
+      if (isSoldOut || !hasOrderCapacity) {
+        console.log(
+          `${item?.name} on ${dateToText(
+            orderItem.deliveryDate
+          )} has reached order capacity`
+        );
+        res.status(400);
+        throw new Error(
+          `${item?.name} on ${dateToText(
+            orderItem.deliveryDate
+          )} has reached order capacity`
+        );
       }
     }
 
-    // Check removed ingredients validity
-    if (orderItem.removedIngredients.length > 0) {
-      const upcomingRemovableIngredients =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ][orderItem.itemId].removableIngredients;
-
-      for (const removedIngredient of orderItem.removedIngredients) {
-        const validRemovableIngredients = upcomingRemovableIngredients
-          ?.split(',')
-          .some(
-            (removableIngredient) =>
-              removableIngredient.trim() ===
-              removedIngredient.trim().toLowerCase()
-          );
-
-        if (!validRemovableIngredients) {
-          console.log(
-            'Your cart contains an item with invalid removable ingredients'
-          );
-          res.status(400);
-          throw new Error(
-            'Your cart contains an item with invalid removable ingredients'
-          );
-        }
-      }
-    }
-
-    // Check item's sold out status and order capacity
-    const orderCapacity =
-      upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-        orderItem.restaurantId
-      ][orderItem.itemId].orderCapacity;
-    const hasOrderCapacity = checkOrderCapacity(
-      orderItem.companyId,
-      orderItem.deliveryDate,
-      orderItem.restaurantId,
-      orderItem.itemId,
-      orderItem.quantity,
-      orderCapacity,
-      activeOrders
-    );
-    const item = upcomingRestaurants
-      .find(
-        (restaurant) => restaurant._id.toString() === orderItem.restaurantId
-      )
-      ?.items.find((item) => item._id.toString() === orderItem.itemId);
-    const isSoldOut = item?.soldOutStat?.some(
-      (el) =>
-        dateToMS(el.date) === orderItem.deliveryDate &&
-        el.company.toString() === orderItem.companyId
-    );
-    if (isSoldOut || !hasOrderCapacity) {
-      console.log(
-        `${item?.name} on ${dateToText(
-          orderItem.deliveryDate
-        )} has reached order capacity`
-      );
-      res.status(400);
-      throw new Error(
-        `${item?.name} on ${dateToText(
-          orderItem.deliveryDate
-        )} has reached order capacity`
-      );
-    }
-  }
-
-  try {
     // Validate applied discount
     let discount: Discount | null = null;
     if (discountCodeId) {
