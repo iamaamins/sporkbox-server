@@ -104,8 +104,7 @@ export async function getUpcomingRestaurants(
       },
     })
       .select('-__v -updatedAt -createdAt -address')
-      .lean()
-      .orFail();
+      .lean();
 
     const upcomingRestaurants = [];
     for (const scheduledRestaurant of scheduledRestaurants) {
@@ -390,8 +389,7 @@ export async function getActiveOrders(
       'restaurant._id': { $in: restaurantIds },
     })
       .select('company._id delivery.date restaurant._id item._id item.quantity')
-      .lean()
-      .orFail();
+      .lean();
     return activeOrders;
   } catch (err) {
     console.log(err);
