@@ -135,6 +135,7 @@ export async function getUpcomingRestaurants(
             schedule: {
               date: schedule.date,
               status: schedule.status,
+              createdAt: schedule.createdAt,
             },
           };
           upcomingRestaurants.push(upcomingRestaurant);
