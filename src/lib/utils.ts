@@ -40,7 +40,6 @@ type ActiveOrder = {
     _id: Types.ObjectId;
   };
   item: {
-    _id: Types.ObjectId;
     quantity: number;
   };
 };
@@ -389,7 +388,7 @@ export async function getActiveOrders(
       'delivery.date': { $in: deliveryDates },
       'restaurant._id': { $in: restaurantIds },
     })
-      .select('company._id delivery.date restaurant._id item._id item.quantity')
+      .select('company._id delivery.date restaurant._id item.quantity')
       .lean();
     return activeOrders;
   } catch (err) {
@@ -402,80 +401,65 @@ export function checkOrderCapacity(
   companyId: string,
   deliveryDate: number,
   restaurantId: string,
-  itemId: string,
   currQuantity: number,
   orderCapacity: number,
   activeOrders: ActiveOrder[]
 ) {
-  let activeQuantity = 0;
+  let orderedQuantity = 0;
   for (const activeOrder of activeOrders) {
     if (
       dateToMS(activeOrder.delivery.date) === deliveryDate &&
       activeOrder.company._id.toString() === companyId &&
-      activeOrder.restaurant._id.toString() === restaurantId &&
-      activeOrder.item._id.toString() === itemId
+      activeOrder.restaurant._id.toString() === restaurantId
     ) {
-      activeQuantity += activeOrder.item.quantity;
+      orderedQuantity += activeOrder.item.quantity;
     }
   }
-  return orderCapacity + 3 >= activeQuantity + currQuantity;
+  return orderCapacity + 3 >= orderedQuantity + currQuantity;
 }
 
-export async function updateItemSoldOutStat(
+export async function updateRestaurantScheduleStatus(
   activeOrders: ActiveOrder[],
   upcomingRestaurants: {
     _id: Types.ObjectId;
     scheduledOn: Date;
+    orderCapacity: number;
     companyId: Types.ObjectId;
-    items: { _id: Types.ObjectId; orderCapacity: number }[];
   }[]
 ) {
   for (const upcomingRestaurant of upcomingRestaurants) {
-    for (const upcomingRestaurantItem of upcomingRestaurant.items) {
-      let orderedQuantity = 0;
-      for (const activeOrder of activeOrders) {
-        if (
-          dateToMS(upcomingRestaurant.scheduledOn) ===
-            dateToMS(activeOrder.delivery.date) &&
-          upcomingRestaurant.companyId.toString() ===
-            activeOrder.company._id.toString() &&
-          upcomingRestaurant._id.toString() ===
-            activeOrder.restaurant._id.toString() &&
-          activeOrder.item._id.toString() ===
-            upcomingRestaurantItem._id.toString()
-        ) {
-          orderedQuantity += activeOrder.item.quantity;
-        }
+    let totalQuantity = 0;
+    for (const activeOrder of activeOrders) {
+      if (
+        dateToMS(activeOrder.delivery.date) ===
+          dateToMS(upcomingRestaurant.scheduledOn) &&
+        activeOrder.company._id.toString() ===
+          upcomingRestaurant.companyId.toString() &&
+        activeOrder.restaurant._id.toString() ===
+          upcomingRestaurant._id.toString()
+      ) {
+        totalQuantity += activeOrder.item.quantity;
       }
+    }
 
-      if (orderedQuantity >= upcomingRestaurantItem.orderCapacity) {
-        try {
-          const restaurant = await Restaurant.findById(
-            upcomingRestaurant._id
-          ).orFail();
-
-          const item = restaurant.items.find(
-            (item) =>
-              item._id.toString() === upcomingRestaurantItem._id.toString()
-          );
-          if (item) {
-            const hasSoldOutEntry = item.soldOutStat?.some(
-              (el) =>
-                dateToMS(el.date) ===
-                  dateToMS(upcomingRestaurant.scheduledOn) &&
-                el.company.toString() ===
-                  upcomingRestaurant.companyId.toString()
-            );
-            if (!hasSoldOutEntry)
-              item.soldOutStat?.push({
-                date: upcomingRestaurant.scheduledOn,
-                company: upcomingRestaurant.companyId,
-              });
+    if (totalQuantity >= upcomingRestaurant.orderCapacity) {
+      try {
+        const restaurant = await Restaurant.findById(upcomingRestaurant._id);
+        if (restaurant) {
+          for (const schedule of restaurant.schedules) {
+            if (
+              dateToMS(schedule.date) ===
+                dateToMS(upcomingRestaurant.scheduledOn) &&
+              schedule.company._id.toString() ===
+                upcomingRestaurant.companyId.toString()
+            ) {
+              schedule.status = 'INACTIVE';
+            }
           }
           await restaurant.save();
-        } catch (err) {
-          console.log(err);
         }
+      } catch (err) {
+        console.log(err);
       }
     }
   }

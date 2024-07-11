@@ -13,7 +13,7 @@ import {
   getAddonsPrice,
   getActiveOrders,
   checkOrderCapacity,
-  updateItemSoldOutStat,
+  updateRestaurantScheduleStatus,
 } from '../lib/utils';
 import {
   orderArchiveTemplate,
@@ -192,13 +192,15 @@ router.post('/create-orders', auth, async (req, res) => {
 
       const restaurant = upcomingRestaurant._id.toString();
       if (!upcomingDataMap[deliveryDate][company][restaurant])
-        upcomingDataMap[deliveryDate][company][restaurant] = {};
+        upcomingDataMap[deliveryDate][company][restaurant] = {
+          item: {},
+          orderCapacity: upcomingRestaurant.orderCapacity,
+        };
 
       for (const item of upcomingRestaurant.items) {
-        upcomingDataMap[deliveryDate][company][restaurant][
+        upcomingDataMap[deliveryDate][company][restaurant].item[
           item._id.toString()
         ] = {
-          orderCapacity: item.orderCapacity,
           optionalAddons: item.optionalAddons,
           requiredAddons: item.requiredAddons,
           removableIngredients: item.removableIngredients,
@@ -208,7 +210,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
     // Validate order items
     for (const orderItem of orderItems) {
-      // Check delivery date's validity
+      // Validate delivery date
       const isValidDate = upcomingDataMap[orderItem.deliveryDate];
       if (!isValidDate) {
         console.log('Your cart contains an item from a day that is closed');
@@ -216,7 +218,7 @@ router.post('/create-orders', auth, async (req, res) => {
         throw new Error('Your cart contains an item from a day that is closed');
       }
 
-      // Check company validity
+      // Validate company
       const isValidCompany =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
       if (!isValidCompany) {
@@ -229,7 +231,7 @@ router.post('/create-orders', auth, async (req, res) => {
         );
       }
 
-      // Check restaurant's validity
+      // Validate restaurant
       const isValidRestaurant =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
@@ -244,23 +246,54 @@ router.post('/create-orders', auth, async (req, res) => {
         );
       }
 
-      // Check item's validity
+      // Validate restaurant's order capacity
+      const orderCapacity =
+        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+          orderItem.restaurantId
+        ].orderCapacity;
+      const hasOrderCapacity = checkOrderCapacity(
+        orderItem.companyId,
+        orderItem.deliveryDate,
+        orderItem.restaurantId,
+        orderItem.quantity,
+        orderCapacity,
+        activeOrders
+      );
+      if (!hasOrderCapacity) {
+        const restaurant = upcomingRestaurants.find(
+          (restaurant) =>
+            restaurant._id.toString() === orderItem.restaurantId &&
+            dateToMS(restaurant.schedule.date) === orderItem.deliveryDate
+        );
+        if (restaurant) {
+          const message = `${
+            restaurant.name
+          } has reached order capacity on ${dateToText(
+            restaurant.schedule.date
+          )}`;
+          console.log(message);
+          res.status(400);
+          throw new Error(message);
+        }
+      }
+
+      // Validate item
       const isValidItem =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
           orderItem.restaurantId
-        ][orderItem.itemId];
+        ].item[orderItem.itemId];
       if (!isValidItem) {
         console.log('Your cart contains an invalid item');
         res.status(400);
         throw new Error('Your cart contains an invalid item');
       }
 
-      // Check optional addons' validity
+      // Validate optional addons
       if (orderItem.optionalAddons.length > 0) {
         const upcomingOptionalAddons =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ][orderItem.itemId].optionalAddons;
+          ].item[orderItem.itemId].optionalAddons;
 
         for (const orderOptionalAddon of orderItem.optionalAddons) {
           const validOptionalAddons = upcomingOptionalAddons.addons
@@ -286,12 +319,12 @@ router.post('/create-orders', auth, async (req, res) => {
         }
       }
 
-      // Check required addons validity
+      // Validate required addons
       if (orderItem.requiredAddons.length > 0) {
         const upcomingRequiredAddons =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ][orderItem.itemId].requiredAddons;
+          ].item[orderItem.itemId].requiredAddons;
 
         for (const orderRequiredAddon of orderItem.requiredAddons) {
           const validRequiredAddons = upcomingRequiredAddons.addons
@@ -318,12 +351,12 @@ router.post('/create-orders', auth, async (req, res) => {
         }
       }
 
-      // Check removed ingredients validity
+      // Validate removed ingredients
       if (orderItem.removedIngredients.length > 0) {
         const upcomingRemovableIngredients =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ][orderItem.itemId].removableIngredients;
+          ].item[orderItem.itemId].removableIngredients;
 
         for (const removedIngredient of orderItem.removedIngredients) {
           const validRemovableIngredients = upcomingRemovableIngredients
@@ -344,44 +377,6 @@ router.post('/create-orders', auth, async (req, res) => {
             );
           }
         }
-      }
-
-      // Check item's sold out status and order capacity
-      const orderCapacity =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ][orderItem.itemId].orderCapacity;
-      const hasOrderCapacity = checkOrderCapacity(
-        orderItem.companyId,
-        orderItem.deliveryDate,
-        orderItem.restaurantId,
-        orderItem.itemId,
-        orderItem.quantity,
-        orderCapacity,
-        activeOrders
-      );
-      const item = upcomingRestaurants
-        .find(
-          (restaurant) => restaurant._id.toString() === orderItem.restaurantId
-        )
-        ?.items.find((item) => item._id.toString() === orderItem.itemId);
-      const isSoldOut = item?.soldOutStat?.some(
-        (el) =>
-          dateToMS(el.date) === orderItem.deliveryDate &&
-          el.company.toString() === orderItem.companyId
-      );
-      if (isSoldOut || !hasOrderCapacity) {
-        console.log(
-          `${item?.name} on ${dateToText(
-            orderItem.deliveryDate
-          )} has reached order capacity`
-        );
-        res.status(400);
-        throw new Error(
-          `${item?.name} on ${dateToText(
-            orderItem.deliveryDate
-          )} has reached order capacity`
-        );
       }
     }
 
@@ -671,15 +666,12 @@ router.post('/create-orders', auth, async (req, res) => {
       );
       const restaurants = upcomingRestaurants.map((restaurant) => ({
         _id: restaurant._id,
-        companyId: restaurant.company._id,
         scheduledOn: restaurant.schedule.date,
-        items: restaurant.items.map((item) => ({
-          _id: item._id,
-          orderCapacity: item.orderCapacity,
-        })),
+        orderCapacity: restaurant.orderCapacity,
+        companyId: restaurant.company._id,
       }));
-      await updateItemSoldOutStat(latestActiveOrders, restaurants);
-    }, 3 * 60 * 1000);
+      await updateRestaurantScheduleStatus(latestActiveOrders, restaurants);
+    }, 5 * 1000);
   } catch (err) {
     console.log(err);
     throw err;

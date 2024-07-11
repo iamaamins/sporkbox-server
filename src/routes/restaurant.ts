@@ -361,7 +361,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     description,
     optionalAddons,
     requiredAddons,
-    orderCapacity,
     removableIngredients,
   } = req.body;
   if (
@@ -426,7 +425,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
             removableIngredients,
             optionalAddons: formattedOptionalAddons || parsedOptionalAddons,
             requiredAddons: formattedRequiredAddons || parsedRequiredAddons,
-            orderCapacity: orderCapacity || Infinity,
           },
         },
       },
@@ -466,7 +464,6 @@ router.patch(
       description,
       optionalAddons,
       requiredAddons,
-      orderCapacity,
       removableIngredients,
     } = req.body;
     if (
@@ -534,7 +531,6 @@ router.patch(
               'items.$.requiredAddons':
                 formattedRequiredAddons || parsedRequiredAddons,
               'items.$.removableIngredients': removableIngredients,
-              'items.$.orderCapacity': orderCapacity || Infinity,
             },
             $unset: {
               'items.$.image': null,
@@ -564,7 +560,6 @@ router.patch(
               'items.$.requiredAddons':
                 formattedRequiredAddons || parsedRequiredAddons,
               'items.$.removableIngredients': removableIngredients,
-              'items.$.orderCapacity': orderCapacity || Infinity,
             },
           },
           {

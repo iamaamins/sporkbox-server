@@ -63,9 +63,8 @@ export interface ItemSchema extends GenericItem {
   status: string;
   optionalAddons: Addons;
   requiredAddons: Addons;
-  removableIngredients?: string;
   averageRating?: number;
-  orderCapacity: number;
+  removableIngredients?: string;
   reviews: Types.DocumentArray<ReviewSchema>;
   soldOutStat?: Types.DocumentArray<SoldOutStatSchema>;
 }
@@ -118,6 +117,7 @@ export interface RestaurantSchema {
   logo: string;
   address: Address;
   isFeatured: boolean;
+  orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
   schedules: Types.DocumentArray<SchedulesSchema>;
 }
@@ -209,17 +209,19 @@ export type UpcomingDataMap = {
   [date: string]: {
     [company: string]: {
       [restaurant: string]: {
-        [item: string]: {
-          orderCapacity: number;
-          optionalAddons: {
-            addons: string;
-            addable: number;
+        orderCapacity: number;
+        item: {
+          [id: string]: {
+            optionalAddons: {
+              addons: string;
+              addable: number;
+            };
+            requiredAddons: {
+              addons: string;
+              addable: number;
+            };
+            removableIngredients?: string;
           };
-          requiredAddons: {
-            addons: string;
-            addable: number;
-          };
-          removableIngredients?: string;
         };
       };
     };

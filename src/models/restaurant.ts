@@ -98,10 +98,6 @@ const itemSchema = new Schema<ItemSchema>({
     lowercase: true,
   },
   reviews: [reviewSchema],
-  orderCapacity: {
-    type: Number,
-    default: Infinity,
-  },
   averageRating: Number,
   soldOutStat: [soldOutStatSchema],
 });
@@ -184,6 +180,10 @@ const restaurantSchema = new Schema<RestaurantSchema>(
     isFeatured: {
       type: Boolean,
       required: [true, 'Please provide featured value'],
+    },
+    orderCapacity: {
+      type: Number,
+      default: Infinity,
     },
     items: [itemSchema],
     schedules: [scheduleSchema],
