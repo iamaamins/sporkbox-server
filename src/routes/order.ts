@@ -122,25 +122,7 @@ router.post('/create-orders', auth, async (req, res) => {
     res.status(403);
     throw new Error(invalidCredentials);
   }
-
   const { orderItems, discountCodeId }: OrdersPayload = req.body;
-  if (
-    !orderItems ||
-    !orderItems.every(
-      (item) =>
-        item.itemId &&
-        item.quantity &&
-        item.companyId &&
-        item.restaurantId &&
-        item.deliveryDate &&
-        item.optionalAddons &&
-        item.requiredAddons
-    )
-  ) {
-    console.log('Please provide valid orders data');
-    res.status(401);
-    throw new Error('Please provide valid orders data');
-  }
 
   try {
     // Get upcoming week restaurants
@@ -244,6 +226,13 @@ router.post('/create-orders', auth, async (req, res) => {
         throw new Error(
           'Your cart contains an item from a restaurant that is closed'
         );
+      }
+
+      // Validate quantity
+      if (!orderItem.quantity) {
+        console.log('One of your orders has invalid quantity');
+        res.status(400);
+        throw new Error('One of your orders has invalid quantity');
       }
 
       // Validate restaurant's order capacity
@@ -413,14 +402,19 @@ router.post('/create-orders', auth, async (req, res) => {
         (upcomingRestaurant) =>
           upcomingRestaurant._id.toString() === orderItem.restaurantId
       );
+      if (!restaurant) {
+        console.log('Restaurant is not found');
+        res.status(400);
+        throw new Error('Restaurant is not found');
+      }
+
       const company = companies.find(
         (company) => company._id.toString() === orderItem.companyId
       );
-
-      if (!restaurant || !company) {
-        console.log('Invalid restaurant or company');
+      if (!company) {
+        console.log('Company is not found');
         res.status(400);
-        throw new Error('Invalid restaurant or company');
+        throw new Error('Company is not found');
       }
 
       const item = restaurant.items.find(
@@ -453,7 +447,7 @@ router.post('/create-orders', auth, async (req, res) => {
           email,
         },
         restaurant: {
-          _id: orderItem.restaurantId,
+          _id: restaurant._id,
           name: restaurant.name,
         },
         company: {
@@ -475,7 +469,7 @@ router.post('/create-orders', auth, async (req, res) => {
         discount,
         status: 'PROCESSING',
         item: {
-          _id: orderItem.itemId,
+          _id: item._id,
           name: item.name,
           tags: item.tags,
           description: item.description,
