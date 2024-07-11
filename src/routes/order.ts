@@ -657,7 +657,7 @@ router.post('/create-orders', auth, async (req, res) => {
       res.status(201).json(ordersForCustomers);
     }
 
-    // Update items' status after 3 minutes
+    // Update restaurant schedule status after 3 minutes
     setTimeout(async () => {
       const latestActiveOrders = await getActiveOrders(
         companyIds,
@@ -671,7 +671,7 @@ router.post('/create-orders', auth, async (req, res) => {
         companyId: restaurant.company._id,
       }));
       await updateRestaurantScheduleStatus(latestActiveOrders, restaurants);
-    }, 5 * 1000);
+    }, 3 * 60 * 1000);
   } catch (err) {
     console.log(err);
     throw err;
