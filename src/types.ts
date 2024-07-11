@@ -117,6 +117,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
+  isFeatured: boolean;
   items: Types.DocumentArray<ItemSchema>;
   schedules: Types.DocumentArray<SchedulesSchema>;
 }

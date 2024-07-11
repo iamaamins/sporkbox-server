@@ -181,6 +181,10 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
+    isFeatured: {
+      type: Boolean,
+      required: [true, 'Please provide featured value'],
+    },
     items: [itemSchema],
     schedules: [scheduleSchema],
   },

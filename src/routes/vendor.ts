@@ -26,6 +26,7 @@ const router = Router();
 interface VendorPayload extends GenericUser, Address {
   password?: string;
   logo?: string;
+  isFeatured: boolean;
   restaurantName: string;
 }
 
@@ -39,6 +40,7 @@ router.post('/register-vendor', upload, async (req, res) => {
     lastName,
     password,
     firstName,
+    isFeatured,
     addressLine1,
     addressLine2,
     restaurantName,
@@ -51,6 +53,7 @@ router.post('/register-vendor', upload, async (req, res) => {
     !password ||
     !lastName ||
     !firstName ||
+    !isFeatured ||
     !addressLine1 ||
     !restaurantName
   ) {
@@ -80,6 +83,7 @@ router.post('/register-vendor', upload, async (req, res) => {
     const restaurant = await Restaurant.create({
       name: restaurantName,
       logo: logoUrl,
+      isFeatured,
       address: {
         city,
         state,
@@ -132,6 +136,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     password,
     lastName,
     firstName,
+    isFeatured,
     addressLine1,
     addressLine2,
     restaurantName,
@@ -144,6 +149,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     !lastName ||
     !password ||
     !firstName ||
+    !isFeatured ||
     !addressLine1 ||
     !restaurantName
   ) {
@@ -173,6 +179,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     const restaurant = await Restaurant.create({
       name: restaurantName,
       logo: logoUrl,
+      isFeatured,
       address: {
         city,
         state,
@@ -264,6 +271,7 @@ router.patch(
       state,
       firstName,
       lastName,
+      isFeatured,
       addressLine1,
       addressLine2,
       restaurantName,
@@ -275,6 +283,7 @@ router.patch(
       !state ||
       !lastName ||
       !firstName ||
+      !isFeatured ||
       !addressLine1 ||
       !restaurantName
     ) {
@@ -310,6 +319,7 @@ router.patch(
         {
           name: restaurantName,
           logo: logoUrl,
+          isFeatured,
           address: {
             city,
             state,
