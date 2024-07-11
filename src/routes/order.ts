@@ -122,7 +122,13 @@ router.post('/create-orders', auth, async (req, res) => {
     res.status(403);
     throw new Error(invalidCredentials);
   }
+
   const { orderItems, discountCodeId }: OrdersPayload = req.body;
+  if (!orderItems || !orderItems.length) {
+    console.log('Please provide valid order items');
+    res.status(400);
+    throw new Error('Please provide valid order items');
+  }
 
   try {
     // Get upcoming week restaurants
