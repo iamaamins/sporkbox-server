@@ -616,12 +616,21 @@ router.post('/create-orders', auth, async (req, res) => {
         payableOrders
       );
 
-      const pendingOrders = orders.map((order) => ({
-        ...order,
-        pendingOrderId,
-        status: 'PENDING',
-      }));
-      await Order.insertMany(pendingOrders);
+      for (const order of orders) {
+        const payable = payableDetails.find(
+          (el) =>
+            el.date === order.delivery.date &&
+            el.companyId === order.company._id.toString()
+        );
+        if (payable) {
+          order.status = 'PENDING';
+          //@ts-ignore
+          order.pendingOrderId = pendingOrderId;
+          //@ts-ignore
+          order.payment = { amount: +payable.payable.toFixed(2) };
+        }
+      }
+      await Order.insertMany(orders);
       res.status(200).json(session.url);
     } else {
       if (discount) {

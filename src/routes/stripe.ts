@@ -36,7 +36,6 @@ router.post('/webhook', async (req, res) => {
             status: 'PROCESSING',
             payment: {
               intent: session.payment_intent,
-              amount: (session.amount_total as number) / 100,
             },
           },
           $unset: {
