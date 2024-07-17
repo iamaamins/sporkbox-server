@@ -34,9 +34,7 @@ router.post('/webhook', async (req, res) => {
         {
           $set: {
             status: 'PROCESSING',
-            payment: {
-              intent: session.payment_intent,
-            },
+            'payment.intent': session.payment_intent,
           },
           $unset: {
             pendingOrderId,
