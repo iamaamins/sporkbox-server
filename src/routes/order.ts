@@ -633,7 +633,9 @@ router.post('/create-orders', auth, async (req, res) => {
             status: 'PENDING',
             pendingOrderId: pendingOrderId,
             payment: {
-              amount: +(payableOrder.amount / sameDayOrders.length).toFixed(2),
+              distributed: +(
+                payableOrder.amount / sameDayOrders.length
+              ).toFixed(2),
             },
           };
         }
@@ -856,7 +858,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     const refunded = await stripeRefundAmount(order.payment.intent);
     const askingRefund = order.item.total;
-    const paid = order.payment.amount;
+    const paid = order.payment.distributed;
     const totalRefund = refunded + askingRefund;
 
     if (paid === refunded) {

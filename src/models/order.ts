@@ -19,7 +19,7 @@ interface OrderSchema {
   status: string;
   payment: {
     intent: string;
-    amount: number;
+    distributed: number;
   };
   item: OrderItem;
   createdAt: Date;
