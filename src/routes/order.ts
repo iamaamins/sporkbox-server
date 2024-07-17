@@ -867,6 +867,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
         .json({ message: `Order cancelled and $${distributed} refunded` });
     }
 
+    //TODO: Remove below code after August 17, 2024
     const refunded = await stripeRefundAmount(order.payment.intent);
     const askingRefund = order.item.total;
     const totalPaid = order.payment.total;

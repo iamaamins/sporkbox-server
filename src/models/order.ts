@@ -19,12 +19,13 @@ interface OrderSchema {
   status: string;
   payment?: {
     intent: string;
+    //TODO: Remove total after August 17, 2024
     total: number;
     distributed: number;
   };
   item: OrderItem;
   createdAt: Date;
-  isReviewed?: boolean;
+  isReviewed: boolean;
   discount?: Discount;
   pendingOrderId?: string;
 }
