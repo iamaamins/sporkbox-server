@@ -519,7 +519,7 @@ router.post('/create-orders', auth, async (req, res) => {
         ),
       },
     })
-      .select('delivery item company')
+      .select('delivery item company payment')
       .lean();
 
     // Get upcoming orders that matches order item dates
@@ -533,10 +533,11 @@ router.post('/create-orders', auth, async (req, res) => {
         )
       )
       .map((upcomingOrder) => ({
-        total: upcomingOrder.item.total,
         shift: upcomingOrder.company.shift,
         date: dateToMS(upcomingOrder.delivery.date),
         companyId: upcomingOrder.company._id.toString(),
+        total:
+          upcomingOrder.item.total - (upcomingOrder.payment?.distributed || 0),
       }));
 
     // Get upcoming order date and total
@@ -850,24 +851,34 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
     }
     order.status = 'CANCELLED';
 
-    if (!order.payment.intent) {
+    if (!order.payment) {
       await order.save();
       await mail.send(orderCancelTemplate(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
+    }
+
+    const distributed = order.payment.distributed;
+    if (distributed) {
+      await stripeRefund(distributed, order.payment.intent);
+      await order.save();
+      await mail.send(orderRefundTemplate(order.toObject(), distributed));
+      return res
+        .status(200)
+        .json({ message: `Order cancelled and $${distributed} refunded` });
     }
 
     const refunded = await stripeRefundAmount(order.payment.intent);
     const askingRefund = order.item.total;
-    const paid = order.payment.distributed;
+    const totalPaid = order.payment.total;
     const totalRefund = refunded + askingRefund;
 
-    if (paid === refunded) {
+    if (totalPaid === refunded) {
       await order.save();
       await mail.send(orderCancelTemplate(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
-    if (paid >= totalRefund) {
+    if (totalPaid >= totalRefund) {
       await stripeRefund(askingRefund, order.payment.intent);
       await order.save();
       await mail.send(orderRefundTemplate(order.toObject(), askingRefund));
@@ -876,8 +887,8 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
         .json({ message: `Order cancelled and $${askingRefund} refunded` });
     }
 
-    if (paid < totalRefund) {
-      const finalRefund = paid - refunded;
+    if (totalPaid < totalRefund) {
+      const finalRefund = totalPaid - refunded;
       await stripeRefund(finalRefund, order.payment.intent);
       await order.save();
       await mail.send(orderRefundTemplate(order.toObject(), finalRefund));

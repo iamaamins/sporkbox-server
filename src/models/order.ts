@@ -17,13 +17,14 @@ interface OrderSchema {
     address: Address;
   };
   status: string;
-  payment: {
+  payment?: {
     intent: string;
+    total: number;
     distributed: number;
   };
   item: OrderItem;
   createdAt: Date;
-  isReviewed: boolean;
+  isReviewed?: boolean;
   discount?: Discount;
   pendingOrderId?: string;
 }
@@ -118,7 +119,8 @@ const orderSchema = new Schema<OrderSchema>(
     },
     payment: {
       intent: String,
-      amount: Number,
+      total: Number,
+      distributed: Number,
     },
     isReviewed: {
       type: Boolean,
