@@ -1,10 +1,10 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 
-interface StripePayableOrders {
-  date: string;
+interface PayableOrders {
   items: string[];
   amount: number;
+  dateShift: string;
 }
 
 dotenv.config();
@@ -18,7 +18,7 @@ export async function stripeCheckout(
   pendingOrderId: string,
   discountCodeId: string,
   discountAmount: number,
-  payableOrders: StripePayableOrders[]
+  payableOrders: PayableOrders[]
 ) {
   try {
     const session = await stripe.checkout.sessions.create({
@@ -29,7 +29,7 @@ export async function stripeCheckout(
           price_data: {
             currency: 'usd',
             product_data: {
-              name: payableOrder.date,
+              name: payableOrder.dateShift,
               description: payableOrder.items.join(', '),
             },
             unit_amount: Math.round(Math.abs(payableOrder.amount) * 100),
@@ -49,7 +49,6 @@ export async function stripeCheckout(
       success_url: `${process.env.CLIENT_URL}/success?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,
     });
-
     return session;
   } catch (err) {
     console.log(err);

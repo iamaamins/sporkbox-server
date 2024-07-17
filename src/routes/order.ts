@@ -563,7 +563,7 @@ router.post('/create-orders', auth, async (req, res) => {
         ) {
           return {
             ...rest,
-            payable: orderItemDetail.total - shiftBudget,
+            amount: orderItemDetail.total - shiftBudget,
           };
         } else {
           const upcomingOrderDetail = upcomingOrderDetails.find(
@@ -573,37 +573,37 @@ router.post('/create-orders', auth, async (req, res) => {
           const upcomingDayOrderTotal = upcomingOrderDetail?.total || 0;
           return {
             ...rest,
-            payable:
+            amount:
               upcomingDayOrderTotal >= shiftBudget
                 ? orderItemDetail.total
                 : orderItemDetail.total - (shiftBudget - upcomingDayOrderTotal),
           };
         }
       })
-      .filter((detail) => detail.payable > 0);
+      .filter((detail) => detail.amount > 0);
 
     const totalPayableAmount = payableDetails.reduce(
-      (acc, curr) => acc + curr.payable,
+      (acc, curr) => acc + curr.amount,
       0
     );
     const discountAmount = discount?.value || 0;
     const hasPayableItems = totalPayableAmount > discountAmount;
 
     if (hasPayableItems) {
-      const payableOrders = payableDetails.map((payableDetail) => ({
-        date: `${dateToText(
-          payableDetail.date
-        )} - ${`${payableDetail.shift[0].toUpperCase()}${payableDetail.shift.slice(
-          1
-        )}`}`,
+      const payableOrders = payableDetails.map((payable) => ({
+        date: payable.date,
+        companyId: payable.companyId,
+        dateShift: `${dateToText(
+          payable.date
+        )} - ${`${payable.shift[0].toUpperCase()}${payable.shift.slice(1)}`}`,
         items: orders
           .filter(
             (order) =>
-              order.delivery.date === payableDetail.date &&
-              order.company._id.toString() === payableDetail.companyId
+              order.delivery.date === payable.date &&
+              order.company._id.toString() === payable.companyId
           )
           .map((order) => order.item.name),
-        amount: payableDetail.payable - discountAmount / payableDetails.length,
+        amount: payable.amount - discountAmount / payableDetails.length,
       }));
 
       // Create stripe checkout sessions
@@ -616,21 +616,23 @@ router.post('/create-orders', auth, async (req, res) => {
         payableOrders
       );
 
-      for (const order of orders) {
-        const payable = payableDetails.find(
-          (el) =>
-            el.date === order.delivery.date &&
-            el.companyId === order.company._id.toString()
+      const updatedOrders = orders.map((order) => {
+        const payableOrder = payableOrders.find(
+          (payableOrder) =>
+            payableOrder.date === order.delivery.date &&
+            payableOrder.companyId === order.company._id.toString()
         );
-        if (payable) {
-          order.status = 'PENDING';
-          //@ts-ignore
-          order.pendingOrderId = pendingOrderId;
-          //@ts-ignore
-          order.payment = { amount: +payable.payable.toFixed(2) };
+        if (payableOrder) {
+          return {
+            ...order,
+            status: 'PENDING',
+            pendingOrderId: pendingOrderId,
+            payment: { amount: +payableOrder.amount.toFixed(2) },
+          };
         }
-      }
-      await Order.insertMany(orders);
+        return order;
+      });
+      await Order.insertMany(updatedOrders);
       res.status(200).json(session.url);
     } else {
       if (discount) {
