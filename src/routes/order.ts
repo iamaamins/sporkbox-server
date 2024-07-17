@@ -623,11 +623,18 @@ router.post('/create-orders', auth, async (req, res) => {
             payableOrder.companyId === order.company._id.toString()
         );
         if (payableOrder) {
+          const sameDayOrders = orders.filter(
+            (order) =>
+              order.delivery.date === payableOrder.date &&
+              order.company._id.toString() === payableOrder.companyId
+          );
           return {
             ...order,
             status: 'PENDING',
             pendingOrderId: pendingOrderId,
-            payment: { amount: +payableOrder.amount.toFixed(2) },
+            payment: {
+              amount: +(payableOrder.amount / sameDayOrders.length).toFixed(2),
+            },
           };
         }
         return order;
