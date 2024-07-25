@@ -232,5 +232,5 @@ export type Discount = {
   _id: Types.ObjectId;
   code: string;
   value: number;
-  distributed: number;
+  distributed?: number;
 };
