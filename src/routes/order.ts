@@ -61,7 +61,7 @@ type Order = {
     };
   };
   discount?: Discount;
-  status: 'PROCESSING';
+  status: 'PENDING' | 'PROCESSING';
   item: {
     _id: Types.ObjectId;
     name: string;
@@ -74,6 +74,8 @@ type Order = {
     removedIngredients: string;
     total: number;
   };
+  pendingOrderId?: string;
+  payment?: { distributed?: number };
 };
 
 const router = Router();
@@ -430,7 +432,6 @@ router.post('/create-orders', auth, async (req, res) => {
         res.status(400);
         throw new Error('Invalid discount code');
       }
-
       const totalRedeem = discountCode.totalRedeem;
       const redeemability = discountCode.redeemability;
       if (redeemability === 'once' && totalRedeem >= 1) {
@@ -630,113 +631,8 @@ router.post('/create-orders', auth, async (req, res) => {
       0
     );
     const discountAmount = discount?.value || 0;
-    if (payableAmount && discountAmount) {
-      let tempDiscountAmount = discountAmount;
-      for (let order of orders) {
-        const payableDetail = payableDetails.find(
-          (payableDetail) =>
-            payableDetail.date === order.delivery.date &&
-            payableDetail.companyId === order.company._id.toString()
-        );
-        if (payableDetail) {
-          const sameDayOrders = orders.filter(
-            (order) =>
-              order.delivery.date === payableDetail.date &&
-              order.company._id.toString() === payableDetail.companyId
-          );
-          if (discountAmount > payableAmount) {
-            const discountForOrder = +(
-              payableDetail.amount / sameDayOrders.length
-            ).toFixed(2);
-            if (!order.discount && discount)
-              order.discount = { ...discount, distributed: discountForOrder };
-          }
-          if (payableDetail.amount >= tempDiscountAmount) {
-            const discountForOrder = +(
-              tempDiscountAmount / sameDayOrders.length
-            ).toFixed(2);
-            for (const sameDayOrder of sameDayOrders) {
-              if (!sameDayOrder.discount && discount)
-                sameDayOrder.discount = {
-                  ...discount,
-                  distributed: discountForOrder,
-                };
-            }
-            break;
-          }
-          if (tempDiscountAmount > payableDetail.amount) {
-            const discountForOrder = +(
-              payableDetail.amount / sameDayOrders.length
-            ).toFixed(2);
-            for (const sameDayOrder of sameDayOrders) {
-              if (!sameDayOrder.discount && discount)
-                sameDayOrder.discount = {
-                  ...discount,
-                  distributed: discountForOrder,
-                };
-            }
-            tempDiscountAmount -= discountForOrder;
-          }
-        }
-      }
-    }
 
-    const isPaymentRequired = payableAmount > discountAmount;
-    if (isPaymentRequired) {
-      const payableOrders = payableDetails.map((payable) => ({
-        date: payable.date,
-        companyId: payable.companyId,
-        dateShift: `${dateToText(
-          payable.date
-        )} - ${`${payable.shift[0].toUpperCase()}${payable.shift.slice(1)}`}`,
-        items: orders
-          .filter(
-            (order) =>
-              order.delivery.date === payable.date &&
-              order.company._id.toString() === payable.companyId
-          )
-          .map((order) => order.item.name),
-        amount: payable.amount - discountAmount / payableDetails.length,
-      }));
-
-      // Create stripe checkout sessions
-      const pendingOrderId = generateRandomString();
-      const session = await stripeCheckout(
-        email,
-        pendingOrderId,
-        discountCodeId,
-        discountAmount,
-        payableOrders
-      );
-
-      const updatedOrders = orders.map((order) => {
-        const payableOrder = payableOrders.find(
-          (payableOrder) =>
-            payableOrder.date === order.delivery.date &&
-            payableOrder.companyId === order.company._id.toString()
-        );
-        if (payableOrder) {
-          const sameDayOrders = orders.filter(
-            (order) =>
-              order.delivery.date === payableOrder.date &&
-              order.company._id.toString() === payableOrder.companyId
-          );
-          return {
-            ...order,
-            status: 'PENDING',
-            pendingOrderId: pendingOrderId,
-            payment: {
-              distributed: +(
-                payableOrder.amount / sameDayOrders.length
-              ).toFixed(2),
-            },
-          };
-        }
-        return order;
-      });
-      await Order.insertMany(updatedOrders);
-      res.status(200).json(session.url);
-    } else {
+    if (!payableAmount || payableAmount === discountAmount) {
       const response = await Order.insertMany(orders);
       const ordersForCustomers = response.map((order) => ({
         _id: order._id,
@@ -750,9 +646,7 @@ router.post('/create-orders', auth, async (req, res) => {
         isReviewed: order.isReviewed,
         company: { shift: order.company.shift },
       }));
-
-      // Update total redeem amount
-      if (discount) {
+      if (discountAmount > 0) {
         await DiscountCode.updateOne(
           { _id: discountCodeId },
           {
@@ -762,8 +656,111 @@ router.post('/create-orders', auth, async (req, res) => {
           }
         );
       }
-      res.status(201).json(ordersForCustomers);
+      return res.status(201).json(ordersForCustomers);
     }
+
+    // If payable amount is greater than discount amount
+    const payableOrders = payableDetails.map((payable) => ({
+      date: payable.date,
+      companyId: payable.companyId,
+      dateShift: `${dateToText(
+        payable.date
+      )} - ${`${payable.shift[0].toUpperCase()}${payable.shift.slice(1)}`}`,
+      items: orders
+        .filter(
+          (order) =>
+            order.delivery.date === payable.date &&
+            order.company._id.toString() === payable.companyId
+        )
+        .map((order) => order.item.name),
+      amount: payable.amount - discountAmount / payableDetails.length,
+    }));
+    const pendingOrderId = generateRandomString();
+
+    // Update orders with payment and discount info
+    let tempDiscountAmount = discountAmount;
+    for (const order of orders) {
+      const payableOrder = payableOrders.find(
+        (payableOrder) =>
+          payableOrder.date === order.delivery.date &&
+          payableOrder.companyId === order.company._id.toString()
+      );
+
+      // Add payment info
+      if (!payableOrder) continue;
+      const sameDayPaymentOrders = orders.filter(
+        (order) =>
+          order.delivery.date === payableOrder.date &&
+          order.company._id.toString() === payableOrder.companyId
+      );
+      order.status = 'PENDING';
+      order.pendingOrderId = pendingOrderId;
+      if (!order.payment) order.payment = {};
+      order.payment.distributed = +(
+        payableOrder.amount / sameDayPaymentOrders.length
+      ).toFixed(2);
+
+      // Add discount info
+      if (!discount) continue;
+      const payableDetail = payableDetails.find(
+        (payableDetail) =>
+          payableDetail.date === order.delivery.date &&
+          payableDetail.companyId === order.company._id.toString()
+      );
+      if (!payableDetail) continue;
+      const sameDayDiscountOrders = orders.filter(
+        (order) =>
+          order.delivery.date === payableDetail.date &&
+          order.company._id.toString() === payableDetail.companyId
+      );
+      if (discountAmount > payableAmount) {
+        const discountForOrder = +(
+          payableDetail.amount / sameDayDiscountOrders.length
+        ).toFixed(2);
+        order.discount = { ...discount, distributed: discountForOrder };
+      }
+      if (payableDetail.amount >= discountAmount) {
+        const discountForOrder = +(
+          discountAmount / sameDayDiscountOrders.length
+        ).toFixed(2);
+        for (const sameDayDiscountOrder of sameDayDiscountOrders) {
+          sameDayDiscountOrder.discount = {
+            ...discount,
+            distributed: discountForOrder,
+          };
+        }
+        discountAmount -= discountForOrder;
+      }
+      if (discountAmount > payableDetail.amount) {
+        const discountForOrder = +(
+          payableDetail.amount / sameDayDiscountOrders.length
+        ).toFixed(2);
+        for (const sameDayDiscountOrder of sameDayDiscountOrders) {
+          sameDayDiscountOrder.discount = {
+            ...discount,
+            distributed: discountForOrder,
+          };
+        }
+        discountAmount -= discountForOrder;
+      }
+    }
+    console.log(
+      orders.map((order) => ({
+        date: dateToText(order.delivery.date),
+        paymentDist: order.payment?.distributed,
+        discountDist: order.discount?.distributed,
+      }))
+    );
+    return res.status(400).json({ message: 'tested' });
+    const session = await stripeCheckout(
+      email,
+      pendingOrderId,
+      discountCodeId,
+      discountAmount,
+      payableOrders
+    );
+    await Order.insertMany(orders);
+    res.status(200).json(session.url);
 
     // Update restaurant schedule status after 3 minutes
     setTimeout(async () => {

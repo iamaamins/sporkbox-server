@@ -43,15 +43,16 @@ router.post('/webhook', async (req, res) => {
       );
 
       // Update total redeem amount
-      +discountAmount > 0 &&
-        (await DiscountCode.updateOne(
+      if (+discountAmount > 0) {
+        await DiscountCode.updateOne(
           { _id: discountCodeId },
           {
             $inc: {
               totalRedeem: 1,
             },
           }
-        ));
+        );
+      }
 
       res.status(201).json('Orders status updated');
     } else if (event.type === 'checkout.session.expired' && isSporkBox) {
