@@ -35,7 +35,6 @@ router.post('/add-company', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-
   const {
     name,
     code,
@@ -48,14 +47,12 @@ router.post('/add-company', auth, async (req, res) => {
     addressLine1,
     addressLine2,
   } = req.body;
-
   if (
     !name ||
     !code ||
     !city ||
     !state ||
     !zip ||
-    !shift ||
     !website ||
     !shiftBudget ||
     !addressLine1
@@ -64,20 +61,24 @@ router.post('/add-company', auth, async (req, res) => {
     res.status(400);
     throw new Error(requiredFields);
   }
-  checkShift(res, shift);
+  if (shift) checkShift(res, shift);
 
   try {
-    const companyExist = await Company.findOne({ code, shift });
-    if (companyExist) {
-      console.log('A company with a same shift already exists');
+    const prevCompany = await Company.findOne({ code }).lean();
+    if (prevCompany?.shift === shift) {
+      console.log('A company with the same shift already exists');
       res.status(400);
-      throw new Error('A company with a same shift already exists');
+      throw new Error('A company with the same shift already exists');
+    }
+    if (prevCompany?.shift === 'general') {
+      console.log('A non-shift company with the same code already exists');
+      res.status(400);
+      throw new Error('A non-shift company with the same code already exists');
     }
 
     const response = await Company.create({
       name,
       code,
-      shift,
       website,
       address: {
         city,
@@ -88,21 +89,23 @@ router.post('/add-company', auth, async (req, res) => {
       },
       shiftBudget,
       status: 'ACTIVE',
+      shift: shift || 'general',
     });
-
     const company = response.toObject();
     deleteFields(company);
     const { website: companyWebsite, createdAt, ...rest } = company;
 
-    await User.updateMany(
-      { 'companies.code': code },
-      {
-        $push: {
-          shifts: company.shift,
-          companies: { ...rest, status: 'ARCHIVED' },
-        },
-      }
-    );
+    if (shift) {
+      await User.updateMany(
+        { 'companies.code': code },
+        {
+          $push: {
+            shifts: company.shift,
+            companies: { ...rest, status: 'ARCHIVED' },
+          },
+        }
+      );
+    }
     res.status(200).json(company);
   } catch (err) {
     console.log(err);
@@ -117,7 +120,6 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-
   const { companyId } = req.params;
   const {
     name,
@@ -129,7 +131,6 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     addressLine1,
     addressLine2,
   } = req.body;
-
   if (
     !zip ||
     !name ||
@@ -163,7 +164,6 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     )
       .lean()
       .orFail();
-
     await User.updateMany(
       { 'companies._id': companyId },
       {

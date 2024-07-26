@@ -50,6 +50,7 @@ const userSchema = new Schema<UserSchema>(
           type: String,
           trim: true,
           lowercase: true,
+          enum: ['day', 'night', 'general'],
           required: [true, 'Please provide a shift'],
         },
         address: {

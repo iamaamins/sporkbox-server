@@ -23,11 +23,13 @@ export interface Address {
   addressLine2?: string;
 }
 
+type Shift = 'day' | 'night' | 'general';
+
 export interface CompanyDetails {
   name: string;
-  shift: string;
   website: string;
   code: string;
+  shift: Shift;
   shiftBudget: number;
 }
 
@@ -73,7 +75,7 @@ export interface OrderCompany {
   _id: Types.ObjectId;
   name: string;
   code: string;
-  shift: string;
+  shift: Shift;
 }
 
 export interface OrderForEmail {
@@ -127,9 +129,9 @@ export interface UserSchema extends GenericUser {
   email: string;
   password: string;
   status: string;
-  shifts: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;
+  shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
   role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
@@ -173,24 +175,24 @@ export type DiscountCodeSchema = {
 };
 
 export interface DateTotal {
-  shift: string;
+  shift: Shift;
   date: number;
   total: number;
   companyId: string;
 }
 
-interface Restaurant {
+interface StatRestaurant {
   id: string;
   name: string;
 }
 
 export interface OrderStat {
-  restaurant: Restaurant;
+  restaurant: StatRestaurant;
   quantity: number;
 }
 
 export interface ItemStat {
-  restaurant: Restaurant;
+  restaurant: StatRestaurant;
   item: {
     id: string;
     name: string;
@@ -246,12 +248,7 @@ export type Order = {
     _id: Types.ObjectId;
     name: string;
   };
-  company: {
-    _id: Types.ObjectId;
-    name: string;
-    code: string;
-    shift: string;
-  };
+  company: OrderCompany;
   delivery: {
     date: number;
     address: {

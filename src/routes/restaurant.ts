@@ -94,7 +94,6 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
       }
     }
     scheduledRestaurants.sort(sortByDate);
-
     res.status(200).json(scheduledRestaurants);
   } catch (err) {
     console.log(err);
@@ -109,14 +108,12 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-
   const { date, companyId, restaurantId } = req.body;
   if (!date || !companyId || !restaurantId) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
-
   if (dateToMS(date) < now) {
     console.log("Cant' schedule on the provided date");
     res.status(400);
@@ -159,7 +156,6 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
       code: company.code,
       shift: company.shift,
     };
-
     const schedule = {
       date,
       status: 'ACTIVE',
@@ -201,7 +197,6 @@ router.patch(
       res.status(403);
       throw new Error(unAuthorized);
     }
-
     const { action } = req.body;
     const { restaurantId, date, companyCode } = req.params;
     if (!action) {
@@ -318,7 +313,6 @@ router.patch(
         'restaurant._id': updatedRestaurant._id,
         'company._id': removedSchedule.company._id,
       });
-
       await Promise.all(
         orders.map(
           async (order) =>
@@ -351,7 +345,6 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-
   const { restaurantId } = req.params;
   const {
     name,

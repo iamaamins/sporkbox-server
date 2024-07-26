@@ -55,27 +55,28 @@ router.post('/register-customer', async (req, res) => {
       .lean()
       .orFail();
 
-    const archivedCompanies = companies.map((company) => ({
-      ...company,
-      status: 'ARCHIVED',
-    }));
-    const shifts = companies
-      .filter((company) => company.status === 'ACTIVE')
-      .map((activeCompany) => activeCompany.shift);
+    const shifts = [];
+    if (!companies.some((company) => company.shift === 'general')) {
+      for (const company of companies) {
+        if (company.status === 'ACTIVE') {
+          shifts.push(company.shift);
+        }
+        company.status = 'ARCHIVED';
+      }
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
     const response = await User.create({
       firstName,
       lastName,
       email,
       shifts,
+      companies,
       status: 'ACTIVE',
       role: 'CUSTOMER',
       password: hashedPassword,
       subscribedTo: subscriptions,
-      companies: archivedCompanies,
     });
     const customer = response.toObject();
 

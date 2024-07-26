@@ -83,6 +83,8 @@ const orderSchema = new Schema<OrderSchema>(
       shift: {
         type: String,
         trim: true,
+        lowercase: true,
+        enum: ['day', 'night', 'general'],
         required: [true, 'Please provide company name'],
       },
     },
