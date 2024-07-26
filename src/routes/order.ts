@@ -31,7 +31,7 @@ import {
 import DiscountCode from '../models/discountCode';
 import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
-import { OrdersPayload, UpcomingDataMap, InitialOrder } from '../types';
+import { OrdersPayload, UpcomingDataMap, Order as OrderType } from '../types';
 
 const router = Router();
 
@@ -402,7 +402,7 @@ router.post('/create-orders', auth, async (req, res) => {
     }
 
     // Create orders
-    const orders: InitialOrder[] = orderItems.map((orderItem) => {
+    const orders: OrderType[] = orderItems.map((orderItem) => {
       const restaurant = upcomingRestaurants.find(
         (upcomingRestaurant) =>
           upcomingRestaurant._id.toString() === orderItem.restaurantId

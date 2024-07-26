@@ -11,7 +11,7 @@ import {
   Addons,
   DateTotal,
   GenericUser,
-  InitialOrder,
+  Order as OrderType,
   UserCompany,
 } from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -474,7 +474,7 @@ export async function updateRestaurantScheduleStatus(
 
 export async function createOrders(
   res: Response,
-  orders: InitialOrder[],
+  orders: OrderType[],
   discountCodeId?: string,
   discountAmount?: number
 ) {

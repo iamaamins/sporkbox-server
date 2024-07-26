@@ -235,7 +235,7 @@ export type Discount = {
   distributed?: number;
 };
 
-export type InitialOrder = {
+export type Order = {
   customer: {
     _id: Types.ObjectId;
     firstName: string;
