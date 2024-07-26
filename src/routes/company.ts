@@ -64,13 +64,13 @@ router.post('/add-company', auth, async (req, res) => {
   if (shift) checkShift(res, shift);
 
   try {
-    const prevCompany = await Company.findOne({ code }).lean();
-    if (prevCompany?.shift === shift) {
+    const companies = await Company.find({ code }).lean();
+    if (companies.some((company) => company.shift === shift)) {
       console.log('A company with the same shift already exists');
       res.status(400);
       throw new Error('A company with the same shift already exists');
     }
-    if (prevCompany?.shift === 'general') {
+    if (companies.some((company) => company.shift === 'general')) {
       console.log('A non-shift company with the same code already exists');
       res.status(400);
       throw new Error('A non-shift company with the same code already exists');
