@@ -7,13 +7,20 @@ import mail from '@sendgrid/mail';
 import { Types } from 'mongoose';
 import Order from '../models/order';
 import Restaurant from '../models/restaurant';
-import { Addons, DateTotal, GenericUser, UserCompany } from '../types';
+import {
+  Addons,
+  DateTotal,
+  GenericUser,
+  InitialOrder,
+  UserCompany,
+} from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import {
   thursdayOrderReminderTemplate,
   fridayOrderReminderTemplate,
 } from './emailTemplates';
 import { invalidShift } from './messages';
+import DiscountCode from '../models/discountCode';
 
 type SortScheduledRestaurant = {
   schedule: {
@@ -463,4 +470,36 @@ export async function updateRestaurantScheduleStatus(
       }
     }
   }
+}
+
+export async function createOrders(
+  res: Response,
+  orders: InitialOrder[],
+  discountCodeId?: string,
+  discountAmount?: number
+) {
+  const response = await Order.insertMany(orders);
+  const ordersForCustomers = response.map((order) => ({
+    _id: order._id,
+    item: order.item,
+    status: order.status,
+    createdAt: order.createdAt,
+    restaurant: order.restaurant,
+    delivery: {
+      date: order.delivery.date,
+    },
+    isReviewed: order.isReviewed,
+    company: { shift: order.company.shift },
+  }));
+  if (discountAmount) {
+    await DiscountCode.updateOne(
+      { _id: discountCodeId },
+      {
+        $inc: {
+          totalRedeem: 1,
+        },
+      }
+    );
+  }
+  res.status(201).json(ordersForCustomers);
 }

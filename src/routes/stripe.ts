@@ -26,7 +26,6 @@ router.post('/webhook', async (req, res) => {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
-
     if (event.type === 'checkout.session.completed' && isSporkBox) {
       const session = event.data.object as Stripe.Checkout.Session;
       await Order.updateMany(
@@ -41,9 +40,7 @@ router.post('/webhook', async (req, res) => {
           },
         }
       );
-
-      // Update total redeem amount
-      if (+discountAmount > 0) {
+      if (+discountAmount) {
         await DiscountCode.updateOne(
           { _id: discountCodeId },
           {
@@ -53,9 +50,9 @@ router.post('/webhook', async (req, res) => {
           }
         );
       }
-
       res.status(201).json('Orders status updated');
-    } else if (event.type === 'checkout.session.expired' && isSporkBox) {
+    }
+    if (event.type === 'checkout.session.expired' && isSporkBox) {
       await Order.deleteMany({ pendingOrderId, status: 'PENDING' });
       res.status(201).json('Orders deleted');
     }
@@ -72,7 +69,6 @@ router.get('/session/:sessionId', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-
   const { sessionId } = req.params;
   try {
     const response = await stripe.checkout.sessions.retrieve(sessionId);

@@ -234,3 +234,48 @@ export type Discount = {
   value: number;
   distributed?: number;
 };
+
+export type InitialOrder = {
+  customer: {
+    _id: Types.ObjectId;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  restaurant: {
+    _id: Types.ObjectId;
+    name: string;
+  };
+  company: {
+    _id: Types.ObjectId;
+    name: string;
+    code: string;
+    shift: string;
+  };
+  delivery: {
+    date: number;
+    address: {
+      city: string;
+      state: string;
+      zip: string;
+      addressLine1: string;
+      addressLine2?: string;
+    };
+  };
+  discount?: Discount;
+  status: 'PENDING' | 'PROCESSING';
+  item: {
+    _id: Types.ObjectId;
+    name: string;
+    tags: string;
+    description: string;
+    quantity: number;
+    image: string;
+    optionalAddons: string;
+    requiredAddons: string;
+    removedIngredients: string;
+    total: number;
+  };
+  pendingOrderId?: string;
+  payment?: { distributed?: number };
+};
