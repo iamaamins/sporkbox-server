@@ -668,14 +668,16 @@ router.post('/create-orders', auth, async (req, res) => {
               order.delivery.date === payableDetail.date &&
               order.company._id.toString() === payableDetail.companyId
           );
-          if (discountAmount > payableAmount) {
+          if (discountAmount >= payableAmount) {
             const discountForOrder = +(
               payableDetail.amount / sameDayDiscountOrders.length
             ).toFixed(2);
             order.discount = { ...discount, distributed: discountForOrder };
-            continue;
           }
-          if (payableDetail.amount >= tempDiscountAmountTwo) {
+          if (
+            payableAmount > discountAmount &&
+            payableDetail.amount >= tempDiscountAmountTwo
+          ) {
             const discountForOrder = +(
               tempDiscountAmountTwo / sameDayDiscountOrders.length
             ).toFixed(2);
@@ -687,9 +689,11 @@ router.post('/create-orders', auth, async (req, res) => {
             }
             tempDiscountAmountTwo -=
               discountForOrder * sameDayDiscountOrders.length;
-            continue;
           }
-          if (tempDiscountAmountTwo > payableDetail.amount) {
+          if (
+            payableAmount > discountAmount &&
+            tempDiscountAmountTwo > payableDetail.amount
+          ) {
             const discountForOrder = +(
               payableDetail.amount / sameDayDiscountOrders.length
             ).toFixed(2);
@@ -701,7 +705,6 @@ router.post('/create-orders', auth, async (req, res) => {
             }
             tempDiscountAmountTwo -=
               discountForOrder * sameDayDiscountOrders.length;
-            continue;
           }
         }
       }
