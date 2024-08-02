@@ -1,26 +1,17 @@
 import sharp from 'sharp';
 import crypto from 'crypto';
-import cron from 'cron';
 import jwt from 'jsonwebtoken';
-import User from '../models/user';
-import mail from '@sendgrid/mail';
 import { Types } from 'mongoose';
 import Order from '../models/order';
+import { CronJob } from 'cron';
+import User from '../models/user';
+import mail from '@sendgrid/mail';
 import Restaurant from '../models/restaurant';
-import {
-  Addons,
-  DateTotal,
-  GenericUser,
-  Order as OrderType,
-  UserCompany,
-} from '../types';
-import { Request, Response, NextFunction, RequestHandler } from 'express';
-import {
-  thursdayOrderReminderTemplate,
-  fridayOrderReminderTemplate,
-} from './emailTemplates';
 import { invalidShift } from './messages';
 import DiscountCode from '../models/discountCode';
+import { Addons, DateTotal, Order as OrderType, UserCompany } from '../types';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { fridayOrderReminder, thursdayOrderReminder } from './emails';
 
 type SortScheduledRestaurant = {
   schedule: {
@@ -28,7 +19,7 @@ type SortScheduledRestaurant = {
   };
 };
 
-type OrderReminderTemplate = (customer: GenericUser) => {
+type OrderReminder = (email: string) => {
   to: string;
   from: string;
   subject: string;
@@ -227,115 +218,6 @@ export const formatAddons = (parsedAddons: Addons) => ({
   addable: parsedAddons.addable || splitAddons(parsedAddons.addons).length,
 });
 
-export function getFutureDate(dayToAdd: number) {
-  const today = new Date();
-  const sunday = today.getUTCDate() - today.getUTCDay();
-  const futureDate = today.setUTCDate(sunday + dayToAdd);
-  return new Date(futureDate).setUTCHours(0, 0, 0, 0);
-}
-
-const nextWeekMonday = getFutureDate(8);
-const followingWeekSunday = getFutureDate(14);
-
-export async function sendOrderReminderEmails(
-  orderReminderTemplate: OrderReminderTemplate
-) {
-  try {
-    const customers = await User.find({
-      role: 'CUSTOMER',
-      status: 'ACTIVE',
-      'subscribedTo.orderReminder': true,
-    })
-      .select('companies email')
-      .lean();
-
-    const response = await Restaurant.find({
-      schedules: {
-        $elemMatch: {
-          status: 'ACTIVE',
-          date: { $gte: now },
-        },
-      },
-    })
-      .select('schedules')
-      .lean();
-
-    const upcomingRestaurants = response
-      .map((upcomingWeekRestaurant) => ({
-        schedules: upcomingWeekRestaurant.schedules.filter(
-          (schedule) =>
-            schedule.status === 'ACTIVE' && dateToMS(schedule.date) >= now
-        ),
-      }))
-      .map((upcomingWeekRestaurant) =>
-        upcomingWeekRestaurant.schedules.map((schedule) => {
-          const { schedules, ...rest } = upcomingWeekRestaurant;
-          return {
-            ...rest,
-            company: {
-              _id: schedule.company._id,
-            },
-          };
-        })
-      )
-      .flat(2);
-
-    const upcomingOrders = await Order.find({
-      'delivery.date': { $gte: nextWeekMonday, $lt: followingWeekSunday },
-    })
-      .select('customer')
-      .lean();
-
-    const customersWithNoOrder = customers.filter(
-      (customer) =>
-        !upcomingOrders.some(
-          (upcomingOrder) =>
-            upcomingOrder.customer._id.toString() === customer._id.toString()
-        ) &&
-        upcomingRestaurants.some((upcomingRestaurant) =>
-          customer.companies?.some(
-            (company) =>
-              company._id.toString() ===
-              upcomingRestaurant.company._id.toString()
-          )
-        )
-    );
-
-    await Promise.all(
-      customersWithNoOrder.map(
-        async (customer) => await mail.send(orderReminderTemplate(customer))
-      )
-    );
-    console.log(
-      `Order reminder sent to ${customersWithNoOrder.length} customers`
-    );
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-// Send the reminder at Thursday 2 PM
-new cron.CronJob(
-  '0 0 14 * * Thu',
-  () => {
-    sendOrderReminderEmails(thursdayOrderReminderTemplate);
-  },
-  null,
-  true,
-  'America/Los_Angeles'
-);
-
-// Send the reminder at Friday 8 AM
-new cron.CronJob(
-  '0 0 8 * * Fri',
-  () => {
-    sendOrderReminderEmails(fridayOrderReminderTemplate);
-  },
-  null,
-  true,
-  'America/Los_Angeles'
-);
-
 // Skip middleware for specific routes/paths
 export function unless(path: string, middleware: RequestHandler) {
   return function (req: Request, res: Response, next: NextFunction) {
@@ -503,3 +385,93 @@ export async function createOrders(
   }
   res.status(201).json(ordersForCustomers);
 }
+
+export function getFutureDate(dayToAdd: number) {
+  const today = new Date();
+  const sunday = today.getUTCDate() - today.getUTCDay();
+  const futureDate = today.setUTCDate(sunday + dayToAdd);
+  return new Date(futureDate).setUTCHours(0, 0, 0, 0);
+}
+
+export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
+  const thisFriday = getFutureDate(5);
+  const nextWeekMonday = getFutureDate(8);
+  const followingWeekSunday = getFutureDate(14);
+
+  try {
+    const customers = await User.find({
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      'subscribedTo.orderReminder': true,
+    })
+      .select('companies email')
+      .lean();
+    const restaurants = await Restaurant.find({
+      schedules: {
+        $elemMatch: {
+          status: 'ACTIVE',
+          date: { $gte: now, $lte: thisFriday },
+        },
+      },
+    })
+      .select('schedules')
+      .lean();
+    const upcomingOrders = await Order.find({
+      'delivery.date': { $gte: nextWeekMonday, $lt: followingWeekSunday },
+    })
+      .select('customer')
+      .lean();
+
+    let companies = [];
+    for (const restaurant of restaurants) {
+      for (const schedule of restaurant.schedules) {
+        if (schedule.status === 'ACTIVE' && dateToMS(schedule.date) >= now) {
+          companies.push(schedule.company._id);
+        }
+      }
+    }
+    const emails = [];
+    for (const customer of customers) {
+      if (
+        !upcomingOrders.some(
+          (order) => order.customer._id.toString() === customer._id.toString()
+        ) &&
+        companies.some((el) =>
+          customer.companies.some(
+            (company) => company._id.toString() === el.toString()
+          )
+        )
+      ) {
+        emails.push(customer.email);
+      }
+    }
+    await Promise.all(
+      emails.map(async (email) => await mail.send(orderReminder(email)))
+    );
+    console.log(`Order reminder sent to ${emails.length} customers`);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+// Send the reminder at Thursday 2 PM
+new CronJob(
+  '0 0 14 * * Thu',
+  () => {
+    sendOrderReminderEmails(thursdayOrderReminder);
+  },
+  null,
+  true,
+  'America/Los_Angeles'
+);
+
+// Send the reminder at Friday 8 AM
+new CronJob(
+  '0 0 8 * * Fri',
+  () => {
+    sendOrderReminderEmails(fridayOrderReminder);
+  },
+  null,
+  true,
+  'America/Los_Angeles'
+);

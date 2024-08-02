@@ -18,7 +18,7 @@ import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
 import { Addons } from '../types';
 import mail from '@sendgrid/mail';
-import { orderCancelTemplate } from '../lib/emailTemplates';
+import { orderCancel } from '../lib/emails';
 import {
   invalidOptionalAddOnsFormat,
   invalidRequiredAddOnsFormat,
@@ -315,8 +315,7 @@ router.patch(
       });
       await Promise.all(
         orders.map(
-          async (order) =>
-            await mail.send(orderCancelTemplate(order.toObject()))
+          async (order) => await mail.send(orderCancel(order.toObject()))
         )
       );
       await Order.updateMany(

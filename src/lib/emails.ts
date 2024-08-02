@@ -1,6 +1,6 @@
 import { OrderForEmail, GenericUser } from '../types';
 
-export function orderDeliveryTemplate(order: OrderForEmail) {
+export function orderDelivery(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -19,7 +19,7 @@ export function orderDeliveryTemplate(order: OrderForEmail) {
   };
 }
 
-export function orderArchiveTemplate(order: OrderForEmail) {
+export function orderArchive(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -30,7 +30,7 @@ export function orderArchiveTemplate(order: OrderForEmail) {
   };
 }
 
-export function orderCancelTemplate(order: OrderForEmail) {
+export function orderCancel(order: OrderForEmail) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,
@@ -41,7 +41,7 @@ export function orderCancelTemplate(order: OrderForEmail) {
   };
 }
 
-export function passwordResetTemplate(user: GenericUser, link: string) {
+export function passwordReset(user: GenericUser, link: string) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
@@ -52,7 +52,7 @@ export function passwordResetTemplate(user: GenericUser, link: string) {
   };
 }
 
-export function passwordResetConfirmationTemplate(user: GenericUser) {
+export function passwordResetConfirmation(user: GenericUser) {
   return {
     to: user.email,
     from: process.env.SENDER_EMAIL as string,
@@ -63,9 +63,9 @@ export function passwordResetConfirmationTemplate(user: GenericUser) {
   };
 }
 
-export function thursdayOrderReminderTemplate(user: GenericUser) {
+export function thursdayOrderReminder(email: string) {
   return {
-    to: user.email,
+    to: email,
     from: process.env.SENDER_EMAIL as string,
     subject: `Have you placed your order for lunch next week?`,
     html: `
@@ -88,9 +88,9 @@ export function thursdayOrderReminderTemplate(user: GenericUser) {
   };
 }
 
-export function fridayOrderReminderTemplate(user: GenericUser) {
+export function fridayOrderReminder(email: string) {
   return {
-    to: user.email,
+    to: email,
     from: process.env.SENDER_EMAIL as string,
     subject: `Have you placed your order for lunch next week?`,
     html: `
@@ -113,7 +113,7 @@ export function fridayOrderReminderTemplate(user: GenericUser) {
   };
 }
 
-export function orderRefundTemplate(order: OrderForEmail, amount: number) {
+export function orderRefund(order: OrderForEmail, amount: number) {
   return {
     to: order.customer.email,
     from: process.env.SENDER_EMAIL as string,

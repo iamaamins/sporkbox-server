@@ -17,11 +17,11 @@ import {
   createOrders,
 } from '../lib/utils';
 import {
-  orderArchiveTemplate,
-  orderCancelTemplate,
-  orderDeliveryTemplate,
-  orderRefundTemplate,
-} from '../lib/emailTemplates';
+  orderArchive,
+  orderCancel,
+  orderDelivery,
+  orderRefund,
+} from '../lib/emails';
 import mail from '@sendgrid/mail';
 import {
   stripeCheckout,
@@ -835,8 +835,7 @@ router.patch('/change-orders-status', auth, async (req, res) => {
     const orders = await Order.find({ _id: { $in: orderIds } });
     await Promise.all(
       orders.map(
-        async (order) =>
-          await mail.send(orderDeliveryTemplate(order.toObject()))
+        async (order) => await mail.send(orderDelivery(order.toObject()))
       )
     );
     res.status(200).json('Delivery email sent');
@@ -865,7 +864,7 @@ router.patch('/:orderId/change-order-status', auth, async (req, res) => {
     )
       .select('-__v -updatedAt')
       .orFail();
-    await mail.send(orderArchiveTemplate(updatedOrder.toObject()));
+    await mail.send(orderArchive(updatedOrder.toObject()));
     res.status(201).json(updatedOrder);
   } catch (err) {
     console.log(err);
@@ -903,7 +902,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     if (!order.payment) {
       await order.save();
-      await mail.send(orderCancelTemplate(order.toObject()));
+      await mail.send(orderCancel(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
@@ -911,7 +910,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
     if (distributed) {
       await stripeRefund(distributed, order.payment.intent);
       await order.save();
-      await mail.send(orderRefundTemplate(order.toObject(), distributed));
+      await mail.send(orderRefund(order.toObject(), distributed));
       return res
         .status(200)
         .json({ message: `Order cancelled and $${distributed} refunded` });
@@ -925,14 +924,14 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     if (totalPaid === refunded) {
       await order.save();
-      await mail.send(orderCancelTemplate(order.toObject()));
+      await mail.send(orderCancel(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
     if (totalPaid >= totalRefund) {
       await stripeRefund(askingRefund, order.payment.intent);
       await order.save();
-      await mail.send(orderRefundTemplate(order.toObject(), askingRefund));
+      await mail.send(orderRefund(order.toObject(), askingRefund));
       return res
         .status(200)
         .json({ message: `Order cancelled and $${askingRefund} refunded` });
@@ -942,7 +941,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       const finalRefund = totalPaid - refunded;
       await stripeRefund(finalRefund, order.payment.intent);
       await order.save();
-      await mail.send(orderRefundTemplate(order.toObject(), finalRefund));
+      await mail.send(orderRefund(order.toObject(), finalRefund));
       return res
         .status(200)
         .json({ message: `Order cancelled and $${finalRefund} refunded` });

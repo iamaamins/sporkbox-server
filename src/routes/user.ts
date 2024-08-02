@@ -5,10 +5,7 @@ import User from '../models/user';
 import auth from '../middleware/auth';
 import { setCookie, deleteFields } from '../lib/utils';
 import { Router } from 'express';
-import {
-  passwordResetTemplate,
-  passwordResetConfirmationTemplate,
-} from '../lib/emailTemplates';
+import { passwordReset, passwordResetConfirmation } from '../lib/emails';
 import {
   invalidCredentials,
   invalidEmail,
@@ -93,7 +90,7 @@ router.post('/forgot-password', async (req, res) => {
     );
     const link = `${process.env.CLIENT_URL}/reset-password/${user._id}/${token}`;
 
-    await mail.send(passwordResetTemplate(user.toObject(), link));
+    await mail.send(passwordReset(user.toObject(), link));
     res.status(200).json('Password reset details sent to your email');
   } catch (err) {
     console.log(err);
@@ -131,7 +128,7 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
         password: hashedPassword,
       }
     ).orFail();
-    await mail.send(passwordResetConfirmationTemplate(user.toObject()));
+    await mail.send(passwordResetConfirmation(user.toObject()));
     res.status(201).json('Password reset successful');
   } catch (err) {
     console.log(err);
