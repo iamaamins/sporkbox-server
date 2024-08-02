@@ -633,7 +633,7 @@ router.post('/create-orders', auth, async (req, res) => {
     let tempDiscountAmountTwo = discountAmount;
     for (const order of orders) {
       // Add payment info
-      if (payableOrders.length) {
+      if (payableOrders.length && !order.payment) {
         const payableOrder = payableOrders.find(
           (payableOrder) =>
             payableOrder.date === order.delivery.date &&
@@ -656,7 +656,7 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Add discount info
-      if (discount && tempDiscountAmountTwo) {
+      if (discount && !order.discount && tempDiscountAmountTwo) {
         const payableDetail = payableDetails.find(
           (payableDetail) =>
             payableDetail.date === order.delivery.date &&
@@ -672,7 +672,12 @@ router.post('/create-orders', auth, async (req, res) => {
             const discountForOrder = +(
               payableDetail.amount / sameDayDiscountOrders.length
             ).toFixed(2);
-            order.discount = { ...discount, distributed: discountForOrder };
+            for (const sameDayDiscountOrder of sameDayDiscountOrders) {
+              sameDayDiscountOrder.discount = {
+                ...discount,
+                distributed: discountForOrder,
+              };
+            }
           }
           if (
             payableAmount > discountAmount &&
