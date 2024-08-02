@@ -394,8 +394,8 @@ export function getFutureDate(dayToAdd: number) {
 }
 
 export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
-  const thisFriday = getFutureDate(5);
   const nextWeekMonday = getFutureDate(8);
+  const nextWeekFriday = getFutureDate(12);
   const followingWeekSunday = getFutureDate(14);
 
   try {
@@ -410,7 +410,7 @@ export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
       schedules: {
         $elemMatch: {
           status: 'ACTIVE',
-          date: { $gte: now, $lte: thisFriday },
+          date: { $gte: now, $lte: nextWeekFriday },
         },
       },
     })
