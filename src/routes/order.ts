@@ -632,14 +632,17 @@ router.post('/create-orders', auth, async (req, res) => {
     const pendingOrderId = generateRandomString();
     let tempDiscountAmountTwo = discountAmount;
     for (const order of orders) {
-      // Add payment info
-      if (payableOrders.length && !order.payment) {
+      // Update order status and add payment info
+      if (payableOrders.length) {
+        order.status = 'PENDING';
+        order.pendingOrderId = pendingOrderId;
+
         const payableOrder = payableOrders.find(
           (payableOrder) =>
             payableOrder.date === order.delivery.date &&
             payableOrder.companyId === order.company._id.toString()
         );
-        if (payableOrder) {
+        if (payableOrder && !order.payment) {
           const sameDayPaymentOrders = orders.filter(
             (order) =>
               order.delivery.date === payableOrder.date &&
@@ -648,10 +651,10 @@ router.post('/create-orders', auth, async (req, res) => {
           const paymentForOrder = +(
             payableOrder.amount / sameDayPaymentOrders.length
           ).toFixed(2);
-          order.status = 'PENDING';
-          order.pendingOrderId = pendingOrderId;
-          if (!order.payment) order.payment = {};
-          order.payment.distributed = paymentForOrder;
+          for (const sameDayPaymentOrder of sameDayPaymentOrders) {
+            sameDayPaymentOrder.payment = {};
+            sameDayPaymentOrder.payment.distributed = paymentForOrder;
+          }
         }
       }
 
