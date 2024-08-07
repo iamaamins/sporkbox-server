@@ -593,19 +593,22 @@ router.post('/create-orders', auth, async (req, res) => {
     const payableOrders = [];
     for (const payableDetail of payableDetails) {
       let paymentAmount = 0;
-      if (tempDiscountAmountOne >= payableAmount) paymentAmount = 0;
-      if (!tempDiscountAmountOne) paymentAmount = payableDetail.amount;
-      if (payableDetail.amount >= tempDiscountAmountOne) {
+      if (discountAmount >= payableAmount) paymentAmount = 0;
+      if (discountAmount < payableAmount && !tempDiscountAmountOne)
+        paymentAmount = payableDetail.amount;
+      if (
+        discountAmount < payableAmount &&
+        payableDetail.amount >= tempDiscountAmountOne
+      ) {
         paymentAmount = payableDetail.amount - tempDiscountAmountOne;
         tempDiscountAmountOne -= tempDiscountAmountOne;
       }
       if (
-        tempDiscountAmountOne < payableAmount &&
+        discountAmount < payableAmount &&
         payableDetail.amount < tempDiscountAmountOne
       ) {
-        paymentAmount =
-          payableDetail.amount - tempDiscountAmountOne / payableDetails.length;
-        tempDiscountAmountOne -= tempDiscountAmountOne / payableDetails.length;
+        paymentAmount = 0;
+        tempDiscountAmountOne -= payableDetail.amount;
       }
       if (paymentAmount) {
         payableOrders.push({
