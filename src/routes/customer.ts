@@ -50,6 +50,7 @@ router.post('/register-customer', async (req, res) => {
   try {
     const companies = await Company.find({
       code: companyCode,
+      status: 'ACTIVE',
     })
       .select('-updatedAt -createdAt -website')
       .lean()
