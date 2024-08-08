@@ -848,7 +848,7 @@ router.patch('/change-orders-status', auth, async (req, res) => {
 });
 
 // Archive an order by admin
-router.patch('/:orderId/archive-order', auth, async (req, res) => {
+router.patch('/:orderId/archive', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
     res.status(403);
@@ -922,7 +922,9 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       await mail.send(orderRefund(order.toObject(), distributed));
       return res
         .status(200)
-        .json({ message: `Order cancelled and $${distributed} refunded` });
+        .json({
+          message: `Order cancelled and $${distributed.toFixed(2)} refunded`,
+        });
     }
 
     //TODO: Remove below code after August 17, 2024
