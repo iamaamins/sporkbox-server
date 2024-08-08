@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 
-interface PayableOrders {
+interface OrdersWithPayment {
   items: string[];
   amount: number;
   dateShift: string;
@@ -18,21 +18,21 @@ export async function stripeCheckout(
   pendingOrderId: string,
   discountCodeId: string,
   discountAmount: number,
-  payableOrders: PayableOrders[]
+  ordersWithPayment: OrdersWithPayment[]
 ) {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
-      line_items: payableOrders.map((payableOrder) => {
+      line_items: ordersWithPayment.map((orderWithPayment) => {
         return {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: payableOrder.dateShift,
-              description: payableOrder.items.join(', '),
+              name: orderWithPayment.dateShift,
+              description: orderWithPayment.items.join(', '),
             },
-            unit_amount: Math.round(payableOrder.amount * 100),
+            unit_amount: Math.round(orderWithPayment.amount * 100),
           },
           quantity: 1,
         };
