@@ -731,7 +731,7 @@ router.post('/create-orders', auth, async (req, res) => {
     );
     await Order.insertMany(orders);
     res.status(200).json(session.url);
-    await updateScheduleStatus(
+    updateScheduleStatus(
       companyIds,
       restaurantIds,
       deliveryDates,
