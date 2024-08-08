@@ -36,7 +36,7 @@ export function orderCancel(order: OrderForEmail) {
     from: process.env.SENDER_EMAIL as string,
     subject: `Order Status Update`,
     html: `
-        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Spork Box order of ${order.item.name} from ${order.restaurant.name} is cancelled. </p>
+        <p>Hi ${order.customer.firstName} ${order.customer.lastName}, your Spork Box order of ${order.item.name} from ${order.restaurant.name} is cancelled.</p>
         `,
   };
 }

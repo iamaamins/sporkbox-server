@@ -851,8 +851,8 @@ router.patch('/change-orders-status', auth, async (req, res) => {
   }
 });
 
-// Change single order status
-router.patch('/:orderId/change-order-status', auth, async (req, res) => {
+// Archive an order by admin
+router.patch('/:orderId/archive-order', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
     res.status(403);
@@ -870,6 +870,13 @@ router.patch('/:orderId/change-order-status', auth, async (req, res) => {
     )
       .select('-__v -updatedAt')
       .orFail();
+
+    if (updatedOrder.payment)
+      await stripeRefund(
+        updatedOrder.payment.distributed,
+        updatedOrder.payment.intent
+      );
+
     await mail.send(orderArchive(updatedOrder.toObject()));
     res.status(201).json(updatedOrder);
   } catch (err) {
