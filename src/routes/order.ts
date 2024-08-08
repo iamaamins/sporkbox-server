@@ -867,7 +867,7 @@ router.patch('/:orderId/archive', auth, async (req, res) => {
       .select('-__v -updatedAt')
       .orFail();
 
-    if (updatedOrder.payment)
+    if (updatedOrder.payment && updatedOrder.payment.distributed)
       await stripeRefund(
         updatedOrder.payment.distributed,
         updatedOrder.payment.intent
