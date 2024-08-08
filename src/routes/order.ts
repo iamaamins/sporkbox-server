@@ -651,9 +651,8 @@ router.post('/create-orders', auth, async (req, res) => {
               order.delivery.date === payableOrder.date &&
               order.company._id.toString() === payableOrder.companyId
           );
-          const paymentForOrder = +(
-            payableOrder.amount / sameDayPaymentOrders.length
-          ).toFixed(2);
+          const paymentForOrder =
+            payableOrder.amount / sameDayPaymentOrders.length;
           for (const sameDayPaymentOrder of sameDayPaymentOrders) {
             sameDayPaymentOrder.payment = {};
             sameDayPaymentOrder.payment.distributed = paymentForOrder;
@@ -675,9 +674,8 @@ router.post('/create-orders', auth, async (req, res) => {
               order.company._id.toString() === payableDetail.companyId
           );
           if (discountAmount >= payableAmount) {
-            const discountForOrder = +(
-              payableDetail.amount / sameDayDiscountOrders.length
-            ).toFixed(2);
+            const discountForOrder =
+              payableDetail.amount / sameDayDiscountOrders.length;
             for (const sameDayDiscountOrder of sameDayDiscountOrders) {
               sameDayDiscountOrder.discount = {
                 ...discount,
@@ -689,9 +687,8 @@ router.post('/create-orders', auth, async (req, res) => {
             payableAmount > discountAmount &&
             payableDetail.amount >= tempDiscountAmountTwo
           ) {
-            const discountForOrder = +(
-              tempDiscountAmountTwo / sameDayDiscountOrders.length
-            ).toFixed(2);
+            const discountForOrder =
+              tempDiscountAmountTwo / sameDayDiscountOrders.length;
             for (const sameDayDiscountOrder of sameDayDiscountOrders) {
               sameDayDiscountOrder.discount = {
                 ...discount,
@@ -705,9 +702,8 @@ router.post('/create-orders', auth, async (req, res) => {
             payableAmount > discountAmount &&
             tempDiscountAmountTwo > payableDetail.amount
           ) {
-            const discountForOrder = +(
-              payableDetail.amount / sameDayDiscountOrders.length
-            ).toFixed(2);
+            const discountForOrder =
+              payableDetail.amount / sameDayDiscountOrders.length;
             for (const sameDayDiscountOrder of sameDayDiscountOrders) {
               sameDayDiscountOrder.discount = {
                 ...discount,
@@ -885,7 +881,7 @@ router.patch('/:orderId/archive-order', auth, async (req, res) => {
   }
 });
 
-// Cancel an order: by customer
+// Cancel an order by customer
 router.patch('/:orderId/cancel', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.log(unAuthorized);

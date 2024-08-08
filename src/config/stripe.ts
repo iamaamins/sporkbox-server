@@ -32,7 +32,7 @@ export async function stripeCheckout(
               name: payableOrder.dateShift,
               description: payableOrder.items.join(', '),
             },
-            unit_amount: Math.round(Math.abs(payableOrder.amount) * 100),
+            unit_amount: Math.round(payableOrder.amount * 100),
           },
           quantity: 1,
         };
