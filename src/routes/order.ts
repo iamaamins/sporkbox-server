@@ -909,7 +909,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
     }
     order.status = 'CANCELLED';
 
-    if (!order.payment) {
+    if (!order.payment || !order.payment.distributed) {
       await order.save();
       await mail.send(orderCancel(order.toObject()));
       return res.status(200).json({ message: 'Order cancelled' });
@@ -920,11 +920,9 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       await stripeRefund(distributed, order.payment.intent);
       await order.save();
       await mail.send(orderRefund(order.toObject(), distributed));
-      return res
-        .status(200)
-        .json({
-          message: `Order cancelled and $${distributed.toFixed(2)} refunded`,
-        });
+      return res.status(200).json({
+        message: `Order cancelled and $${distributed.toFixed(2)} refunded`,
+      });
     }
 
     //TODO: Remove below code after August 17, 2024
