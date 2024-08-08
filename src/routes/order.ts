@@ -13,7 +13,7 @@ import {
   getAddonsPrice,
   getActiveOrders,
   checkOrderCapacity,
-  updateRestaurantScheduleStatus,
+  updateScheduleStatus,
   createOrders,
 } from '../lib/utils';
 import {
@@ -585,7 +585,21 @@ router.post('/create-orders', auth, async (req, res) => {
       (acc, curr) => acc + curr.amount,
       0
     );
-    if (!payableAmount) return await createOrders(res, orders);
+    const restaurantsData = upcomingRestaurants.map((restaurant) => ({
+      _id: restaurant._id,
+      scheduledOn: restaurant.schedule.date,
+      orderCapacity: restaurant.orderCapacity,
+      companyId: restaurant.company._id,
+    }));
+    if (!payableAmount) {
+      await createOrders(res, orders);
+      return updateScheduleStatus(
+        companyIds,
+        restaurantIds,
+        deliveryDates,
+        restaurantsData
+      );
+    }
     const discountAmount = discount?.value || 0;
 
     // Create orders with payment and discount
@@ -698,8 +712,15 @@ router.post('/create-orders', auth, async (req, res) => {
       }
     }
 
-    if (!ordersWithPayment.length)
-      return await createOrders(res, orders, discountCodeId, discountAmount);
+    if (!ordersWithPayment.length) {
+      await createOrders(res, orders, discountCodeId, discountAmount);
+      return updateScheduleStatus(
+        companyIds,
+        restaurantIds,
+        deliveryDates,
+        restaurantsData
+      );
+    }
 
     const session = await stripeCheckout(
       email,
@@ -710,22 +731,12 @@ router.post('/create-orders', auth, async (req, res) => {
     );
     await Order.insertMany(orders);
     res.status(200).json(session.url);
-
-    // Update restaurant schedule status after 3 minutes
-    setTimeout(async () => {
-      const latestActiveOrders = await getActiveOrders(
-        companyIds,
-        restaurantIds,
-        deliveryDates
-      );
-      const restaurants = upcomingRestaurants.map((restaurant) => ({
-        _id: restaurant._id,
-        scheduledOn: restaurant.schedule.date,
-        orderCapacity: restaurant.orderCapacity,
-        companyId: restaurant.company._id,
-      }));
-      await updateRestaurantScheduleStatus(latestActiveOrders, restaurants);
-    }, 3 * 60 * 1000);
+    await updateScheduleStatus(
+      companyIds,
+      restaurantIds,
+      deliveryDates,
+      restaurantsData
+    );
   } catch (err) {
     console.log(err);
     throw err;

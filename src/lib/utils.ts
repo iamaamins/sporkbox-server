@@ -265,27 +265,6 @@ export const subscriptions = {
   orderReminder: true,
 };
 
-export async function getActiveOrders(
-  companyIds: string[],
-  restaurantIds: string[],
-  deliveryDates: Date[]
-): Promise<ActiveOrder[]> {
-  try {
-    const activeOrders = await Order.find({
-      status: 'PROCESSING',
-      'company._id': { $in: companyIds },
-      'delivery.date': { $in: deliveryDates },
-      'restaurant._id': { $in: restaurantIds },
-    })
-      .select('company._id delivery.date restaurant._id item.quantity')
-      .lean();
-    return activeOrders;
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-}
-
 export function checkOrderCapacity(
   companyId: string,
   deliveryDate: number,
@@ -307,8 +286,31 @@ export function checkOrderCapacity(
   return orderCapacity + 3 >= orderedQuantity + currQuantity;
 }
 
-export async function updateRestaurantScheduleStatus(
-  activeOrders: ActiveOrder[],
+export async function getActiveOrders(
+  companyIds: string[],
+  restaurantIds: string[],
+  deliveryDates: Date[]
+): Promise<ActiveOrder[]> {
+  try {
+    const activeOrders = await Order.find({
+      status: 'PROCESSING',
+      'company._id': { $in: companyIds },
+      'delivery.date': { $in: deliveryDates },
+      'restaurant._id': { $in: restaurantIds },
+    })
+      .select('company._id delivery.date restaurant._id item.quantity')
+      .lean();
+    return activeOrders;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
+
+export function updateScheduleStatus(
+  companyIds: string[],
+  restaurantIds: string[],
+  deliveryDates: Date[],
   upcomingRestaurants: {
     _id: Types.ObjectId;
     scheduledOn: Date;
@@ -316,42 +318,56 @@ export async function updateRestaurantScheduleStatus(
     companyId: Types.ObjectId;
   }[]
 ) {
-  for (const upcomingRestaurant of upcomingRestaurants) {
-    let totalQuantity = 0;
-    for (const activeOrder of activeOrders) {
-      if (
-        dateToMS(activeOrder.delivery.date) ===
-          dateToMS(upcomingRestaurant.scheduledOn) &&
-        activeOrder.company._id.toString() ===
-          upcomingRestaurant.companyId.toString() &&
-        activeOrder.restaurant._id.toString() ===
-          upcomingRestaurant._id.toString()
-      ) {
-        totalQuantity += activeOrder.item.quantity;
-      }
-    }
-
-    if (totalQuantity >= upcomingRestaurant.orderCapacity) {
-      try {
-        const restaurant = await Restaurant.findById(upcomingRestaurant._id);
-        if (restaurant) {
-          for (const schedule of restaurant.schedules) {
-            if (
-              dateToMS(schedule.date) ===
-                dateToMS(upcomingRestaurant.scheduledOn) &&
-              schedule.company._id.toString() ===
-                upcomingRestaurant.companyId.toString()
-            ) {
-              schedule.status = 'INACTIVE';
-            }
+  setTimeout(async () => {
+    try {
+      const activeOrders = await getActiveOrders(
+        companyIds,
+        restaurantIds,
+        deliveryDates
+      );
+      for (const upcomingRestaurant of upcomingRestaurants) {
+        let totalQuantity = 0;
+        for (const activeOrder of activeOrders) {
+          if (
+            dateToMS(activeOrder.delivery.date) ===
+              dateToMS(upcomingRestaurant.scheduledOn) &&
+            activeOrder.company._id.toString() ===
+              upcomingRestaurant.companyId.toString() &&
+            activeOrder.restaurant._id.toString() ===
+              upcomingRestaurant._id.toString()
+          ) {
+            totalQuantity += activeOrder.item.quantity;
           }
-          await restaurant.save();
         }
-      } catch (err) {
-        console.log(err);
+
+        if (totalQuantity >= upcomingRestaurant.orderCapacity) {
+          try {
+            const restaurant = await Restaurant.findById(
+              upcomingRestaurant._id
+            );
+            if (restaurant) {
+              for (const schedule of restaurant.schedules) {
+                if (
+                  dateToMS(schedule.date) ===
+                    dateToMS(upcomingRestaurant.scheduledOn) &&
+                  schedule.company._id.toString() ===
+                    upcomingRestaurant.companyId.toString()
+                ) {
+                  schedule.status = 'INACTIVE';
+                }
+              }
+              await restaurant.save();
+            }
+          } catch (err) {
+            console.log(err);
+          }
+        }
       }
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
-  }
+  }, 3 * 60 * 1000);
 }
 
 export async function createOrders(
@@ -360,30 +376,35 @@ export async function createOrders(
   discountCodeId?: string,
   discountAmount?: number
 ) {
-  const response = await Order.insertMany(orders);
-  const ordersForCustomers = response.map((order) => ({
-    _id: order._id,
-    item: order.item,
-    status: order.status,
-    createdAt: order.createdAt,
-    restaurant: order.restaurant,
-    delivery: {
-      date: order.delivery.date,
-    },
-    isReviewed: order.isReviewed,
-    company: { shift: order.company.shift },
-  }));
-  if (discountAmount) {
-    await DiscountCode.updateOne(
-      { _id: discountCodeId },
-      {
-        $inc: {
-          totalRedeem: 1,
-        },
-      }
-    );
+  try {
+    const response = await Order.insertMany(orders);
+    const ordersForCustomers = response.map((order) => ({
+      _id: order._id,
+      item: order.item,
+      status: order.status,
+      createdAt: order.createdAt,
+      restaurant: order.restaurant,
+      delivery: {
+        date: order.delivery.date,
+      },
+      isReviewed: order.isReviewed,
+      company: { shift: order.company.shift },
+    }));
+    if (discountAmount) {
+      await DiscountCode.updateOne(
+        { _id: discountCodeId },
+        {
+          $inc: {
+            totalRedeem: 1,
+          },
+        }
+      );
+    }
+    res.status(201).json(ordersForCustomers);
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
-  res.status(201).json(ordersForCustomers);
 }
 
 export function getFutureDate(dayToAdd: number) {
