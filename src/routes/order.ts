@@ -808,7 +808,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
 });
 
 // Change bulk orders and send delivery email
-router.patch('/change-orders-status', auth, async (req, res) => {
+router.patch('/deliver', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
     res.status(403);
