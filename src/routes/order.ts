@@ -735,7 +735,8 @@ router.post('/create-orders', auth, async (req, res) => {
       companyIds,
       restaurantIds,
       deliveryDates,
-      restaurantsData
+      restaurantsData,
+      3 * 60 * 1000
     );
   } catch (err) {
     console.log(err);

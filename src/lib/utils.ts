@@ -316,7 +316,8 @@ export function updateScheduleStatus(
     scheduledOn: Date;
     orderCapacity: number;
     companyId: Types.ObjectId;
-  }[]
+  }[],
+  milliseconds = 1
 ) {
   setTimeout(async () => {
     try {
@@ -367,7 +368,7 @@ export function updateScheduleStatus(
       console.log(err);
       throw err;
     }
-  }, 3 * 60 * 1000);
+  }, milliseconds);
 }
 
 export async function createOrders(
@@ -416,7 +417,6 @@ export function getFutureDate(dayToAdd: number) {
 
 export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
   const nextWeekMonday = getFutureDate(8);
-  const nextWeekFriday = getFutureDate(12);
   const followingWeekSunday = getFutureDate(14);
 
   try {
@@ -431,14 +431,14 @@ export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
       schedules: {
         $elemMatch: {
           status: 'ACTIVE',
-          date: { $gte: now, $lte: nextWeekFriday },
+          date: { $gte: nextWeekMonday, $lte: followingWeekSunday },
         },
       },
     })
       .select('schedules')
       .lean();
     const upcomingOrders = await Order.find({
-      'delivery.date': { $gte: nextWeekMonday, $lt: followingWeekSunday },
+      'delivery.date': { $gte: nextWeekMonday, $lte: followingWeekSunday },
     })
       .select('customer')
       .lean();
@@ -446,7 +446,11 @@ export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
     let companies = [];
     for (const restaurant of restaurants) {
       for (const schedule of restaurant.schedules) {
-        if (schedule.status === 'ACTIVE' && dateToMS(schedule.date) >= now) {
+        if (
+          schedule.status === 'ACTIVE' &&
+          dateToMS(schedule.date) >= nextWeekMonday &&
+          dateToMS(schedule.date) <= followingWeekSunday
+        ) {
           companies.push(schedule.company._id);
         }
       }
