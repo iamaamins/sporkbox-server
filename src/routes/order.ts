@@ -50,7 +50,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'customer.firstName customer.lastName restaurant.name company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -807,7 +807,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
   }
 });
 
-// Change bulk orders and send delivery email
+// Deliver orders
 router.patch('/deliver', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
