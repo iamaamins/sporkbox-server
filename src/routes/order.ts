@@ -50,7 +50,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'customer.firstName customer.lastName restaurant.name company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'customer.firstName customer.lastName restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
