@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import Order from '../models/order';
-import { ItemStat, OrderStat } from '../types';
 import auth from '../middleware/auth';
 import { dateToMS } from '../lib/utils';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
+import { CustomerStat, ItemStat, OrderStat } from '../types';
 
 const router = Router();
 
@@ -46,37 +46,22 @@ router.get('/order', auth, async (req, res) => {
   }
 
   const orders = await getDeliveredOrders();
-  const results = orders.reduce((acc, curr) => {
-    if (
-      !acc.some(
-        (order) => order.restaurant.id === curr.restaurant._id.toString()
-      )
-    ) {
-      return [
-        ...acc,
-        {
-          restaurant: {
-            id: curr.restaurant._id.toString(),
-            name: curr.restaurant.name,
-          },
-          quantity: curr.item.quantity,
+  const resultsMap: Record<string, OrderStat> = {};
+  for (const order of orders) {
+    const key = order.restaurant._id.toString();
+    if (!resultsMap[key]) {
+      resultsMap[key] = {
+        restaurant: {
+          id: order.restaurant._id.toString(),
+          name: order.restaurant.name,
         },
-      ];
+        quantity: order.item.quantity,
+      };
     } else {
-      return acc.map((order) => {
-        if (order.restaurant.id === curr.restaurant._id.toString()) {
-          return {
-            ...order,
-            quantity: order.quantity + curr.item.quantity,
-          };
-        } else {
-          return order;
-        }
-      });
+      resultsMap[key].quantity += order.item.quantity;
     }
-  }, [] as OrderStat[]);
-
-  res.status(200).json(results);
+  }
+  res.status(200).json(Object.values(resultsMap));
 });
 
 router.get('/item', auth, async (req, res) => {
@@ -87,49 +72,26 @@ router.get('/item', auth, async (req, res) => {
   }
 
   const orders = await getDeliveredOrders();
-  const results = orders.reduce((acc, curr) => {
-    if (
-      !acc.some(
-        (order) =>
-          order.item.id === curr.item._id.toString() &&
-          order.restaurant.id === curr.restaurant._id.toString()
-      )
-    ) {
-      return [
-        ...acc,
-        {
-          restaurant: {
-            id: curr.restaurant._id.toString(),
-            name: curr.restaurant.name,
-          },
-          item: {
-            id: curr.item._id.toString(),
-            name: curr.item.name,
-            quantity: curr.item.quantity,
-          },
+  const resultsMap: Record<string, ItemStat> = {};
+  for (const order of orders) {
+    const key = `${order.item._id}${order.restaurant._id}`;
+    if (!resultsMap[key]) {
+      resultsMap[key] = {
+        restaurant: {
+          id: order.restaurant._id.toString(),
+          name: order.restaurant.name,
         },
-      ];
+        item: {
+          id: order.item._id.toString(),
+          name: order.item.name,
+          quantity: order.item.quantity,
+        },
+      };
     } else {
-      return acc.map((order) => {
-        if (
-          order.item.id === curr.item._id.toString() &&
-          order.restaurant.id === curr.restaurant._id.toString()
-        ) {
-          return {
-            ...order,
-            item: {
-              ...order.item,
-              quantity: order.item.quantity + curr.item.quantity,
-            },
-          };
-        } else {
-          return order;
-        }
-      });
+      resultsMap[key].item.quantity += order.item.quantity;
     }
-  }, [] as ItemStat[]);
-
-  res.status(200).json(results);
+  }
+  res.status(200).json(Object.values(resultsMap));
 });
 
 router.get('/people', auth, async (req, res) => {
@@ -140,29 +102,22 @@ router.get('/people', auth, async (req, res) => {
   }
 
   const orders = await getDeliveredOrders();
-  const results = orders.reduce((acc, curr) => {
-    const currCustomerId = curr.customer._id.toString();
-    const currDeliveryDate = dateToMS(curr.delivery.date);
+  const resultsMap: Record<string, CustomerStat> = {};
+  for (const order of orders) {
+    const customerId = order.customer._id.toString();
+    const deliveryDate = dateToMS(order.delivery.date);
 
-    if (!acc.some((el) => el.date === currDeliveryDate)) {
-      return [...acc, { date: currDeliveryDate, customers: [currCustomerId] }];
+    if (!resultsMap[deliveryDate]) {
+      resultsMap[deliveryDate] = {
+        date: deliveryDate,
+        customers: [customerId],
+      };
     } else {
-      return acc.map((el) => {
-        if (el.date === currDeliveryDate) {
-          return {
-            ...el,
-            customers: el.customers.includes(currCustomerId)
-              ? el.customers
-              : [...el.customers, currCustomerId],
-          };
-        } else {
-          return el;
-        }
-      });
+      if (!resultsMap[deliveryDate].customers.includes(customerId))
+        resultsMap[deliveryDate].customers.push(customerId);
     }
-  }, [] as { date: number; customers: string[] }[]);
-
-  res.status(200).json(results);
+  }
+  res.status(200).json(Object.values(resultsMap));
 });
 
 router.get('/restaurant-items', auth, async (req, res) => {

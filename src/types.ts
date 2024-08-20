@@ -200,6 +200,11 @@ export interface ItemStat {
   };
 }
 
+export interface CustomerStat {
+  date: number;
+  customers: string[];
+}
+
 export interface CompanySchema extends CompanyDetails {
   _id: Types.ObjectId;
   createdAt: Date;
