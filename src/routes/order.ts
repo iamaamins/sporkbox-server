@@ -73,9 +73,7 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
       status: 'PROCESSING',
     })
       .sort({ 'delivery.date': 1 })
-      .select(
-        '-__v -updatedAt -customer -delivery.address -company.name -company._id'
-      );
+      .select('-__v -updatedAt -customer -delivery.address -company.name');
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
     console.log(err);
