@@ -28,9 +28,6 @@ type OrderReminder = (email: string) => {
 
 type ActiveOrder = {
   _id: Types.ObjectId;
-  company: {
-    _id: Types.ObjectId;
-  };
   delivery: {
     date: Date;
   };
@@ -260,7 +257,6 @@ export const subscriptions = {
 };
 
 export function checkOrderCapacity(
-  companyId: string,
   deliveryDate: number,
   restaurantId: string,
   currQuantity: number,
@@ -271,7 +267,6 @@ export function checkOrderCapacity(
   for (const activeOrder of activeOrders) {
     if (
       dateToMS(activeOrder.delivery.date) === deliveryDate &&
-      activeOrder.company._id.toString() === companyId &&
       activeOrder.restaurant._id.toString() === restaurantId
     ) {
       orderedQuantity += activeOrder.item.quantity;
@@ -281,18 +276,16 @@ export function checkOrderCapacity(
 }
 
 export async function getActiveOrders(
-  companyIds: string[],
   restaurantIds: string[],
   deliveryDates: Date[]
 ): Promise<ActiveOrder[]> {
   try {
     const activeOrders = await Order.find({
       status: 'PROCESSING',
-      'company._id': { $in: companyIds },
       'delivery.date': { $in: deliveryDates },
       'restaurant._id': { $in: restaurantIds },
     })
-      .select('company._id delivery.date restaurant._id item.quantity')
+      .select('delivery.date restaurant._id item.quantity')
       .lean();
     return activeOrders;
   } catch (err) {
@@ -302,7 +295,6 @@ export async function getActiveOrders(
 }
 
 export function updateScheduleStatus(
-  companyIds: string[],
   restaurantIds: string[],
   deliveryDates: Date[],
   upcomingRestaurants: {
@@ -315,19 +307,13 @@ export function updateScheduleStatus(
 ) {
   setTimeout(async () => {
     try {
-      const activeOrders = await getActiveOrders(
-        companyIds,
-        restaurantIds,
-        deliveryDates
-      );
+      const activeOrders = await getActiveOrders(restaurantIds, deliveryDates);
       for (const upcomingRestaurant of upcomingRestaurants) {
         let totalQuantity = 0;
         for (const activeOrder of activeOrders) {
           if (
             dateToMS(activeOrder.delivery.date) ===
               dateToMS(upcomingRestaurant.scheduledOn) &&
-            activeOrder.company._id.toString() ===
-              upcomingRestaurant.companyId.toString() &&
             activeOrder.restaurant._id.toString() ===
               upcomingRestaurant._id.toString()
           ) {

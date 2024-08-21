@@ -163,11 +163,7 @@ router.post('/create-orders', auth, async (req, res) => {
     // Get active orders for scheduled
     // restaurants with companies and delivery dates
     // to validate order capacity
-    const activeOrders = await getActiveOrders(
-      companyIds,
-      restaurantIds,
-      deliveryDates
-    );
+    const activeOrders = await getActiveOrders(restaurantIds, deliveryDates);
 
     // Create data map
     const upcomingDataMap: UpcomingDataMap = {};
@@ -248,7 +244,6 @@ router.post('/create-orders', auth, async (req, res) => {
           orderItem.restaurantId
         ].orderCapacity;
       const hasOrderCapacity = checkOrderCapacity(
-        orderItem.companyId,
         orderItem.deliveryDate,
         orderItem.restaurantId,
         orderItem.quantity,
@@ -594,7 +589,6 @@ router.post('/create-orders', auth, async (req, res) => {
     if (!payableAmount) {
       await createOrders(res, orders);
       return updateScheduleStatus(
-        companyIds,
         restaurantIds,
         deliveryDates,
         restaurantsData
@@ -715,7 +709,6 @@ router.post('/create-orders', auth, async (req, res) => {
     if (!ordersWithPayment.length) {
       await createOrders(res, orders, discountCodeId, discountAmount);
       return updateScheduleStatus(
-        companyIds,
         restaurantIds,
         deliveryDates,
         restaurantsData
@@ -732,7 +725,6 @@ router.post('/create-orders', auth, async (req, res) => {
     await Order.insertMany(orders);
     res.status(200).json(session.url);
     updateScheduleStatus(
-      companyIds,
       restaurantIds,
       deliveryDates,
       restaurantsData,
