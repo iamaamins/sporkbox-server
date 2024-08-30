@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import Order from '../models/order';
 import auth from '../middleware/auth';
-import { dateToMS } from '../lib/utils';
+import { dateToMS, dateToText } from '../lib/utils';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
 import { CustomerStat, ItemStat, OrderStat } from '../types';
+import User from '../models/user';
 
 const router = Router();
 
@@ -142,6 +143,49 @@ router.get('/restaurant-items', auth, async (req, res) => {
       }
     }
     res.status(200).json(items);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
+router.get('/review', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const restaurants = await Restaurant.find({
+      items: {
+        $elemMatch: {
+          reviews: { $exists: true, $ne: [] },
+        },
+      },
+    })
+      .lean()
+      .orFail();
+
+    const results = [];
+    for (const restaurant of restaurants) {
+      for (const item of restaurant.items) {
+        for (const review of item.reviews) {
+          const customer = await User.findById(review.customer._id);
+          if (customer) {
+            results.push({
+              date: dateToText(review.createdAt),
+              restaurant: restaurant.name,
+              item: item.name,
+              rating: review.rating,
+              comment: review.comment,
+              customer: customer.email,
+            });
+          }
+        }
+      }
+    }
+    res.status(200).json(results);
   } catch (err) {
     console.log(err);
     throw err;
