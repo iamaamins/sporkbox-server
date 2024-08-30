@@ -140,11 +140,6 @@ router.post('/create-orders', auth, async (req, res) => {
       companies,
       getActiveSchedules
     );
-    const companyIds: string[] = [];
-    for (const restaurant of upcomingRestaurants) {
-      const companyId = restaurant.company._id.toString();
-      if (!companyIds.includes(companyId)) companyIds.push(companyId);
-    }
     const deliveryDates: Date[] = [];
     for (const restaurant of upcomingRestaurants) {
       const deliveryDate = restaurant.schedule.date;
