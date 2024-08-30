@@ -301,7 +301,6 @@ export function updateScheduleStatus(
     _id: Types.ObjectId;
     scheduledOn: Date;
     orderCapacity: number;
-    companyId: Types.ObjectId;
   }[],
   milliseconds = 1
 ) {
@@ -322,31 +321,23 @@ export function updateScheduleStatus(
         }
 
         if (totalQuantity >= upcomingRestaurant.orderCapacity) {
-          try {
-            const restaurant = await Restaurant.findById(
-              upcomingRestaurant._id
-            );
-            if (restaurant) {
-              for (const schedule of restaurant.schedules) {
-                if (
-                  dateToMS(schedule.date) ===
-                    dateToMS(upcomingRestaurant.scheduledOn) &&
-                  schedule.company._id.toString() ===
-                    upcomingRestaurant.companyId.toString()
-                ) {
-                  schedule.status = 'INACTIVE';
-                }
-              }
-              await restaurant.save();
+          await Restaurant.findByIdAndUpdate(
+            upcomingRestaurant._id,
+            {
+              $set: {
+                'schedules.$[schedule].status': 'INACTIVE',
+              },
+            },
+            {
+              arrayFilters: [
+                { 'schedule.date': upcomingRestaurant.scheduledOn },
+              ],
             }
-          } catch (err) {
-            console.log(err);
-          }
+          ).orFail();
         }
       }
     } catch (err) {
       console.log(err);
-      throw err;
     }
   }, milliseconds);
 }

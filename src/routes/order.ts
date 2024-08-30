@@ -582,7 +582,6 @@ router.post('/create-orders', auth, async (req, res) => {
       _id: restaurant._id,
       scheduledOn: restaurant.schedule.date,
       orderCapacity: restaurant.orderCapacity,
-      companyId: restaurant.company._id,
     }));
     if (!payableAmount) {
       await createOrders(res, orders);
