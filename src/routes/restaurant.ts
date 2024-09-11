@@ -101,15 +101,15 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
   }
 });
 
-// Schedule a restaurant
-router.post('/schedule-restaurant', auth, async (req, res) => {
+// Schedule restaurants
+router.post('/schedule-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
-  const { date, companyId, restaurantId } = req.body;
-  if (!date || !companyId || !restaurantId) {
+  const { date, companyId, restaurantIds } = req.body;
+  if (!date || !companyId || !restaurantIds.length) {
     console.log(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -121,32 +121,41 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
   }
 
   try {
-    // Find the restaurant and remove past dates
-    const updatedRestaurant = await Restaurant.findOneAndUpdate(
-      { _id: restaurantId },
+    // Remove past dates from the restaurants
+    await Restaurant.updateMany(
+      {
+        _id: {
+          $in: restaurantIds,
+        },
+      },
       {
         $pull: {
           schedules: {
             date: { $lt: now },
           },
         },
-      },
-      {
-        returnDocument: 'after',
       }
-    )
-      .select('-__v -updatedAt -createdAt -address -items -logo')
+    );
+
+    const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } })
+      .select('name schedules')
       .orFail();
 
-    const isScheduled = updatedRestaurant.schedules.some(
-      (schedule) =>
-        dateToMS(schedule.date) === dateToMS(date) &&
-        companyId === schedule.company._id.toString()
-    );
-    if (isScheduled) {
-      console.log('Already scheduled on the provided date');
-      res.status(401);
-      throw new Error('Already scheduled on the provided date');
+    for (const restaurant of restaurants) {
+      for (const schedule of restaurant.schedules) {
+        if (
+          dateToMS(schedule.date) === dateToMS(date) &&
+          companyId === schedule.company._id.toString()
+        ) {
+          console.log(
+            `${restaurant.name} is already scheduled on the provided date`
+          );
+          res.status(400);
+          throw new Error(
+            `${restaurant.name} is already scheduled on the provided date`
+          );
+        }
+      }
     }
 
     const company = await Company.findById(companyId).orFail();
@@ -161,23 +170,38 @@ router.post('/schedule-restaurant', auth, async (req, res) => {
       status: 'ACTIVE',
       company: scheduleCompany,
     };
-    updatedRestaurant.schedules.push(schedule);
-    await updatedRestaurant.save();
 
-    const addedSchedule =
-      updatedRestaurant.schedules[updatedRestaurant.schedules.length - 1];
-    const { schedules, ...rest } = updatedRestaurant.toObject();
-    const scheduledRestaurant = {
-      ...rest,
-      company: scheduleCompany,
-      schedule: {
-        _id: addedSchedule._id,
-        date,
-        status: 'ACTIVE',
-      },
-    };
-    deleteFields(scheduledRestaurant);
-    res.status(201).json(scheduledRestaurant);
+    const scheduledRestaurants = [];
+    for (const restaurant of restaurants) {
+      const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+        restaurant.id,
+        {
+          $push: {
+            schedules: schedule,
+          },
+        },
+        { returnDocument: 'after' }
+      )
+        .select('-__v -updatedAt -createdAt -address -items -logo')
+        .orFail();
+
+      const addedSchedule =
+        updatedRestaurant.schedules[updatedRestaurant.schedules.length - 1];
+      const { schedules, ...rest } = updatedRestaurant.toObject();
+
+      const scheduledRestaurant = {
+        ...rest,
+        company: scheduleCompany,
+        schedule: {
+          _id: addedSchedule._id,
+          date,
+          status: 'ACTIVE',
+        },
+      };
+      deleteFields(scheduledRestaurant);
+      scheduledRestaurants.push(scheduledRestaurant);
+    }
+    res.status(201).json(scheduledRestaurants);
   } catch (err) {
     console.log(err);
     throw err;
