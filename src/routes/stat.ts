@@ -180,6 +180,7 @@ router.get('/review', auth, async (req, res) => {
               rating: review.rating,
               comment: review.comment,
               customer: customer.email,
+              company: customer.companies[0].code,
             });
           }
         }
