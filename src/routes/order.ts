@@ -23,11 +23,7 @@ import {
   orderRefund,
 } from '../lib/emails';
 import mail from '@sendgrid/mail';
-import {
-  stripeCheckout,
-  stripeRefund,
-  stripeRefundAmount,
-} from '../config/stripe';
+import { stripeCheckout, stripeRefund } from '../config/stripe';
 import DiscountCode from '../models/discountCode';
 import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
@@ -900,37 +896,6 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       return res.status(200).json({
         message: `Order cancelled and $${distributed.toFixed(2)} refunded`,
       });
-    }
-
-    //TODO: Remove below code after August 17, 2024
-    const refunded = await stripeRefundAmount(order.payment.intent);
-    const askingRefund = order.item.total;
-    const totalPaid = order.payment.total;
-    const totalRefund = refunded + askingRefund;
-
-    if (totalPaid === refunded) {
-      await order.save();
-      await mail.send(orderCancel(order.toObject()));
-      return res.status(200).json({ message: 'Order cancelled' });
-    }
-
-    if (totalPaid >= totalRefund) {
-      await stripeRefund(askingRefund, order.payment.intent);
-      await order.save();
-      await mail.send(orderRefund(order.toObject(), askingRefund));
-      return res
-        .status(200)
-        .json({ message: `Order cancelled and $${askingRefund} refunded` });
-    }
-
-    if (totalPaid < totalRefund) {
-      const finalRefund = totalPaid - refunded;
-      await stripeRefund(finalRefund, order.payment.intent);
-      await order.save();
-      await mail.send(orderRefund(order.toObject(), finalRefund));
-      return res
-        .status(200)
-        .json({ message: `Order cancelled and $${finalRefund} refunded` });
     }
   } catch (err) {
     console.log(err);

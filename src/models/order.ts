@@ -19,8 +19,6 @@ interface OrderSchema {
   status: string;
   payment?: {
     intent: string;
-    //TODO: Remove total after August 17, 2024
-    total: number;
     distributed: number;
   };
   item: OrderItem;
@@ -122,7 +120,6 @@ const orderSchema = new Schema<OrderSchema>(
     },
     payment: {
       intent: String,
-      total: Number,
       distributed: Number,
     },
     isReviewed: {
