@@ -753,10 +753,29 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
 
   const { limit } = req.params;
   try {
-    const deliveredOrders = await Order.find({ status: 'DELIVERED' })
+    let deliveredOrders = await Order.find({ status: 'DELIVERED' })
       .limit(+limit)
       .select('-__v -updatedAt')
-      .sort({ 'delivery.date': -1 });
+      .sort({ 'delivery.date': -1 })
+      .lean();
+
+    const lastOrder = deliveredOrders.at(-1);
+    if (lastOrder) {
+      const lastOrderDeliveryDate = lastOrder.delivery.date;
+      const dbOrderCount = await Order.count({
+        status: 'DELIVERED',
+        'delivery.date': lastOrderDeliveryDate,
+      });
+      const localOrderCount = deliveredOrders.filter(
+        (order) => order.delivery.date === lastOrderDeliveryDate
+      ).length;
+
+      if (dbOrderCount > localOrderCount) {
+        deliveredOrders = deliveredOrders.filter(
+          (order) => order.delivery.date !== lastOrderDeliveryDate
+        );
+      }
+    }
     res.status(200).json(deliveredOrders);
   } catch (err) {
     console.log(err);
