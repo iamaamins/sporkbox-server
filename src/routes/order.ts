@@ -761,18 +761,18 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
 
     const lastOrder = deliveredOrders.at(-1);
     if (lastOrder) {
-      const lastOrderDeliveryDate = lastOrder.delivery.date;
+      const lastOrderDeliveryDateMS = dateToMS(lastOrder.delivery.date);
       const dbOrderCount = await Order.count({
         status: 'DELIVERED',
-        'delivery.date': lastOrderDeliveryDate,
+        'delivery.date': lastOrderDeliveryDateMS,
       });
       const localOrderCount = deliveredOrders.filter(
-        (order) => order.delivery.date === lastOrderDeliveryDate
+        (order) => dateToMS(order.delivery.date) === lastOrderDeliveryDateMS
       ).length;
 
       if (dbOrderCount > localOrderCount) {
         deliveredOrders = deliveredOrders.filter(
-          (order) => order.delivery.date !== lastOrderDeliveryDate
+          (order) => dateToMS(order.delivery.date) !== lastOrderDeliveryDateMS
         );
       }
     }
