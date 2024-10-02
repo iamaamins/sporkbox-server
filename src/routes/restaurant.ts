@@ -13,6 +13,7 @@ import {
   dateToMS,
   isCorrectAddonsFormat,
   getUpcomingRestaurants,
+  docToObj,
 } from '../lib/utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
@@ -339,7 +340,7 @@ router.patch(
       });
       await Promise.all(
         orders.map(
-          async (order) => await mail.send(orderCancel(order.toObject()))
+          async (order) => await mail.send(orderCancel(docToObj(order)))
         )
       );
       await Order.updateMany(
