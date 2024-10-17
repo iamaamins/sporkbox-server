@@ -454,7 +454,8 @@ async function createPopularItems() {
   try {
     const restaurants = await Restaurant.find().lean().orFail();
 
-    const prevMonth = new Date().getMonth() - 1;
+    // Update the month
+    const prevMonth = new Date().getMonth() - 5;
     for (const restaurant of restaurants) {
       const topItems = [];
       for (const item of restaurant.items) {
@@ -523,7 +524,7 @@ new CronJob(
 // Update popular items
 // 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 0 0 19 * *',
+  '0 16 11 16 * *',
   async () => {
     await createPopularItems();
   },
