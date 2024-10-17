@@ -450,11 +450,58 @@ export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
   }
 }
 
+async function createPopularItems() {
+  try {
+    const restaurants = await Restaurant.find().lean().orFail();
+
+    const prevMonth = new Date().getMonth() - 1;
+    for (const restaurant of restaurants) {
+      const topItems = [];
+      for (const item of restaurant.items) {
+        const orderCount = await Order.count({
+          'item._id': item._id,
+          createdAt: { $gte: new Date().setMonth(prevMonth) },
+        });
+        if (orderCount > 30) {
+          topItems.push({ id: item._id.toString(), count: orderCount });
+        }
+      }
+      if (topItems.length > 0) {
+        const top3Items = topItems
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3);
+
+        const isPopularItem = (itemId: string) =>
+          top3Items.some((topItem) => topItem.id === itemId);
+        const getPopularityIndex = (itemId: string) =>
+          top3Items.findIndex((topItem) => topItem.id === itemId) + 1;
+
+        const updatedItems = restaurant.items.map((item) => {
+          const itemId = item._id.toString();
+          const { popularityIndex, ...rest } = item;
+          if (!isPopularItem(itemId)) return rest;
+          return {
+            ...rest,
+            popularityIndex: getPopularityIndex(itemId),
+          };
+        });
+
+        await Restaurant.updateOne(
+          { _id: restaurant._id },
+          { $set: { items: updatedItems } }
+        );
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 // Send the reminder at Thursday 2 PM
 new CronJob(
   '0 0 14 * * Thu',
-  () => {
-    sendOrderReminderEmails(thursdayOrderReminder);
+  async () => {
+    await sendOrderReminderEmails(thursdayOrderReminder);
   },
   null,
   true,
@@ -464,10 +511,21 @@ new CronJob(
 // Send the reminder at Friday 8 AM
 new CronJob(
   '0 0 8 * * Fri',
-  () => {
-    sendOrderReminderEmails(fridayOrderReminder);
+  async () => {
+    await sendOrderReminderEmails(fridayOrderReminder);
   },
   null,
   true,
   'America/Los_Angeles'
+);
+
+// Update popular items
+// 0 0 0 1 * * - actual pattern
+new CronJob(
+  '0 47 10 16 * *',
+  async () => {
+    await createPopularItems();
+  },
+  null,
+  true
 );
