@@ -524,7 +524,7 @@ new CronJob(
 // Create popular items
 // 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 35 11 * * *',
+  '0 39 12 * * *',
   () => {
     createPopularItems();
   },
