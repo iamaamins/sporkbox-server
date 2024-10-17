@@ -524,11 +524,11 @@ new CronJob(
 // Create popular items
 // 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 40 0 * * *',
+  '0 0 0 17 * *',
   () => {
     createPopularItems();
   },
   null,
-  true
-  // 'America/Los_Angeles'
+  true,
+  'America/Los_Angeles'
 );
