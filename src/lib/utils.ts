@@ -523,10 +523,11 @@ new CronJob(
 // Update popular items
 // 0 0 0 1 * * - actual pattern
 new CronJob(
-  '0 55 10 16 * *',
+  '0 57 10 16 * *',
   async () => {
     await createPopularItems();
   },
   null,
-  true
+  true,
+  'America/Los_Angeles'
 );
