@@ -462,7 +462,8 @@ async function createPopularItems() {
           'item._id': item._id,
           createdAt: { $gte: new Date().setMonth(prevMonth) },
         });
-        if (orderCount > 30) {
+        // Update: threshold
+        if (orderCount > 1) {
           topItems.push({ id: item._id.toString(), count: orderCount });
         }
       }
@@ -522,7 +523,7 @@ new CronJob(
 // Update popular items
 // 0 0 0 1 * * - actual pattern
 new CronJob(
-  '0 50 10 16 * *',
+  '0 55 10 16 * *',
   async () => {
     await createPopularItems();
   },
