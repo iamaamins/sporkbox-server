@@ -521,9 +521,9 @@ new CronJob(
 );
 
 // Update popular items
-// 0 0 0 1 * * - actual pattern
+// 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 57 10 16 * *',
+  '0 06 11 16 * *',
   async () => {
     await createPopularItems();
   },
