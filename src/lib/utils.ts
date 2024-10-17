@@ -521,14 +521,14 @@ new CronJob(
   'America/Los_Angeles'
 );
 
-// Update popular items
+// Create popular items
 // 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 28 11 16 * *',
+  '0 35 11 * * *',
   () => {
     createPopularItems();
   },
   null,
-  true,
-  'America/Los_Angeles'
+  true
+  // 'America/Los_Angeles'
 );
