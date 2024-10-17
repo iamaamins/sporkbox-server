@@ -502,8 +502,8 @@ async function createPopularItems() {
 // Send the reminder at Thursday 2 PM
 new CronJob(
   '0 0 14 * * Thu',
-  async () => {
-    await sendOrderReminderEmails(thursdayOrderReminder);
+  () => {
+    sendOrderReminderEmails(thursdayOrderReminder);
   },
   null,
   true,
@@ -513,8 +513,8 @@ new CronJob(
 // Send the reminder at Friday 8 AM
 new CronJob(
   '0 0 8 * * Fri',
-  async () => {
-    await sendOrderReminderEmails(fridayOrderReminder);
+  () => {
+    sendOrderReminderEmails(fridayOrderReminder);
   },
   null,
   true,
@@ -524,9 +524,9 @@ new CronJob(
 // Update popular items
 // 0 0 0 1 * * - First day of every month
 new CronJob(
-  '0 16 11 16 * *',
-  async () => {
-    await createPopularItems();
+  '0 25 11 16 * *',
+  () => {
+    createPopularItems();
   },
   null,
   true,
