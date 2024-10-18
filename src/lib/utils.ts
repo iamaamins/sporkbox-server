@@ -454,8 +454,7 @@ async function createPopularItems() {
   try {
     const restaurants = await Restaurant.find().lean().orFail();
 
-    // Update the month
-    const prevMonth = new Date().getMonth() - 5;
+    const prevMonth = new Date().getMonth() - 1;
     for (const restaurant of restaurants) {
       const topItems = [];
       for (const item of restaurant.items) {
@@ -463,7 +462,6 @@ async function createPopularItems() {
           'item._id': item._id,
           createdAt: { $gte: new Date().setMonth(prevMonth) },
         });
-        // Update: threshold
         if (orderCount > 0) {
           topItems.push({ id: item._id.toString(), count: orderCount });
         }
@@ -521,10 +519,9 @@ new CronJob(
   'America/Los_Angeles'
 );
 
-// Create popular items
-// 0 0 0 1 * * - First day of every month
+// Create popular items at 12 am sunday
 new CronJob(
-  '0 0 0 17 * *',
+  '0 0 0 * * Sun',
   () => {
     createPopularItems();
   },
