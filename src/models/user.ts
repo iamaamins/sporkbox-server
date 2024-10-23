@@ -110,6 +110,7 @@ const userSchema = new Schema<UserSchema>(
     subscribedTo: {
       orderReminder: Boolean,
     },
+    foodPreferences: [{ type: String, trim: true }],
   },
   {
     timestamps: true,

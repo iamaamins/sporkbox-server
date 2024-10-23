@@ -99,6 +99,7 @@ const itemSchema = new Schema<ItemSchema>({
   },
   reviews: [reviewSchema],
   averageRating: Number,
+  popularityIndex: Number,
   soldOutStat: [soldOutStatSchema],
 });
 
