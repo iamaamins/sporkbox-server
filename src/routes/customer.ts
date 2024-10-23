@@ -3,7 +3,6 @@ import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
 import {
-  TAGS,
   setCookie,
   deleteFields,
   checkActions,
@@ -17,6 +16,7 @@ import {
   requiredFields,
   unAuthorized,
 } from '../lib/messages';
+import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
 
 const router = Router();
 
@@ -277,7 +277,8 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   const { preferences } = req.body;
 
   const isValidPreferences = preferences.every(
-    (preference: (typeof TAGS)[number]) => TAGS.includes(preference)
+    (preference: (typeof DIETARY_TAGS)[number]) =>
+      DIETARY_TAGS.includes(preference)
   );
 
   if (!isValidPreferences) {

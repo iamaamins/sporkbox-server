@@ -495,20 +495,6 @@ async function createPopularItems() {
   }
 }
 
-export const TAGS = [
-  'Vegan',
-  'Vegetarian',
-  'Gluten-Free',
-  'Nut-Free',
-  'Soy-Free',
-  'Dairy-Free',
-  'Contains Nuts',
-  'Contains Soy',
-  'Enjoy Later',
-  'Pork-Free',
-  'Contains Shellfish',
-] as const;
-
 // Send the reminder at Thursday 2 PM
 new CronJob(
   '0 0 14 * * Thu',
