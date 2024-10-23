@@ -3,6 +3,7 @@ import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
 import {
+  TAGS,
   setCookie,
   deleteFields,
   checkActions,
@@ -263,5 +264,45 @@ router.patch(
     }
   }
 );
+
+// Update customer food preferences
+router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { customerId } = req.params;
+  const { preferences } = req.body;
+
+  const isValidPreferences = preferences.every(
+    (preference: (typeof TAGS)[number]) => TAGS.includes(preference)
+  );
+
+  if (!isValidPreferences) {
+    console.log('One or more invalid preferences');
+    res.status(400);
+    throw new Error('One or more  invalid preferences');
+  }
+
+  try {
+    const updatedCustomer = await User.findByIdAndUpdate(
+      customerId,
+      {
+        $set: { foodPreferences: preferences },
+      },
+      { returnDocument: 'after' }
+    )
+      .select('-__v -password -updatedAt -createdAt')
+      .lean()
+      .orFail();
+
+    res.status(200).json(updatedCustomer);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
 
 export default router;

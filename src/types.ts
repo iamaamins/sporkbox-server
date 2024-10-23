@@ -130,6 +130,7 @@ export interface UserSchema extends GenericUser {
   email: string;
   password: string;
   status: string;
+  foodPreferences?: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;
   shifts: Exclude<Shift, 'general'>[];
