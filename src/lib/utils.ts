@@ -455,6 +455,7 @@ export function docToObj<T extends Document>(input: T) {
     ...input.toObject(),
     _id: (input._id as Types.ObjectId).toString(),
   };
+}
 
 async function createPopularItems() {
   try {
@@ -464,7 +465,7 @@ async function createPopularItems() {
     for (const restaurant of restaurants) {
       const topItems = [];
       for (const item of restaurant.items) {
-        const orderCount = await Order.count({
+        const orderCount = await Order.countDocuments({
           'item._id': item._id,
           createdAt: { $gte: new Date().setMonth(prevMonth) },
         });
