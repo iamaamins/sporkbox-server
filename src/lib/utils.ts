@@ -462,9 +462,7 @@ async function createPopularItems() {
           'item._id': item._id,
           createdAt: { $gte: new Date().setMonth(prevMonth) },
         });
-        if (orderCount > 0) {
-          topItems.push({ id: item._id.toString(), count: orderCount });
-        }
+        topItems.push({ id: item._id.toString(), count: orderCount });
       }
       if (topItems.length > 0) {
         const top3Items = topItems
