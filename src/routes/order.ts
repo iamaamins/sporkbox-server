@@ -15,6 +15,7 @@ import {
   checkOrderCapacity,
   updateScheduleStatus,
   createOrders,
+  docToObj,
 } from '../lib/utils';
 import {
   orderArchive,
@@ -762,7 +763,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
     const lastOrder = deliveredOrders.at(-1);
     if (lastOrder) {
       const lastOrderDeliveryDateMS = dateToMS(lastOrder.delivery.date);
-      const dbOrderCount = await Order.count({
+      const dbOrderCount = await Order.countDocuments({
         status: 'DELIVERED',
         'delivery.date': lastOrderDeliveryDateMS,
       });
@@ -829,7 +830,7 @@ router.patch('/deliver', auth, async (req, res) => {
     const orders = await Order.find({ _id: { $in: orderIds } });
     await Promise.all(
       orders.map(
-        async (order) => await mail.send(orderDelivery(order.toObject()))
+        async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
     );
     res.status(200).json('Delivery email sent');
@@ -865,7 +866,7 @@ router.patch('/:orderId/archive', auth, async (req, res) => {
         updatedOrder.payment.intent
       );
 
-    await mail.send(orderArchive(updatedOrder.toObject()));
+    await mail.send(orderArchive(docToObj(updatedOrder)));
     res.status(201).json(updatedOrder);
   } catch (err) {
     console.log(err);
@@ -903,7 +904,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 
     if (!order.payment || !order.payment.distributed) {
       await order.save();
-      await mail.send(orderCancel(order.toObject()));
+      await mail.send(orderCancel(docToObj(order)));
       return res.status(200).json({ message: 'Order cancelled' });
     }
 
@@ -911,7 +912,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
     if (distributed) {
       await stripeRefund(distributed, order.payment.intent);
       await order.save();
-      await mail.send(orderRefund(order.toObject(), distributed));
+      await mail.send(orderRefund(docToObj(order), distributed));
       return res.status(200).json({
         message: `Order cancelled and $${distributed.toFixed(2)} refunded`,
       });

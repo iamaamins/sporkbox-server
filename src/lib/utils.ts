@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import Order from '../models/order';
 import { CronJob } from 'cron';
 import User from '../models/user';
@@ -449,6 +449,12 @@ export async function sendOrderReminderEmails(orderReminder: OrderReminder) {
     console.log(err);
   }
 }
+
+export function docToObj<T extends Document>(input: T) {
+  return {
+    ...input.toObject(),
+    _id: (input._id as Types.ObjectId).toString(),
+  };
 
 async function createPopularItems() {
   try {
