@@ -127,3 +127,26 @@ export function orderRefund(order: OrderForEmail, amount: number) {
         `,
   };
 }
+
+export function timeToOrder(customer: GenericUser) {
+  return {
+    to: customer.email,
+    from: process.env.SENDER_EMAIL as string,
+    subject: `🍽️ Order Your Lunch NOW for Next Week!`,
+    html: `
+        <p>Hi ${customer.firstName},</p>
+        
+        <p>You can now make your selections for next week's lunch order! Choose your meals by logging into SporkBox.app.</p>
+
+        <a href='http://sporkbox.app/'>Spork Box</a>
+
+        <p>To access all available restaurants, please place your orders 48 hours or more before the delivery date and time. You should see at least one restaurant option available until about 24 before the delivery date and time.</p>
+
+        <p>If you miss the ordering window, please email <a href='mailto:portland@sporkbytes.com'>portland@sporkbytes.com</a> and we will do our best to help!</p>
+
+        <p>Enjoy!</p>
+
+        <p>-The Spork Bytes Team</p>
+        `,
+  };
+}

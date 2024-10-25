@@ -17,6 +17,7 @@ import Data from './routes/data';
 import error from './middleware/error';
 import { connectDB } from './config/db';
 import Customer from './routes/customer';
+import Email from './routes/email';
 import Favorite from './routes/favorite';
 import cookieParser from 'cookie-parser';
 import Restaurant from './routes/restaurant';
@@ -55,6 +56,8 @@ app.use('/favorites', Favorite);
 app.use('/customers', Customer);
 app.use('/restaurants', Restaurant);
 app.use('/discount-code', Discount);
+app.use('/email', Email);
+
 app.use(error);
 
 app.listen(PORT, () => console.log('Server started'));
