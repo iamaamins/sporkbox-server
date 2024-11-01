@@ -461,13 +461,13 @@ async function createPopularItems() {
   try {
     const restaurants = await Restaurant.find().lean().orFail();
 
-    const prevMonth = new Date().getMonth() - 1;
+    const lastQuarter = new Date().getMonth() - 3;
     for (const restaurant of restaurants) {
       const topItems = [];
       for (const item of restaurant.items) {
         const orderCount = await Order.countDocuments({
           'item._id': item._id,
-          createdAt: { $gte: new Date().setMonth(prevMonth) },
+          createdAt: { $gte: new Date().setMonth(lastQuarter) },
         });
         topItems.push({ id: item._id.toString(), count: orderCount });
       }
