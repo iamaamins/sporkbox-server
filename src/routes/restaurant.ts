@@ -17,7 +17,7 @@ import {
 } from '../lib/utils';
 import { upload } from '../config/multer';
 import { deleteImage, uploadImage } from '../config/s3';
-import { Addons } from '../types';
+import { Addons, RestaurantSchema } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancel } from '../lib/emails';
 import {
@@ -142,7 +142,16 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
       .select('name schedules')
       .orFail();
 
+    // Sort the restaurants by the index of the restaurantIds
+    const restaurantMap: Record<string, RestaurantSchema> = {};
     for (const restaurant of restaurants) {
+      restaurantMap[restaurant._id.toString()] = restaurant;
+    }
+    const sortedRestaurants = restaurantIds.map(
+      (id: string) => restaurantMap[id]
+    );
+
+    for (const restaurant of sortedRestaurants) {
       for (const schedule of restaurant.schedules) {
         if (
           dateToMS(schedule.date) === dateToMS(date) &&
@@ -173,7 +182,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
     };
 
     const scheduledRestaurants = [];
-    for (const restaurant of restaurants) {
+    for (const restaurant of sortedRestaurants) {
       const updatedRestaurant = await Restaurant.findByIdAndUpdate(
         restaurant.id,
         {
