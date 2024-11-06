@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import auth from '../middleware/auth';
 import User from '../models/user';
+import Order from '../models/order';
 import { unAuthorized } from '../lib/messages';
 import mail from '@sendgrid/mail';
 import { timeToOrder } from '../lib/emails';
@@ -16,6 +17,23 @@ router.post('/time-to-order', auth, async (req, res) => {
 
   const { code } = req.body;
   try {
+    const lastMonth = new Date().getMonth() - 1;
+    const orders = await Order.find({
+      status: 'DELIVERED',
+      'company.code': code,
+      createdAt: {
+        $gte: new Date().setMonth(lastMonth),
+      },
+    })
+      .select('customer._id')
+      .lean();
+
+    const orderMap: Record<string, boolean> = {};
+    for (const order of orders) {
+      const customerId = order.customer._id.toString();
+      if (!orderMap[customerId]) orderMap[customerId] = true;
+    }
+
     const customers = await User.find({
       role: 'CUSTOMER',
       status: 'ACTIVE',
@@ -26,8 +44,15 @@ router.post('/time-to-order', auth, async (req, res) => {
     })
       .select('email firstName')
       .lean();
+
+    const eligibleCustomers = customers.filter(
+      (customer) => orderMap[customer._id.toString()]
+    );
     await Promise.all(
-      customers.map(async (customer) => await mail.send(timeToOrder(customer)))
+      eligibleCustomers.map(
+        async (eligibleCustomer) =>
+          await mail.send(timeToOrder(eligibleCustomer))
+      )
     );
     res.status(200).json({ message: 'Order reminders sent' });
   } catch (err) {
