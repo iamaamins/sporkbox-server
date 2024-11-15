@@ -27,6 +27,7 @@ import {
   requiredFields,
   unAuthorized,
 } from '../lib/messages';
+import User from '../models/user';
 
 interface ItemsIndexPayload {
   reorderedItems: {
@@ -37,7 +38,7 @@ interface ItemsIndexPayload {
 
 const router = Router();
 
-// Get upcoming restaurants
+// Get customer's upcoming restaurants
 router.get('/upcoming-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.log(unAuthorized);
@@ -46,7 +47,7 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
   }
 
   const { companies } = req.user;
-  if (!companies || companies.length === 0) {
+  if (!companies || !companies.length) {
     console.log(unAuthorized);
     res.status(400);
     throw new Error(unAuthorized);
@@ -54,6 +55,36 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
 
   try {
     const upcomingRestaurants = await getUpcomingRestaurants(res, companies);
+    res.status(200).json(upcomingRestaurants);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
+// Get admin's upcoming restaurants
+router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const user = await User.findById(req.params.employee)
+    .select('companies')
+    .lean()
+    .orFail();
+  if (!user.companies || !user.companies.length) {
+    console.log(unAuthorized);
+    res.status(400);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const upcomingRestaurants = await getUpcomingRestaurants(
+      res,
+      user.companies
+    );
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
     console.log(err);
