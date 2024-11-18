@@ -129,6 +129,11 @@ router.post('/create-orders', auth, async (req, res) => {
             .lean()
             .orFail();
 
+    if (customer.status !== 'ACTIVE') {
+      res.status(400);
+      throw new Error('Customer must be active');
+    }
+
     const { _id, firstName, lastName, email, companies } = customer;
     if (!companies || companies.length === 0) {
       console.log(invalidCredentials);
@@ -592,7 +597,7 @@ router.post('/create-orders', auth, async (req, res) => {
       orderCapacity: restaurant.orderCapacity,
     }));
     if (!payableAmount) {
-      await createOrders(res, orders);
+      await createOrders(res, orders, req.user.role);
       return updateScheduleStatus(
         restaurantIds,
         deliveryDates,
@@ -712,7 +717,13 @@ router.post('/create-orders', auth, async (req, res) => {
     }
 
     if (!ordersWithPayment.length) {
-      await createOrders(res, orders, discountCodeId, discountAmount);
+      await createOrders(
+        res,
+        orders,
+        req.user.role,
+        discountCodeId,
+        discountAmount
+      );
       return updateScheduleStatus(
         restaurantIds,
         deliveryDates,
@@ -721,6 +732,7 @@ router.post('/create-orders', auth, async (req, res) => {
     }
 
     const session = await stripeCheckout(
+      req.user.role,
       email,
       pendingOrderId,
       discountCodeId,

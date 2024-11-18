@@ -125,9 +125,12 @@ export interface RestaurantSchema {
   schedules: Types.DocumentArray<SchedulesSchema>;
 }
 
+export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER';
+
 export interface UserSchema extends GenericUser {
   _id: Types.ObjectId;
   email: string;
+  role: UserRole;
   password: string;
   status: string;
   foodPreferences?: string[];
@@ -135,7 +138,6 @@ export interface UserSchema extends GenericUser {
   restaurant: Types.ObjectId;
   shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
-  role: 'ADMIN' | 'VENDOR' | 'CUSTOMER';
 }
 
 export interface FavRestaurantItem extends GenericItem {

@@ -9,7 +9,13 @@ import mail from '@sendgrid/mail';
 import Restaurant from '../models/restaurant';
 import { invalidShift } from './messages';
 import DiscountCode from '../models/discountCode';
-import { Addons, DateTotal, Order as OrderType, UserCompany } from '../types';
+import {
+  Addons,
+  DateTotal,
+  Order as OrderType,
+  UserCompany,
+  UserRole,
+} from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { fridayOrderReminder, thursdayOrderReminder } from './emails';
 
@@ -344,13 +350,14 @@ export function updateScheduleStatus(
 
 export async function createOrders(
   res: Response,
-  orders: OrderType[],
+  orderData: OrderType[],
+  role: UserRole,
   discountCodeId?: string,
   discountAmount?: number
 ) {
   try {
-    const response = await Order.insertMany(orders);
-    const ordersForCustomers = response.map((order) => ({
+    const orders = await Order.insertMany(orderData);
+    const ordersForCustomer = orders.map((order) => ({
       _id: order._id,
       item: order.item,
       status: order.status,
@@ -372,7 +379,7 @@ export async function createOrders(
         }
       );
     }
-    res.status(201).json(ordersForCustomers);
+    res.status(201).json(role === 'CUSTOMER' ? ordersForCustomer : orders);
   } catch (err) {
     console.log(err);
     throw err;

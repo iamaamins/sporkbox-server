@@ -37,25 +37,22 @@ router.get('/me', auth, async (req, res) => {
       const item = favorite.restaurant.items.find(
         (item) => item._id.toString() === favorite.item._id.toString()
       );
-      if (!item) {
-        console.log(noItem);
-        res.status(400);
-        throw new Error(noItem);
-      }
 
-      return {
-        _id: favorite._id,
-        item: {
-          _id: item._id,
-          name: item.name,
-          image: item.image || favorite.restaurant.logo,
-        },
-        customer: favorite.customer,
-        restaurant: {
-          _id: favorite.restaurant._id,
-          name: favorite.restaurant.name,
-        },
-      };
+      if (item) {
+        return {
+          _id: favorite._id,
+          item: {
+            _id: item._id,
+            name: item.name,
+            image: item.image || favorite.restaurant.logo,
+          },
+          customer: favorite.customer,
+          restaurant: {
+            _id: favorite.restaurant._id,
+            name: favorite.restaurant.name,
+          },
+        };
+      }
     });
     res.status(200).json(favorites);
   } catch (err) {
