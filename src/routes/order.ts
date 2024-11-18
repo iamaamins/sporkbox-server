@@ -124,7 +124,7 @@ router.post('/create-orders', auth, async (req, res) => {
     const customer =
       req.user.role === 'CUSTOMER'
         ? req.user
-        : await User.findById(req.body.employeeId)
+        : await User.findOne({ _id: req.body.employeeId, role: 'CUSTOMER' })
             .select('-__v -updatedAt -password')
             .lean()
             .orFail();
