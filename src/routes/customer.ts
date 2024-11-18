@@ -39,6 +39,29 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get customer by id
+router.get('/:id', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const customer = await User.findOne({
+      _id: req.params.id,
+      role: 'CUSTOMER',
+    })
+      .select('-__v -updatedAt -password -role')
+      .lean()
+      .orFail();
+    res.status(200).json(customer);
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 // Register customer
 router.post('/register-customer', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;

@@ -157,6 +157,7 @@ export interface OrdersPayload {
     removedIngredients: string[];
   }[];
   discountCodeId: string;
+  employeeId?: string;
 }
 
 export interface UserCompany extends CompanyDetails {

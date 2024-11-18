@@ -29,6 +29,7 @@ import DiscountCode from '../models/discountCode';
 import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
 import { OrdersPayload, UpcomingDataMap, Order as OrderType } from '../types';
+import User from '../models/user';
 
 const router = Router();
 
@@ -106,27 +107,42 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
 
 // Create orders
 router.post('/create-orders', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'CUSTOMER') {
+  if (
+    !req.user ||
+    !(req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')
+  ) {
     console.log(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
-
-  const { _id, firstName, lastName, email, companies } = req.user;
-  if (!companies || companies.length === 0) {
-    console.log(invalidCredentials);
-    res.status(403);
-    throw new Error(invalidCredentials);
-  }
-
-  const { orderItems, discountCodeId }: OrdersPayload = req.body;
-  if (!orderItems || !orderItems.length) {
-    console.log('Please provide valid order items');
+  if (req.user.role === 'ADMIN' && !req.body.employeeId) {
     res.status(400);
-    throw new Error('Please provide valid order items');
+    throw new Error('Please provide employee ID');
   }
 
   try {
+    const customer =
+      req.user.role === 'CUSTOMER'
+        ? req.user
+        : await User.findById(req.body.employeeId)
+            .select('-__v -updatedAt -password')
+            .lean()
+            .orFail();
+
+    const { _id, firstName, lastName, email, companies } = customer;
+    if (!companies || companies.length === 0) {
+      console.log(invalidCredentials);
+      res.status(403);
+      throw new Error(invalidCredentials);
+    }
+
+    const { orderItems, discountCodeId }: OrdersPayload = req.body;
+    if (!orderItems || !orderItems.length) {
+      console.log('Please provide valid order items');
+      res.status(400);
+      throw new Error('Please provide valid order items');
+    }
+
     // Get upcoming week restaurants
     // to validate the orders,
     // to get the order item details, and

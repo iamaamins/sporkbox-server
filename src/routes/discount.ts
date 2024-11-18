@@ -77,7 +77,10 @@ router.delete('/delete/:id', auth, async (req, res) => {
 
 // Apply discount code
 router.post('/apply/:code', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'CUSTOMER') {
+  if (
+    !req.user ||
+    !(req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')
+  ) {
     console.log(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
