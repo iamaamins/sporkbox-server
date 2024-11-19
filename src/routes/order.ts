@@ -986,4 +986,48 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
+// Get price stat
+router.get('/price-stat/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+  try {
+    const orders = await Order.find({
+      status: { $in: ['PROCESSING', 'DELIVERED'] },
+      createdAt: { $gte: start, $lte: end },
+    })
+      .select('customer._id item.total payment.distributed')
+      .lean();
+
+    let totalSpent = 0;
+    let totalPaid = 0;
+    let payingEmployee: Record<string, boolean> = {};
+    for (const order of orders) {
+      totalSpent += order.item.total;
+      if (order.payment?.distributed) {
+        totalPaid += order.payment.distributed;
+        const key = order.customer._id.toString();
+        if (!payingEmployee[key]) payingEmployee[key] = true;
+      }
+    }
+
+    const days = Math.abs(
+      (new Date(end).getTime() - new Date(start).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+    res.status(200).json({
+      averageSpent: totalSpent / days,
+      averagePaid: totalPaid / days,
+      payingEmployeeCount: Object.keys(payingEmployee).length,
+    });
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 export default router;
