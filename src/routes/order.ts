@@ -951,4 +951,39 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
   }
 });
 
+// Get weekly order stat
+router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const orders = await Order.find({
+      status: { $in: ['PROCESSING', 'DELIVERED'] },
+      createdAt: { $gte: req.params.start, $lte: req.params.end },
+    })
+      .select('createdAt customer._id')
+      .lean();
+
+    const statMap: Record<string, { date: Date; count: number }> = {};
+    for (const order of orders) {
+      const key = `${order.createdAt}-${order.customer._id}`;
+      if (!statMap[key]) {
+        statMap[key] = {
+          date: order.createdAt,
+          count: 1,
+        };
+      } else {
+        statMap[key].count += 1;
+      }
+    }
+    res.status(200).json(Object.values(statMap));
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 export default router;
