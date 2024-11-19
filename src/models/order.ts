@@ -51,7 +51,6 @@ const orderSchema = new Schema<OrderSchema>(
         required: [true, 'Please provide customer email'],
       },
     },
-
     restaurant: {
       _id: {
         type: Schema.Types.ObjectId,

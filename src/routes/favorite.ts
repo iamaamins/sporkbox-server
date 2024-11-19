@@ -33,13 +33,13 @@ router.get('/me', auth, async (req, res) => {
       )
       .select('-__v');
 
-    const favorites = response.map((favorite) => {
+    let favorites = [];
+    for (const favorite of response) {
       const item = favorite.restaurant.items.find(
         (item) => item._id.toString() === favorite.item._id.toString()
       );
-
       if (item) {
-        return {
+        favorites.push({
           _id: favorite._id,
           item: {
             _id: item._id,
@@ -51,9 +51,9 @@ router.get('/me', auth, async (req, res) => {
             _id: favorite.restaurant._id,
             name: favorite.restaurant.name,
           },
-        };
+        });
       }
-    });
+    }
     res.status(200).json(favorites);
   } catch (err) {
     console.log(err);
