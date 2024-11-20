@@ -1021,14 +1021,11 @@ router.get('/price-stat/:start/:end', auth, async (req, res) => {
       }
     }
 
-    const days = Math.abs(
-      (new Date(end).getTime() - new Date(start).getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
+    const payingEmployeeCount = Object.keys(payingEmployee).length;
     res.status(200).json({
-      averageSpent: totalSpent / days,
-      averagePaid: totalPaid / days,
-      payingEmployeeCount: Object.keys(payingEmployee).length,
+      averageSpent: totalSpent / orders.length,
+      averagePaid: totalPaid / payingEmployeeCount,
+      payingEmployeeCount,
     });
   } catch (err) {
     console.log(err);
