@@ -758,6 +758,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
       .limit(+limit)
       .select('-__v -updatedAt')
       .sort({ 'delivery.date': -1 })
+      .allowDiskUse(true)
       .lean();
 
     const lastOrder = deliveredOrders.at(-1);
