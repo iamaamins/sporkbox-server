@@ -46,6 +46,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
       status: 'PROCESSING',
     })
       .sort({ 'delivery.date': 1 })
+      .allowDiskUse(true)
       .select(
         'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
       );
@@ -70,6 +71,7 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
       status: 'PROCESSING',
     })
       .sort({ 'delivery.date': 1 })
+      .allowDiskUse(true)
       .select('-__v -updatedAt -customer -delivery.address -company.name');
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -94,6 +96,7 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
     })
       .limit(+limit)
       .sort({ 'delivery.date': -1 })
+      .allowDiskUse(true)
       .select(
         '-__v -updatedAt -customer -delivery.address -company.name -company._id'
       );
@@ -736,7 +739,8 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
   try {
     const upcomingOrders = await Order.find({ status: 'PROCESSING' })
       .select('-__v -updatedAt')
-      .sort({ 'delivery.date': 1 });
+      .sort({ 'delivery.date': 1 })
+      .allowDiskUse(true);
     res.status(200).json(upcomingOrders);
   } catch (err) {
     console.log(err);
@@ -800,6 +804,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
       status: 'DELIVERED',
     })
       .sort({ 'delivery.date': -1 })
+      .allowDiskUse(true)
       .select('-__v -updatedAt');
     res.status(200).json(customerDeliveredOrders);
   } catch (err) {
