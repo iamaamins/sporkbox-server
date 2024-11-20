@@ -803,4 +803,39 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
+// Get item stat
+router.get('/items/count-and-average/:price?', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { price } = req.params;
+  try {
+    const restaurants = await Restaurant.find().select('items').lean();
+
+    let activeItemsTotal = 0;
+    let activeItemsCount = 0;
+    let itemsCount = 0;
+    for (const restaurant of restaurants) {
+      for (const item of restaurant.items) {
+        if (item.status === 'ACTIVE') {
+          activeItemsTotal += item.price;
+          activeItemsCount++;
+          if (price && item.price <= +price) itemsCount++;
+        }
+      }
+    }
+
+    res.status(200).json({
+      itemsCount,
+      averagePrice: activeItemsTotal / activeItemsCount,
+    });
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 export default router;

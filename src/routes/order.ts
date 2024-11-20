@@ -993,7 +993,7 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
 });
 
 // Get price stat
-router.get('/price-stat/:start/:end', auth, async (req, res) => {
+router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.log(unAuthorized);
     res.status(403);
