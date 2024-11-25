@@ -760,23 +760,23 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
       .sort({ 'delivery.date': -1 })
       .lean();
 
-    // const lastOrder = deliveredOrders.at(-1);
-    // if (lastOrder) {
-    //   const lastOrderDeliveryDateMS = dateToMS(lastOrder.delivery.date);
-    //   const dbOrderCount = await Order.countDocuments({
-    //     status: 'DELIVERED',
-    //     'delivery.date': lastOrderDeliveryDateMS,
-    //   });
-    //   const localOrderCount = deliveredOrders.filter(
-    //     (order) => dateToMS(order.delivery.date) === lastOrderDeliveryDateMS
-    //   ).length;
+    const lastOrder = deliveredOrders.at(-1);
+    if (lastOrder) {
+      const lastOrderDeliveryDateMS = dateToMS(lastOrder.delivery.date);
+      const dbOrderCount = await Order.countDocuments({
+        status: 'DELIVERED',
+        'delivery.date': lastOrderDeliveryDateMS,
+      });
+      const localOrderCount = deliveredOrders.filter(
+        (order) => dateToMS(order.delivery.date) === lastOrderDeliveryDateMS
+      ).length;
 
-    //   if (dbOrderCount > localOrderCount) {
-    //     deliveredOrders = deliveredOrders.filter(
-    //       (order) => dateToMS(order.delivery.date) !== lastOrderDeliveryDateMS
-    //     );
-    //   }
-    // }
+      if (dbOrderCount > localOrderCount) {
+        deliveredOrders = deliveredOrders.filter(
+          (order) => dateToMS(order.delivery.date) !== lastOrderDeliveryDateMS
+        );
+      }
+    }
     res.status(200).json(deliveredOrders);
   } catch (err) {
     console.log(err);
