@@ -1027,4 +1027,61 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
+// Get top-rated restaurants
+router.get('/restaurant-stat', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.log(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const today = new Date();
+  const pastDate = new Date();
+  pastDate.setDate(today.getDate() - 60);
+
+  try {
+    const orders = await Order.find({
+      createdAt: {
+        $gte: pastDate,
+      },
+    });
+
+    type DataMap = Record<string, { name: string; orderCount: number }>;
+    const restaurantsMap: DataMap = {};
+    const itemsMap: DataMap = {};
+
+    for (const order of orders) {
+      const restaurant = order.restaurant._id.toString();
+      if (!restaurantsMap[restaurant]) {
+        restaurantsMap[restaurant] = {
+          name: order.restaurant.name,
+          orderCount: 1,
+        };
+      } else {
+        restaurantsMap[restaurant].orderCount++;
+      }
+
+      const item = order.item._id.toString();
+      if (!itemsMap[item]) {
+        itemsMap[item] = {
+          name: order.item.name,
+          orderCount: 1,
+        };
+      } else {
+        itemsMap[item].orderCount++;
+      }
+    }
+    const getData = (dataMap: DataMap) =>
+      Object.values(dataMap)
+        .sort((a, b) => b.orderCount - a.orderCount)
+        .slice(0, 10);
+    res
+      .status(200)
+      .json({ restaurants: getData(restaurantsMap), items: getData(itemsMap) });
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 export default router;
