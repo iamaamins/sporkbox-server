@@ -1005,17 +1005,17 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
 
     let totalSpent = 0;
     let totalPaid = 0;
-    let payingEmployee: Record<string, boolean> = {};
+    let payingEmployeeMap: Record<string, boolean> = {};
     for (const order of orders) {
       totalSpent += order.item.total;
       if (order.payment?.distributed) {
         totalPaid += order.payment.distributed;
         const key = order.customer._id.toString();
-        if (!payingEmployee[key]) payingEmployee[key] = true;
+        if (!payingEmployeeMap[key]) payingEmployeeMap[key] = true;
       }
     }
 
-    const payingEmployeeCount = Object.keys(payingEmployee).length;
+    const payingEmployeeCount = Object.keys(payingEmployeeMap).length;
     res.status(200).json({
       averageSpent: totalSpent / orders.length,
       averagePaid: totalPaid / payingEmployeeCount,
