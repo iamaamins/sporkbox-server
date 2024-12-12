@@ -959,27 +959,30 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
+  const { start, end } = req.params;
   try {
     const orders = await Order.find({
-      status: { $in: ['PROCESSING', 'DELIVERED'] },
-      createdAt: { $gte: req.params.start, $lte: req.params.end },
+      createdAt: { $gte: start, $lte: end },
     })
       .select('createdAt customer._id')
       .lean();
 
-    const statMap: Record<string, { date: Date; count: number }> = {};
+    const statMap: Record<string, string[]> = {};
     for (const order of orders) {
-      const key = `${order.createdAt}-${order.customer._id}`;
+      const key = order.createdAt.toISOString().split('T')[0];
+      const customerId = order.customer._id.toString();
       if (!statMap[key]) {
-        statMap[key] = {
-          date: order.createdAt,
-          count: 1,
-        };
-      } else {
-        statMap[key].count += 1;
+        statMap[key] = [customerId];
+      } else if (statMap[key] && !statMap[key].includes(customerId)) {
+        statMap[key].push(customerId);
       }
     }
-    res.status(200).json(Object.values(statMap));
+
+    let stat = [];
+    for (const key in statMap) {
+      stat.push({ date: key, count: statMap[key].length });
+    }
+    res.status(200).json(stat);
   } catch (err) {
     console.log(err);
     throw err;
