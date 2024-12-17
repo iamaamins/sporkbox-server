@@ -962,19 +962,20 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   const { start, end } = req.params;
   try {
     const orders = await Order.find({
-      createdAt: { $gte: start, $lte: end },
+      status: { $in: ['DELIVERED', 'PROCESSING'] },
+      'delivery.date': { $gte: start, $lte: end },
     })
-      .select('createdAt customer._id')
+      .select('delivery.date customer._id')
       .lean();
 
     const statMap: Record<string, string[]> = {};
     for (const order of orders) {
-      const key = order.createdAt.toISOString().split('T')[0];
+      const key = order.delivery.date.toISOString().split('T')[0];
       const customerId = order.customer._id.toString();
       if (!statMap[key]) {
         statMap[key] = [customerId];
-      } else if (statMap[key] && !statMap[key].includes(customerId)) {
-        statMap[key].push(customerId);
+      } else {
+        if (!statMap[key].includes(customerId)) statMap[key].push(customerId);
       }
     }
 
