@@ -1050,9 +1050,13 @@ router.get('/restaurant-stat', auth, async (req, res) => {
       },
     });
 
-    type DataMap = Record<string, { name: string; orderCount: number }>;
-    const restaurantsMap: DataMap = {};
-    const itemsMap: DataMap = {};
+    type RestaurantsMap = Record<string, { name: string; orderCount: number }>;
+    type ItemsMap = Record<
+      string,
+      { name: string; restaurant: string; orderCount: number }
+    >;
+    const restaurantsMap: RestaurantsMap = {};
+    const itemsMap: ItemsMap = {};
 
     for (const order of orders) {
       const restaurant = order.restaurant._id.toString();
@@ -1069,13 +1073,14 @@ router.get('/restaurant-stat', auth, async (req, res) => {
       if (!itemsMap[item]) {
         itemsMap[item] = {
           name: order.item.name,
+          restaurant: order.restaurant.name,
           orderCount: 1,
         };
       } else {
         itemsMap[item].orderCount++;
       }
     }
-    const getData = (dataMap: DataMap) =>
+    const getData = (dataMap: RestaurantsMap | ItemsMap) =>
       Object.values(dataMap)
         .sort((a, b) => b.orderCount - a.orderCount)
         .slice(0, 10);
