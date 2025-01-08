@@ -488,20 +488,21 @@ async function createPopularItems() {
         const getPopularityIndex = (itemId: string) =>
           top3Items.findIndex((topItem) => topItem.id === itemId) + 1;
 
-        const updatedItems = restaurant.items.map((item) => {
+        for (const item of restaurant.items) {
           const itemId = item._id.toString();
-          const { popularityIndex, ...rest } = item;
-          if (!isPopularItem(itemId)) return rest;
-          return {
-            ...rest,
-            popularityIndex: getPopularityIndex(itemId),
-          };
-        });
-
-        await Restaurant.updateOne(
-          { _id: restaurant._id },
-          { $set: { items: updatedItems } }
-        );
+          if (isPopularItem(itemId)) {
+            const popularityIndex = getPopularityIndex(itemId);
+            await Restaurant.updateOne(
+              { _id: restaurant._id, 'items._id': item._id },
+              { $set: { 'items.$.popularityIndex': popularityIndex } }
+            );
+          } else {
+            await Restaurant.updateOne(
+              { _id: restaurant._id, 'items._id': item._id },
+              { $unset: { 'items.$.popularityIndex': '' } }
+            );
+          }
+        }
       }
     }
   } catch (err) {
