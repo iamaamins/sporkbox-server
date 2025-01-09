@@ -3,7 +3,7 @@ import mail from '@sendgrid/mail';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/user';
 import auth from '../middleware/auth';
-import { setCookie, deleteFields } from '../lib/utils';
+import { setCookie, deleteFields, checkActions } from '../lib/utils';
 import { Router } from 'express';
 import { passwordReset, passwordResetConfirmation } from '../lib/emails';
 import {
@@ -77,6 +77,31 @@ router.post('/logout', async (req, res) => {
 // Get user details
 router.get('/me', auth, async (req, res) => {
   res.status(200).json(req.user);
+});
+
+// Get user by id
+router.get('/:id', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  console.log(req.params.id);
+
+  try {
+    const customer = await User.findOne({
+      _id: req.params.id,
+    })
+      .select('-__v -updatedAt -password')
+      .lean()
+      .orFail();
+
+    res.status(200).json(customer);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 });
 
 // Forgot password
@@ -157,6 +182,80 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
     res.status(201).json('Password reset successful');
   } catch (err) {
     console.log(err);
+    throw err;
+  }
+});
+
+// Change status
+router.patch('/:userId/change-user-status', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { userId } = req.params;
+  const { action } = req.body;
+
+  if (!action) {
+    console.error(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+  checkActions(undefined, action, res);
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+      },
+      { returnDocument: 'after' }
+    )
+      .select('-__v -password -updatedAt')
+      .lean()
+      .orFail();
+
+    res.status(201).json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Edit user details
+router.patch('/:userId/update-user-details', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { userId } = req.params;
+  const { firstName, lastName, email } = req.body;
+
+  if (!firstName || !lastName || !email) {
+    console.error(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        firstName,
+        lastName,
+        email,
+      },
+      { returnDocument: 'after' }
+    )
+      .lean()
+      .orFail();
+
+    res.status(200).json(updatedUser);
+  } catch (err) {
+    console.error(err);
     throw err;
   }
 });

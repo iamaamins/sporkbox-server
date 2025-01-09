@@ -5,17 +5,11 @@ import auth from '../middleware/auth';
 import {
   setCookie,
   deleteFields,
-  checkActions,
   checkShift,
   subscriptions,
 } from '../lib/utils';
 import { Router } from 'express';
-import {
-  invalidShift,
-  requiredAction,
-  requiredFields,
-  unAuthorized,
-} from '../lib/messages';
+import { invalidShift, requiredFields, unAuthorized } from '../lib/messages';
 import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
 
 const router = Router();
@@ -33,29 +27,6 @@ router.get('/', auth, async (req, res) => {
       '-__v -updatedAt -password -role'
     );
     res.status(200).json(customers);
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-});
-
-// Get customer by id
-router.get('/:id', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  try {
-    const customer = await User.findOne({
-      _id: req.params.id,
-      role: 'CUSTOMER',
-    })
-      .select('-__v -updatedAt -password -role')
-      .lean()
-      .orFail();
-    res.status(200).json(customer);
   } catch (err) {
     console.error(err);
     throw err;
@@ -108,78 +79,6 @@ router.post('/register-customer', async (req, res) => {
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
     res.status(201).json(customer);
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-});
-
-// Edit customer details
-router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  const { customerId } = req.params;
-  const { firstName, lastName, email } = req.body;
-  if (!firstName || !lastName || !email) {
-    console.error(requiredFields);
-    res.status(400);
-    throw new Error(requiredFields);
-  }
-
-  try {
-    const updatedCustomer = await User.findOneAndUpdate(
-      { _id: customerId },
-      {
-        firstName,
-        lastName,
-        email,
-      },
-      { returnDocument: 'after' }
-    )
-      .lean()
-      .orFail();
-    res.status(200).json(updatedCustomer);
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-});
-
-// Change customer status
-router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  const { customerId } = req.params;
-  const { action } = req.body;
-
-  if (!action) {
-    console.error(requiredAction);
-    res.status(400);
-    throw new Error(requiredAction);
-  }
-  checkActions(undefined, action, res);
-
-  try {
-    const updatedCustomer = await User.findOneAndUpdate(
-      { _id: customerId, role: 'CUSTOMER' },
-      {
-        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-      },
-      { returnDocument: 'after' }
-    )
-      .select('-__v -password -updatedAt -role')
-      .lean()
-      .orFail();
-
-    res.status(201).json(updatedCustomer);
   } catch (err) {
     console.error(err);
     throw err;

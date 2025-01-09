@@ -115,26 +115,27 @@ router.post('/create-orders', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
-  if (req.user.role === 'ADMIN' && !req.body.employeeId) {
+
+  if (req.user.role === 'ADMIN' && !req.body.userId) {
     res.status(400);
     throw new Error('Please provide employee ID');
   }
 
   try {
-    const customer =
+    const user =
       req.user.role === 'CUSTOMER'
         ? req.user
-        : await User.findOne({ _id: req.body.employeeId, role: 'CUSTOMER' })
+        : await User.findOne({ _id: req.body.userId })
             .select('-__v -updatedAt -password')
             .lean()
             .orFail();
 
-    if (customer.status !== 'ACTIVE') {
+    if (user.status !== 'ACTIVE') {
       res.status(400);
-      throw new Error('Customer must be active');
+      throw new Error('User must be active');
     }
 
-    const { _id, firstName, lastName, email, companies } = customer;
+    const { _id, firstName, lastName, email, companies } = user;
     if (!companies || companies.length === 0) {
       console.log(invalidCredentials);
       res.status(403);
