@@ -1,9 +1,9 @@
 import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { deleteFields } from '../lib/utils';
+import { checkActions, deleteFields } from '../lib/utils';
 import { Router } from 'express';
-import { requiredFields, unAuthorized } from '../lib/messages';
+import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 import bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 
@@ -69,6 +69,42 @@ router.post('/add-guest', auth, async (req, res) => {
     const guest = response.toObject();
     deleteFields(guest, ['createdAt', 'password']);
     res.status(201).json(guest);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Change guest status
+router.patch('/:guestId/change-guest-status', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { guestId } = req.params;
+  const { action } = req.body;
+  if (!action) {
+    console.error(requiredAction);
+    res.status(400);
+    throw new Error(requiredAction);
+  }
+  checkActions(undefined, action, res);
+
+  try {
+    const updatedGuest = await User.findOneAndUpdate(
+      { _id: guestId, role: 'GUEST' },
+      {
+        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+      },
+      { returnDocument: 'after' }
+    )
+      .select('-__v -password -updatedAt -role')
+      .lean()
+      .orFail();
+
+    res.status(201).json(updatedGuest);
   } catch (err) {
     console.error(err);
     throw err;

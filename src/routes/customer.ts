@@ -159,6 +159,7 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
 
   const { customerId } = req.params;
   const { action } = req.body;
+
   if (!action) {
     console.error(requiredAction);
     res.status(400);
@@ -168,7 +169,7 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
 
   try {
     const updatedCustomer = await User.findOneAndUpdate(
-      { _id: customerId },
+      { _id: customerId, role: 'CUSTOMER' },
       {
         status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
       },
@@ -177,6 +178,7 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
       .select('-__v -password -updatedAt -role')
       .lean()
       .orFail();
+
     res.status(201).json(updatedCustomer);
   } catch (err) {
     console.error(err);
