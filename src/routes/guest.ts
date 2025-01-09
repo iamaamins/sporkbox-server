@@ -9,17 +9,36 @@ import { randomBytes } from 'node:crypto';
 
 const router = Router();
 
+// Get all guests
+router.get('/', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const guests = await User.find({ role: 'GUEST' }).select(
+      '-__v -updatedAt -password'
+    );
+    res.status(200).json(guests);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Add guest
 router.post('/add-guest', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { firstName, lastName, email, companyId } = req.body;
   if (!firstName || !lastName || !email || !companyId) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -51,7 +70,7 @@ router.post('/add-guest', auth, async (req, res) => {
     deleteFields(guest, ['createdAt', 'password']);
     res.status(201).json(guest);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

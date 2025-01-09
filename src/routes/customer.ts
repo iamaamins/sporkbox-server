@@ -23,7 +23,7 @@ const router = Router();
 // Get all customers
 router.get('/', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -34,7 +34,7 @@ router.get('/', auth, async (req, res) => {
     );
     res.status(200).json(customers);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -42,7 +42,7 @@ router.get('/', auth, async (req, res) => {
 // Get customer by id
 router.get('/:id', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -57,7 +57,7 @@ router.get('/:id', auth, async (req, res) => {
       .orFail();
     res.status(200).json(customer);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -66,7 +66,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/register-customer', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;
   if (!firstName || !lastName || !email || !password) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -109,7 +109,7 @@ router.post('/register-customer', async (req, res) => {
     deleteFields(customer, ['createdAt', 'password']);
     res.status(201).json(customer);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -117,7 +117,7 @@ router.post('/register-customer', async (req, res) => {
 // Edit customer details
 router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -125,7 +125,7 @@ router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
   const { customerId } = req.params;
   const { firstName, lastName, email } = req.body;
   if (!firstName || !lastName || !email) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -144,7 +144,7 @@ router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
       .orFail();
     res.status(200).json(updatedCustomer);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -152,7 +152,7 @@ router.patch('/:customerId/update-customer-details', auth, async (req, res) => {
 // Change customer status
 router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -160,7 +160,7 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
   const { customerId } = req.params;
   const { action } = req.body;
   if (!action) {
-    console.log(requiredAction);
+    console.error(requiredAction);
     res.status(400);
     throw new Error(requiredAction);
   }
@@ -179,7 +179,7 @@ router.patch('/:customerId/change-customer-status', auth, async (req, res) => {
       .orFail();
     res.status(201).json(updatedCustomer);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -190,7 +190,7 @@ router.patch(
   auth,
   async (req, res) => {
     if (!req.user || req.user.role !== 'CUSTOMER') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -198,7 +198,7 @@ router.patch(
     const { customerId, companyCode } = req.params;
     const { shift } = req.body;
     if (!shift || typeof shift !== 'string') {
-      console.log(invalidShift);
+      console.error(invalidShift);
       res.status(400);
       throw new Error(invalidShift);
     }
@@ -218,7 +218,7 @@ router.patch(
       if (
         !activeCompanies.some((activeCompany) => activeCompany.shift === shift)
       ) {
-        console.log(invalidShift);
+        console.error(invalidShift);
         res.status(404);
         throw new Error(invalidShift);
       }
@@ -237,7 +237,7 @@ router.patch(
       ).orFail();
       res.status(201).json(companies);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -249,7 +249,7 @@ router.patch(
   auth,
   async (req, res) => {
     if (!req.user || req.user.role !== 'CUSTOMER') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -282,7 +282,7 @@ router.patch(
         .orFail();
       res.status(201).json(updatedCustomer);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -291,7 +291,7 @@ router.patch(
 // Update customer food preferences
 router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -305,7 +305,7 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   );
 
   if (!isValidPreferences) {
-    console.log('One or more invalid preferences');
+    console.error('One or more invalid preferences');
     res.status(400);
     throw new Error('One or more  invalid preferences');
   }
@@ -324,7 +324,7 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
 
     res.status(200).json(updatedCustomer);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
