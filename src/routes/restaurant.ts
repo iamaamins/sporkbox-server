@@ -41,14 +41,14 @@ const router = Router();
 // Get customer's upcoming restaurants
 router.get('/upcoming-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { companies } = req.user;
   if (!companies || !companies.length) {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(400);
     throw new Error(unAuthorized);
   }
@@ -57,7 +57,7 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
     const upcomingRestaurants = await getUpcomingRestaurants(res, companies);
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -65,7 +65,7 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
 // Get admin's upcoming restaurants
 router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -75,7 +75,7 @@ router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
     .lean()
     .orFail();
   if (!user.companies || !user.companies.length) {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(400);
     throw new Error(unAuthorized);
   }
@@ -87,7 +87,7 @@ router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
     );
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -95,7 +95,7 @@ router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
 // Get all scheduled restaurants
 router.get('/scheduled-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -128,7 +128,7 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
     scheduledRestaurants.sort(sortByDate);
     res.status(200).json(scheduledRestaurants);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -136,18 +136,18 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
 // Schedule restaurants
 router.post('/schedule-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
   const { date, companyId, restaurantIds } = req.body;
   if (!date || !companyId || !restaurantIds.length) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
   if (dateToMS(date) < now) {
-    console.log("Cant' schedule on the provided date");
+    console.error("Cant' schedule on the provided date");
     res.status(400);
     throw new Error("Cant' schedule on the provided date");
   }
@@ -188,7 +188,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
           dateToMS(schedule.date) === dateToMS(date) &&
           companyId === schedule.company._id.toString()
         ) {
-          console.log(
+          console.error(
             `${restaurant.name} is already scheduled on the provided date`
           );
           res.status(400);
@@ -244,7 +244,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
     }
     res.status(201).json(scheduledRestaurants);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -258,14 +258,14 @@ router.patch(
       !req.user ||
       !(req.user.role === 'ADMIN' || req.user.role === 'VENDOR')
     ) {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
     const { action } = req.body;
     const { restaurantId, date, companyCode } = req.params;
     if (!action) {
-      console.log(requiredAction);
+      console.error(requiredAction);
       res.status(400);
       throw new Error(requiredAction);
     }
@@ -286,7 +286,7 @@ router.patch(
           schedule.company.code === companyCode
       );
       if (!schedules.length) {
-        console.log('No schedule found');
+        console.error('No schedule found');
         res.status(400);
         throw new Error('No schedule found');
       }
@@ -299,7 +299,7 @@ router.patch(
         areDeactivatedByAdmin &&
         action === 'Activate'
       ) {
-        console.log('Restaurant is deactivated by admin');
+        console.error('Restaurant is deactivated by admin');
         res.status(400);
         throw new Error('Restaurant is deactivated by admin');
       }
@@ -331,7 +331,7 @@ router.patch(
       }));
       res.status(201).json(allSchedules);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -343,7 +343,7 @@ router.patch(
   auth,
   async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -367,7 +367,7 @@ router.patch(
         (schedule) => schedule._id?.toString() === scheduleId
       );
       if (!removedSchedule) {
-        console.log('Please provide a valid schedule');
+        console.error('Please provide a valid schedule');
         res.status(400);
         throw new Error('Please provide a valid schedule');
       }
@@ -396,7 +396,7 @@ router.patch(
       );
       res.status(201).json('Schedule and orders removed successfully');
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -405,7 +405,7 @@ router.patch(
 // Cerate an item
 router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -429,7 +429,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     !optionalAddons ||
     !requiredAddons
   ) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -441,7 +441,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     parsedOptionalAddons.addons &&
     !isCorrectAddonsFormat(parsedOptionalAddons)
   ) {
-    console.log(invalidOptionalAddOnsFormat);
+    console.error(invalidOptionalAddOnsFormat);
     res.status(400);
     throw new Error(invalidOptionalAddOnsFormat);
   }
@@ -449,7 +449,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     parsedRequiredAddons.addons &&
     !isCorrectAddonsFormat(parsedRequiredAddons)
   ) {
-    console.log(invalidRequiredAddOnsFormat);
+    console.error(invalidRequiredAddOnsFormat);
     res.status(400);
     throw new Error(invalidRequiredAddOnsFormat);
   }
@@ -495,7 +495,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
 
     res.status(201).json(updatedRestaurant);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -507,7 +507,7 @@ router.patch(
   upload,
   async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -531,7 +531,7 @@ router.patch(
       !optionalAddons ||
       !requiredAddons
     ) {
-      console.log(requiredFields);
+      console.error(requiredFields);
       res.status(400);
       throw new Error(requiredFields);
     }
@@ -543,7 +543,7 @@ router.patch(
       parsedOptionalAddons.addons &&
       !isCorrectAddonsFormat(parsedOptionalAddons)
     ) {
-      console.log(invalidOptionalAddOnsFormat);
+      console.error(invalidOptionalAddOnsFormat);
       res.status(400);
       throw new Error(invalidOptionalAddOnsFormat);
     }
@@ -551,7 +551,7 @@ router.patch(
       parsedRequiredAddons.addons &&
       !isCorrectAddonsFormat(parsedRequiredAddons)
     ) {
-      console.log(invalidRequiredAddOnsFormat);
+      console.error(invalidRequiredAddOnsFormat);
       res.status(400);
       throw new Error(invalidRequiredAddOnsFormat);
     }
@@ -630,7 +630,7 @@ router.patch(
         res.status(201).json(updatedRestaurant);
       }
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -642,7 +642,7 @@ router.patch(
   auth,
   async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -650,7 +650,7 @@ router.patch(
     const { restaurantId, itemId } = req.params;
     const { action } = req.body;
     if (!action) {
-      console.log(requiredAction);
+      console.error(requiredAction);
       res.status(400);
       throw new Error(requiredAction);
     }
@@ -673,7 +673,7 @@ router.patch(
         .orFail();
       res.status(200).json(updatedRestaurant);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -682,7 +682,7 @@ router.patch(
 // Review item
 router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -690,7 +690,7 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
   const { restaurantId, itemId } = req.params;
   const { rating, comment, orderId } = req.body;
   if (!rating || !comment || !orderId) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -752,7 +752,7 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
     }
     res.status(201).json(order);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -760,7 +760,7 @@ router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
 // Update items index
 router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -777,7 +777,7 @@ router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
     });
     res.status(200).json('Items order updated');
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -785,7 +785,7 @@ router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
 // Get a vendor restaurant
 router.get('/:id', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -798,7 +798,7 @@ router.get('/:id', auth, async (req, res) => {
       .orFail();
     res.status(200).json(restaurant);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -806,7 +806,7 @@ router.get('/:id', auth, async (req, res) => {
 // Get item stat
 router.get('/items/count-and-average/:price?', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -833,7 +833,7 @@ router.get('/items/count-and-average/:price?', auth, async (req, res) => {
       averagePrice: activeItemsTotal / activeItemsCount,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

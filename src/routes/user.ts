@@ -19,7 +19,7 @@ const router = Router();
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -28,20 +28,20 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email }).lean().orFail();
 
     if (!user) {
-      console.log(invalidCredentials);
+      console.error(invalidCredentials);
       res.status(403);
       throw new Error(invalidCredentials);
     }
 
     if (user.role === 'GUEST') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
 
     const correctPassword = await bcrypt.compare(password, user.password);
     if (!correctPassword) {
-      console.log(invalidCredentials);
+      console.error(invalidCredentials);
       res.status(403);
       throw new Error(invalidCredentials);
     }
@@ -50,7 +50,7 @@ router.post('/login', async (req, res) => {
     deleteFields(user, ['password', 'createdAt']);
     res.status(200).json(user);
   } catch (err) {
-    console.log(invalidCredentials);
+    console.error(invalidCredentials);
     res.status(403);
     throw new Error(invalidCredentials);
   }
@@ -82,8 +82,6 @@ router.get('/:id', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
-  console.log(req.params.id);
-
   try {
     const customer = await User.findOne({
       _id: req.params.id,
@@ -104,7 +102,7 @@ router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    console.log(invalidEmail);
+    console.error(invalidEmail);
     res.status(400);
     throw new Error(invalidEmail);
   }
@@ -113,7 +111,7 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email }).orFail();
 
     if (user.role === 'GUEST') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -128,7 +126,7 @@ router.post('/forgot-password', async (req, res) => {
     await mail.send(passwordReset(user.toObject(), link));
     res.status(200).json('Password reset details sent to your email');
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -137,7 +135,7 @@ router.post('/forgot-password', async (req, res) => {
 router.patch('/reset-password/:userId/:token', async (req, res) => {
   const { password } = req.body;
   if (!password) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -147,7 +145,7 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
     const user = await User.findById(userId).orFail();
 
     if (user.role === 'GUEST') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -158,7 +156,7 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
     ) as JwtPayload;
 
     if (decoded.password !== user.password) {
-      console.log('Invalid token');
+      console.error('Invalid token');
       res.status(400);
       throw new Error('Invalid token');
     }
@@ -176,7 +174,7 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
     await mail.send(passwordResetConfirmation(user.toObject()));
     res.status(201).json('Password reset successful');
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

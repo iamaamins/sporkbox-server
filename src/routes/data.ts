@@ -8,7 +8,7 @@ const router = Router();
 // Get dietary tags
 router.get('/dietary-tags', auth, async (req, res) => {
   if (!req.user) {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }

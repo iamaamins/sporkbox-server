@@ -18,7 +18,7 @@ export interface FavoriteRestaurant {
 // Get all favorite
 router.get('/me', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -56,7 +56,7 @@ router.get('/me', auth, async (req, res) => {
     }
     res.status(200).json(favorites);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -64,7 +64,7 @@ router.get('/me', auth, async (req, res) => {
 // Add a favorite
 router.post('/add-to-favorite', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -72,7 +72,7 @@ router.post('/add-to-favorite', auth, async (req, res) => {
   const { _id } = req.user;
   const { restaurantId, itemId } = req.body;
   if (!restaurantId || !itemId) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -83,7 +83,7 @@ router.post('/add-to-favorite', auth, async (req, res) => {
       (item) => item._id?.toString() === itemId
     );
     if (!item) {
-      console.log(noItem);
+      console.error(noItem);
       res.status(400);
       throw new Error(noItem);
     }
@@ -108,7 +108,7 @@ router.post('/add-to-favorite', auth, async (req, res) => {
     };
     res.status(201).json(favorite);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -116,7 +116,7 @@ router.post('/add-to-favorite', auth, async (req, res) => {
 // Remove a favorite
 router.delete('/:favoriteId/remove-from-favorite', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -128,7 +128,7 @@ router.delete('/:favoriteId/remove-from-favorite', auth, async (req, res) => {
     });
     res.status(200).json({ message: 'Favorite removed' });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

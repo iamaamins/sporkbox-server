@@ -59,13 +59,13 @@ router.post('/register-vendor', upload, async (req, res) => {
     !addressLine1 ||
     !restaurantName
   ) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
 
   if (!req.file) {
-    console.log(requiredLogo);
+    console.error(requiredLogo);
     res.status(400);
     throw new Error(requiredLogo);
   }
@@ -73,7 +73,7 @@ router.post('/register-vendor', upload, async (req, res) => {
   try {
     const vendorExists = await User.findOne({ email }).lean();
     if (vendorExists) {
-      console.log(vendorAlreadyExists);
+      console.error(vendorAlreadyExists);
       res.status(400);
       throw new Error(vendorAlreadyExists);
     }
@@ -118,7 +118,7 @@ router.post('/register-vendor', upload, async (req, res) => {
     deleteFields(vendor, ['createdAt', 'password']);
     res.status(200).json(vendor);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -126,7 +126,7 @@ router.post('/register-vendor', upload, async (req, res) => {
 // Add a vendor and a restaurant
 router.post('/add-vendor', auth, upload, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -157,13 +157,13 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     !addressLine1 ||
     !restaurantName
   ) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
 
   if (!req.file) {
-    console.log(requiredLogo);
+    console.error(requiredLogo);
     res.status(400);
     throw new Error(requiredLogo);
   }
@@ -171,7 +171,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
   try {
     const vendorExists = await User.findOne({ email }).lean();
     if (vendorExists) {
-      console.log(vendorAlreadyExists);
+      console.error(vendorAlreadyExists);
       res.status(400);
       throw new Error(vendorAlreadyExists);
     }
@@ -216,7 +216,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     deleteFields(vendor, ['createdAt', 'password']);
     res.status(200).json(vendor);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -224,7 +224,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
 // Get all the vendors
 router.get('/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -250,7 +250,7 @@ router.get('/:limit', auth, async (req, res) => {
     });
     res.status(200).json(vendors);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -262,7 +262,7 @@ router.patch(
   upload,
   async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      console.log(unAuthorized);
+      console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
     }
@@ -293,7 +293,7 @@ router.patch(
       !addressLine1 ||
       !restaurantName
     ) {
-      console.log(requiredFields);
+      console.error(requiredFields);
       res.status(400);
       throw new Error(requiredFields);
     }
@@ -351,7 +351,7 @@ router.patch(
       };
       res.status(201).json(updatedVendorAndRestaurant);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       throw err;
     }
   }
@@ -360,7 +360,7 @@ router.patch(
 // Change vendor status
 router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -368,7 +368,7 @@ router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
   const { vendorId } = req.params;
   const { action } = req.body;
   if (!action) {
-    console.log(requiredAction);
+    console.error(requiredAction);
     res.status(400);
     throw new Error(requiredAction);
   }
@@ -390,7 +390,7 @@ router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
       .orFail();
     res.status(200).json(updatedVendor);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

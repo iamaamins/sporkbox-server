@@ -34,14 +34,14 @@ async function getDeliveredOrders() {
 
     return orders;
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 }
 
 router.get('/order', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -67,7 +67,7 @@ router.get('/order', auth, async (req, res) => {
 
 router.get('/item', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -97,7 +97,7 @@ router.get('/item', auth, async (req, res) => {
 
 router.get('/people', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -123,7 +123,7 @@ router.get('/people', auth, async (req, res) => {
 
 router.get('/restaurant-items', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -144,14 +144,14 @@ router.get('/restaurant-items', auth, async (req, res) => {
     }
     res.status(200).json(items);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
 
 router.get('/review', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -188,7 +188,7 @@ router.get('/review', auth, async (req, res) => {
     }
     res.status(200).json(results);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

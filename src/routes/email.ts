@@ -10,7 +10,7 @@ const router = Router();
 
 router.post('/time-to-order', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -56,7 +56,7 @@ router.post('/time-to-order', auth, async (req, res) => {
     );
     res.status(200).json({ message: 'Order reminders sent' });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

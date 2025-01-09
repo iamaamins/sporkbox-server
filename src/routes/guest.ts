@@ -1,11 +1,10 @@
 import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { checkActions, deleteFields } from '../lib/utils';
+import { checkActions, deleteFields, generateRandomString } from '../lib/utils';
 import { Router } from 'express';
 import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 import bcrypt from 'bcrypt';
-import { randomBytes } from 'node:crypto';
 
 const router = Router();
 
@@ -53,7 +52,7 @@ router.post('/add-guest', auth, async (req, res) => {
       .orFail();
 
     const salt = await bcrypt.genSalt(10);
-    const password = randomBytes(16).toString('hex');
+    const password = generateRandomString();
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const response = await User.create({

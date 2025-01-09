@@ -10,14 +10,14 @@ const router = Router();
 // Add admin
 router.post('/add-admin', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { firstName, lastName, email, password } = req.body;
   if (!firstName || !lastName || !email || !password) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -38,7 +38,7 @@ router.post('/add-admin', auth, async (req, res) => {
 
     res.status(201).json(admin);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

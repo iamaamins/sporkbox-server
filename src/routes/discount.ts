@@ -9,7 +9,7 @@ const router = Router();
 // Get all discount codes
 router.get('/', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
       .lean();
     res.status(200).json(discountCodes);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -28,14 +28,14 @@ router.get('/', auth, async (req, res) => {
 // Add a discount code
 router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { code, value, redeemability } = req.body;
   if (!code || !value || !redeemability) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -50,7 +50,7 @@ router.post('/add', auth, async (req, res) => {
     deleteFields(discountCode, ['createdAt']);
     res.status(201).json(discountCode);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -58,7 +58,7 @@ router.post('/add', auth, async (req, res) => {
 // Delete a discount code
 router.delete('/delete/:id', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -70,7 +70,7 @@ router.delete('/delete/:id', auth, async (req, res) => {
       .orFail();
     res.status(200).json(deletedCode._id);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -81,7 +81,7 @@ router.post('/apply/:code', auth, async (req, res) => {
     !req.user ||
     !(req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')
   ) {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -101,11 +101,11 @@ router.post('/apply/:code', auth, async (req, res) => {
       const { redeemability, ...rest } = discountCode;
       res.status(200).json(rest);
     } else {
-      console.log('Invalid discount code');
+      console.error('Invalid discount code');
       res.status(400).json({ message: 'Invalid discount code' });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

@@ -57,7 +57,7 @@ router.post('/webhook', async (req, res) => {
       res.status(201).json('Orders deleted');
     }
   } catch (err) {
-    console.log('Stripe event verification failed');
+    console.error('Stripe event verification failed');
     throw err;
   }
 });
@@ -65,7 +65,7 @@ router.post('/webhook', async (req, res) => {
 // Get session details
 router.get('/session/:sessionId', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -74,7 +74,7 @@ router.get('/session/:sessionId', auth, async (req, res) => {
     const response = await stripe.checkout.sessions.retrieve(sessionId);
     res.status(200).json(response.amount_total);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

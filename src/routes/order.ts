@@ -36,7 +36,7 @@ const router = Router();
 // Get vendor's all upcoming orders
 router.get('/vendor/upcoming-orders', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -52,7 +52,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -60,7 +60,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
 // Get customer's all upcoming orders
 router.get('/me/upcoming-orders', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -74,7 +74,7 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
       .select('-__v -updatedAt -customer -delivery.address -company.name');
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -82,7 +82,7 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
 // Get customer's limited delivered orders
 router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -100,7 +100,7 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
       );
     res.status(200).json(customerDeliveredOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -111,7 +111,7 @@ router.post('/create-orders', auth, async (req, res) => {
     !req.user ||
     !(req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')
   ) {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -137,14 +137,14 @@ router.post('/create-orders', auth, async (req, res) => {
 
     const { _id, firstName, lastName, email, companies } = user;
     if (!companies || companies.length === 0) {
-      console.log(invalidCredentials);
+      console.error(invalidCredentials);
       res.status(403);
       throw new Error(invalidCredentials);
     }
 
     const { orderItems, discountCodeId }: OrdersPayload = req.body;
     if (!orderItems || !orderItems.length) {
-      console.log('Please provide valid order items');
+      console.error('Please provide valid order items');
       res.status(400);
       throw new Error('Please provide valid order items');
     }
@@ -209,7 +209,7 @@ router.post('/create-orders', auth, async (req, res) => {
       // Validate delivery date
       const isValidDate = upcomingDataMap[orderItem.deliveryDate];
       if (!isValidDate) {
-        console.log('Your cart contains an item from a day that is closed');
+        console.error('Your cart contains an item from a day that is closed');
         res.status(400);
         throw new Error('Your cart contains an item from a day that is closed');
       }
@@ -218,7 +218,7 @@ router.post('/create-orders', auth, async (req, res) => {
       const isValidCompany =
         upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
       if (!isValidCompany) {
-        console.log(
+        console.error(
           'Your cart contains an item from a restaurant that is not available for your company'
         );
         res.status(400);
@@ -233,7 +233,7 @@ router.post('/create-orders', auth, async (req, res) => {
           orderItem.restaurantId
         ];
       if (!isValidRestaurant) {
-        console.log(
+        console.error(
           'Your cart contains an item from a restaurant that is closed'
         );
         res.status(400);
@@ -244,7 +244,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
       // Validate quantity
       if (!orderItem.quantity) {
-        console.log('One of your orders has invalid quantity');
+        console.error('One of your orders has invalid quantity');
         res.status(400);
         throw new Error('One of your orders has invalid quantity');
       }
@@ -273,7 +273,7 @@ router.post('/create-orders', auth, async (req, res) => {
           } has reached order capacity on ${dateToText(
             restaurant.schedule.date
           )}`;
-          console.log(message);
+          console.error(message);
           res.status(400);
           throw new Error(message);
         }
@@ -285,7 +285,7 @@ router.post('/create-orders', auth, async (req, res) => {
           orderItem.restaurantId
         ].item[orderItem.itemId];
       if (!isValidItem) {
-        console.log('Your cart contains an invalid item');
+        console.error('Your cart contains an invalid item');
         res.status(400);
         throw new Error('Your cart contains an invalid item');
       }
@@ -310,7 +310,7 @@ router.post('/create-orders', auth, async (req, res) => {
             orderItem.optionalAddons.length > upcomingOptionalAddons.addable ||
             !validOptionalAddons
           ) {
-            console.log(
+            console.error(
               'Your cart contains an item with invalid optional addons'
             );
             res.status(400);
@@ -342,7 +342,7 @@ router.post('/create-orders', auth, async (req, res) => {
               upcomingRequiredAddons.addable ||
             !validRequiredAddons
           ) {
-            console.log(
+            console.error(
               'Your cart contains an item with invalid required addons'
             );
             res.status(400);
@@ -370,7 +370,7 @@ router.post('/create-orders', auth, async (req, res) => {
             );
 
           if (!validRemovableIngredients) {
-            console.log(
+            console.error(
               'Your cart contains an item with invalid removable ingredients'
             );
             res.status(400);
@@ -389,14 +389,14 @@ router.post('/create-orders', auth, async (req, res) => {
         .select('code value redeemability totalRedeem')
         .lean();
       if (!discountCode) {
-        console.log('Invalid discount code');
+        console.error('Invalid discount code');
         res.status(400);
         throw new Error('Invalid discount code');
       }
       const totalRedeem = discountCode.totalRedeem;
       const redeemability = discountCode.redeemability;
       if (redeemability === 'once' && totalRedeem >= 1) {
-        console.log('Invalid discount code');
+        console.error('Invalid discount code');
         res.status(400);
         throw new Error('Invalid discount code');
       }
@@ -414,7 +414,7 @@ router.post('/create-orders', auth, async (req, res) => {
           upcomingRestaurant._id.toString() === orderItem.restaurantId
       );
       if (!restaurant) {
-        console.log('Restaurant is not found');
+        console.error('Restaurant is not found');
         res.status(400);
         throw new Error('Restaurant is not found');
       }
@@ -423,7 +423,7 @@ router.post('/create-orders', auth, async (req, res) => {
         (company) => company._id.toString() === orderItem.companyId
       );
       if (!company) {
-        console.log('Company is not found');
+        console.error('Company is not found');
         res.status(400);
         throw new Error('Company is not found');
       }
@@ -432,7 +432,7 @@ router.post('/create-orders', auth, async (req, res) => {
         (item) => item._id?.toString() === orderItem.itemId
       );
       if (!item) {
-        console.log('Item is not found');
+        console.error('Item is not found');
         res.status(400);
         throw new Error('Item is not found');
       }
@@ -759,7 +759,7 @@ router.post('/create-orders', auth, async (req, res) => {
       3 * 60 * 1000
     );
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -767,7 +767,7 @@ router.post('/create-orders', auth, async (req, res) => {
 // Get all upcoming orders
 router.get('/all-upcoming-orders', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -778,7 +778,7 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
       .select('-__v -updatedAt');
     res.status(200).json(upcomingOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -786,7 +786,7 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
 // Get limited delivered orders
 router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -818,7 +818,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
     }
     res.status(200).json(deliveredOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -826,7 +826,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
 // Get all delivered orders of a customer
 router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -841,7 +841,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
       .select('-__v -updatedAt');
     res.status(200).json(customerDeliveredOrders);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -849,14 +849,14 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
 // Deliver orders
 router.patch('/deliver', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { orderIds } = req.body;
   if (!orderIds) {
-    console.log('Please provide order ids');
+    console.error('Please provide order ids');
     res.status(400);
     throw new Error('Please provide order ids');
   }
@@ -874,7 +874,7 @@ router.patch('/deliver', auth, async (req, res) => {
     );
     res.status(200).json('Delivery email sent');
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -882,7 +882,7 @@ router.patch('/deliver', auth, async (req, res) => {
 // Archive an order by admin
 router.patch('/:orderId/archive', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -908,7 +908,7 @@ router.patch('/:orderId/archive', auth, async (req, res) => {
     await mail.send(orderArchive(docToObj(updatedOrder)));
     res.status(201).json(updatedOrder);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -916,7 +916,7 @@ router.patch('/:orderId/archive', auth, async (req, res) => {
 // Cancel an order by customer
 router.patch('/:orderId/cancel', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -935,7 +935,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
         dateToMS(schedule.date) === dateToMS(order.delivery.date)
     );
     if (!isScheduled) {
-      console.log('Order changes are closed. Please contact support');
+      console.error('Order changes are closed. Please contact support');
       res.status(400);
       throw new Error('Order changes are closed. Please contact support');
     }
@@ -957,7 +957,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -965,7 +965,7 @@ router.patch('/:orderId/cancel', auth, async (req, res) => {
 // Get weekly order stat
 router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -996,7 +996,7 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
     }
     res.status(200).json(stat);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -1004,7 +1004,7 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
 // Get price stat
 router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -1020,7 +1020,7 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
 
     let totalSpent = 0;
     let totalPaid = 0;
-    let payingEmployeeMap: Record<string, boolean> = {};
+    const payingEmployeeMap: Record<string, boolean> = {};
     for (const order of orders) {
       totalSpent += order.item.total;
       if (order.payment?.distributed) {
@@ -1037,7 +1037,7 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
       payingEmployeeCount,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -1045,7 +1045,7 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
 // Get top-rated restaurants
 router.get('/restaurant-stat', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -1099,7 +1099,7 @@ router.get('/restaurant-stat', auth, async (req, res) => {
       .status(200)
       .json({ restaurants: getData(restaurantsMap), items: getData(itemsMap) });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });

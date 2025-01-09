@@ -11,7 +11,7 @@ const router = Router();
 // Get all companies
 router.get('/', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -23,7 +23,7 @@ router.get('/', auth, async (req, res) => {
 
     res.status(201).json(companies);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -31,7 +31,7 @@ router.get('/', auth, async (req, res) => {
 // Add a company
 router.post('/add-company', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -57,7 +57,7 @@ router.post('/add-company', auth, async (req, res) => {
     !shiftBudget ||
     !addressLine1
   ) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -66,12 +66,12 @@ router.post('/add-company', auth, async (req, res) => {
   try {
     const companies = await Company.find({ code }).lean();
     if (companies.some((company) => company.shift === shift)) {
-      console.log('A company with the same shift already exists');
+      console.error('A company with the same shift already exists');
       res.status(400);
       throw new Error('A company with the same shift already exists');
     }
     if (companies.some((company) => company.shift === 'general')) {
-      console.log('A non-shift company with the same code already exists');
+      console.error('A non-shift company with the same code already exists');
       res.status(400);
       throw new Error('A non-shift company with the same code already exists');
     }
@@ -108,7 +108,7 @@ router.post('/add-company', auth, async (req, res) => {
     }
     res.status(200).json(company);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -116,7 +116,7 @@ router.post('/add-company', auth, async (req, res) => {
 // Update company details
 router.patch('/:companyId/update-company-details', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -140,7 +140,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     !shiftBudget ||
     !addressLine1
   ) {
-    console.log(requiredFields);
+    console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
@@ -177,7 +177,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     deleteFields(updatedCompany);
     res.status(201).json(updatedCompany);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
@@ -185,7 +185,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
 // Change company status
 router.patch('/:companyId/change-company-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    console.log(unAuthorized);
+    console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
@@ -194,7 +194,7 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
   const { action } = req.body;
 
   if (!action) {
-    console.log(requiredAction);
+    console.error(requiredAction);
     res.status(400);
     throw new Error(requiredAction);
   }
@@ -210,7 +210,7 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
         .lean();
 
       if (orders.length > 0) {
-        console.log("Can't archive a company with active orders");
+        console.error("Can't archive a company with active orders");
         res.status(404);
         throw new Error("Can't archive a company with active orders");
       }
@@ -254,7 +254,7 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
       res.status(200).json(updatedCompany);
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
