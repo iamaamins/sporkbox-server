@@ -10,6 +10,7 @@ import {
   invalidCredentials,
   invalidEmail,
   requiredFields,
+  unAuthorized,
 } from '../lib/messages';
 
 const router = Router();
@@ -30,10 +31,17 @@ router.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email }).lean().orFail();
+
     if (!user) {
       console.log(invalidCredentials);
       res.status(403);
       throw new Error(invalidCredentials);
+    }
+
+    if (user.role === 'GUEST') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
     }
 
     const correctPassword = await bcrypt.compare(password, user.password);
@@ -83,6 +91,13 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const user = await User.findOne({ email }).orFail();
+
+    if (user.role === 'GUEST') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
+
     const token = jwt.sign(
       { password: user.password },
       process.env.JWT_SECRET as string,
@@ -110,15 +125,24 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
   const { userId, token } = req.params;
   try {
     const user = await User.findById(userId).orFail();
+
+    if (user.role === 'GUEST') {
+      console.log(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
+
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
     ) as JwtPayload;
+
     if (decoded.password !== user.password) {
       console.log('Invalid token');
       res.status(400);
       throw new Error('Invalid token');
     }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -128,6 +152,7 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
         password: hashedPassword,
       }
     ).orFail();
+
     await mail.send(passwordResetConfirmation(user.toObject()));
     res.status(201).json('Password reset successful');
   } catch (err) {

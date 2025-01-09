@@ -125,14 +125,14 @@ export interface RestaurantSchema {
   schedules: Types.DocumentArray<SchedulesSchema>;
 }
 
-export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER';
+export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER' | 'GUEST';
 
 export interface UserSchema extends GenericUser {
   _id: Types.ObjectId;
   email: string;
   role: UserRole;
-  password: string;
   status: string;
+  password: string;
   foodPreferences?: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;

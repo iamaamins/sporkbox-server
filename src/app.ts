@@ -13,6 +13,7 @@ import Stripe from './routes/stripe';
 const xssClean = require('xss-clean');
 import Vendor from './routes/vendor';
 import Company from './routes/company';
+import Guest from './routes/guest';
 import Data from './routes/data';
 import error from './middleware/error';
 import { connectDB } from './config/db';
@@ -57,6 +58,7 @@ app.use('/customers', Customer);
 app.use('/restaurants', Restaurant);
 app.use('/discount-code', Discount);
 app.use('/email', Email);
+app.use('/guests', Guest);
 
 app.use(error);
 
