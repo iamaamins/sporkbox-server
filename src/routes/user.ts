@@ -15,14 +15,9 @@ import {
 
 const router = Router();
 
-interface LoginPayload {
-  email: string;
-  password: string;
-}
-
 // Login user
 router.post('/login', async (req, res) => {
-  const { email, password }: LoginPayload = req.body;
+  const { email, password } = req.body;
   if (!email || !password) {
     console.log(requiredFields);
     res.status(400);

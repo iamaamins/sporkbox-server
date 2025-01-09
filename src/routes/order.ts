@@ -153,11 +153,10 @@ router.post('/create-orders', auth, async (req, res) => {
     // to validate the orders,
     // to get the order item details, and
     // to get scheduled dates and company ids
-    const getActiveSchedules = true;
     const upcomingRestaurants = await getUpcomingRestaurants(
       res,
       companies,
-      getActiveSchedules
+      true
     );
     const deliveryDates: Date[] = [];
     for (const restaurant of upcomingRestaurants) {
@@ -498,6 +497,21 @@ router.post('/create-orders', auth, async (req, res) => {
       };
     });
 
+    // Place the orders if the user is a guest
+    const restaurantsData = upcomingRestaurants.map((restaurant) => ({
+      _id: restaurant._id,
+      scheduledOn: restaurant.schedule.date,
+      orderCapacity: restaurant.orderCapacity,
+    }));
+    if (user.role === 'GUEST') {
+      await createOrders(res, orders, req.user.role);
+      return updateScheduleStatus(
+        restaurantIds,
+        deliveryDates,
+        restaurantsData
+      );
+    }
+
     // Get unique upcoming dates and company ids
     // Dates will be used to get the upcoming orders
     const upcomingDetails = upcomingRestaurants
@@ -512,8 +526,8 @@ router.post('/create-orders', auth, async (req, res) => {
           ) === index
       );
 
-    // Get customer upcoming orders
-    const customerUpcomingOrders = await Order.find({
+    // Get user upcoming orders
+    const userUpcomingOrders = await Order.find({
       'customer._id': _id,
       status: {
         $nin: ['PENDING', 'ARCHIVED', 'CANCELLED'],
@@ -527,8 +541,8 @@ router.post('/create-orders', auth, async (req, res) => {
       .select('delivery item company payment')
       .lean();
 
-    // Get upcoming orders that matches order item dates
-    const upcomingDateTotalDetails = customerUpcomingOrders
+    // Get upcoming orders date total detail
+    const upcomingDateTotalDetails = userUpcomingOrders
       .filter((upcomingOrder) =>
         orders.some(
           (order) =>
@@ -544,18 +558,17 @@ router.post('/create-orders', auth, async (req, res) => {
         total:
           upcomingOrder.item.total - (upcomingOrder.payment?.distributed || 0),
       }));
-
-    // Get upcoming order date and total
-    // with shift and company id details
     const upcomingOrderDetails = getDateTotal(upcomingDateTotalDetails);
+
+    // Get current orders date total detail
     const orderDateTotalDetails = orders.map((order) => ({
       shift: order.company.shift,
       date: order.delivery.date,
       total: order.item.total,
       companyId: order.company._id.toString(),
     }));
-
     const orderItemDetails = getDateTotal(orderDateTotalDetails);
+
     const company = companies.find((company) => company.status === 'ACTIVE');
     const shiftBudget = company?.shiftBudget || 0;
     const payableDetails = orderItemDetails
@@ -592,11 +605,6 @@ router.post('/create-orders', auth, async (req, res) => {
       (acc, curr) => acc + curr.amount,
       0
     );
-    const restaurantsData = upcomingRestaurants.map((restaurant) => ({
-      _id: restaurant._id,
-      scheduledOn: restaurant.schedule.date,
-      orderCapacity: restaurant.orderCapacity,
-    }));
     if (!payableAmount) {
       await createOrders(res, orders, req.user.role);
       return updateScheduleStatus(
@@ -605,12 +613,14 @@ router.post('/create-orders', auth, async (req, res) => {
         restaurantsData
       );
     }
-    const discountAmount = discount?.value || 0;
 
     // Create orders with payment and discount
+    const discountAmount = discount?.value || 0;
     let tempDiscountAmount = discountAmount;
+
     const ordersWithPayment = [];
     const ordersWithDiscount = [];
+
     for (const payableDetail of payableDetails) {
       let payment = 0;
       let discount = 0;
