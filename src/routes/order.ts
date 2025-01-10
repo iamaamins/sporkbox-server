@@ -497,13 +497,30 @@ router.post('/create-orders', auth, async (req, res) => {
       };
     });
 
-    // Place the orders if the user is a guest
+    // Get restaurant data to update the schedule status
     const restaurantsData = upcomingRestaurants.map((restaurant) => ({
       _id: restaurant._id,
       scheduledOn: restaurant.schedule.date,
       orderCapacity: restaurant.orderCapacity,
     }));
+
+    // Place the orders if the user is a guest
     if (user.role === 'GUEST') {
+      if (discount) {
+        const orderTotal = orders.reduce(
+          (acc, curr) => curr.item.total + acc,
+          0
+        );
+        const discountValue = Math.min(orderTotal, discount.value);
+
+        for (const order of orders) {
+          order.discount = {
+            ...discount,
+            distributed: discountValue / orders.length,
+          };
+        }
+      }
+
       await createOrders(res, orders, req.user.role);
       return updateScheduleStatus(
         restaurantIds,
@@ -624,14 +641,17 @@ router.post('/create-orders', auth, async (req, res) => {
     for (const payableDetail of payableDetails) {
       let payment = 0;
       let discount = 0;
+
       if (discountAmount >= payableAmount) {
         payment = 0;
         discount = payableDetail.amount;
       }
+
       if (discountAmount < payableAmount && !tempDiscountAmount) {
         payment = payableDetail.amount;
         discount = 0;
       }
+
       if (
         discountAmount < payableAmount &&
         tempDiscountAmount <= payableDetail.amount
@@ -640,6 +660,7 @@ router.post('/create-orders', auth, async (req, res) => {
         discount = tempDiscountAmount;
         tempDiscountAmount -= tempDiscountAmount;
       }
+
       if (
         discountAmount < payableAmount &&
         payableDetail.amount < tempDiscountAmount
@@ -648,6 +669,7 @@ router.post('/create-orders', auth, async (req, res) => {
         discount = payableDetail.amount;
         tempDiscountAmount -= payableDetail.amount;
       }
+
       if (payment) {
         ordersWithPayment.push({
           date: payableDetail.date,
@@ -667,6 +689,7 @@ router.post('/create-orders', auth, async (req, res) => {
           amount: payment,
         });
       }
+
       if (discount) {
         ordersWithDiscount.push({
           date: payableDetail.date,
