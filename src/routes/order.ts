@@ -1065,23 +1065,18 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get top-rated restaurants
-router.get('/restaurant-stat', auth, async (req, res) => {
+// Get most liked restaurants and items
+router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  const today = new Date();
-  const pastDate = new Date();
-  pastDate.setDate(today.getDate() - 60);
-
+  const { start, end } = req.params;
   try {
     const orders = await Order.find({
-      createdAt: {
-        $gte: pastDate,
-      },
+      createdAt: { $gte: start, $lte: end },
     });
 
     type RestaurantsMap = Record<string, { name: string; orderCount: number }>;
