@@ -12,6 +12,7 @@ import {
   requiredFields,
   unAuthorized,
 } from '../lib/messages';
+import Order from '../models/order';
 
 const router = Router();
 
@@ -72,14 +73,18 @@ router.post('/logout', async (req, res) => {
     .end();
 });
 
-// Get user details
+// Get self details
 router.get('/me', auth, async (req, res) => {
   res.status(200).json(req.user);
 });
 
 // Get user by id
 router.get('/:id', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
@@ -250,6 +255,51 @@ router.patch('/:userId/update-user-details', auth, async (req, res) => {
       .orFail();
 
     res.status(200).json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get user data by company
+router.get('/:companyCode/:userId/data', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { companyCode, userId } = req.params;
+  try {
+    const user = await User.findOne({
+      _id: userId,
+      'companies.code': companyCode,
+    })
+      .select('-__v -updatedAt -password')
+      .lean();
+
+    const upcomingOrders = await Order.find({
+      status: 'PROCESSING',
+      'customer._id': userId,
+      'company.code': companyCode,
+    })
+      .sort({ 'delivery.date': -1 })
+      .select('-__v -updatedAt');
+
+    const deliveredOrders = await Order.find({
+      status: 'DELIVERED',
+      'customer._id': userId,
+      'company.code': companyCode,
+    })
+      .sort({ 'delivery.date': -1 })
+      .select('-__v -updatedAt');
+
+    res.status(200).json({ data: user, upcomingOrders, deliveredOrders });
   } catch (err) {
     console.error(err);
     throw err;

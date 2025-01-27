@@ -62,18 +62,23 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
   }
 });
 
-// Get admin's upcoming restaurants
-router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+// Get users's upcoming restaurants
+router.get('/upcoming-restaurants/:userId', auth, async (req, res) => {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  const user = await User.findById(req.params.employee)
+  const user = await User.findById(req.params.userId)
     .select('companies')
     .lean()
     .orFail();
+
   if (!user.companies || !user.companies.length) {
     console.error(unAuthorized);
     res.status(400);
@@ -85,6 +90,7 @@ router.get('/upcoming-restaurants/:employee', auth, async (req, res) => {
       res,
       user.companies
     );
+
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
     console.error(err);

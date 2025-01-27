@@ -109,21 +109,18 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
 router.post('/create-orders', auth, async (req, res) => {
   if (
     !req.user ||
-    !(req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
   ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  if (req.user.role === 'ADMIN' && !req.body.userId) {
-    res.status(400);
-    throw new Error('Please provide employee ID');
-  }
-
+  const { orderingFor } = req.body;
   try {
     const user =
-      req.user.role === 'CUSTOMER'
+      orderingFor === 'SELF'
         ? req.user
         : await User.findOne({ _id: req.body.userId })
             .select('-__v -updatedAt -password')
@@ -862,6 +859,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': -1 })
       .select('-__v -updatedAt');
+
     res.status(200).json(customerDeliveredOrders);
   } catch (err) {
     console.error(err);
@@ -1275,12 +1273,10 @@ router.get(
         Object.values(dataMap)
           .sort((a, b) => b.orderCount - a.orderCount)
           .slice(0, 10);
-      res
-        .status(200)
-        .json({
-          restaurants: getData(restaurantsMap),
-          items: getData(itemsMap),
-        });
+      res.status(200).json({
+        restaurants: getData(restaurantsMap),
+        items: getData(itemsMap),
+      });
     } catch (err) {
       console.error(err);
       throw err;
