@@ -1024,7 +1024,52 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get price stat
+// Get weekly order stat by company
+router.get('/:companyCode/weekly-stat/:start/:end', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end, companyCode } = req.params;
+  try {
+    const orders = await Order.find({
+      'company.code': companyCode,
+      status: { $in: ['DELIVERED', 'PROCESSING'] },
+      'delivery.date': { $gte: start, $lte: end },
+    })
+      .select('delivery.date customer._id')
+      .lean();
+
+    const statMap: Record<string, string[]> = {};
+    for (const order of orders) {
+      const key = order.delivery.date.toISOString().split('T')[0];
+      const customerId = order.customer._id.toString();
+      if (!statMap[key]) {
+        statMap[key] = [customerId];
+      } else {
+        if (!statMap[key].includes(customerId)) statMap[key].push(customerId);
+      }
+    }
+
+    let stat = [];
+    for (const key in statMap) {
+      stat.push({ date: key, count: statMap[key].length });
+    }
+    res.status(200).json(stat);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get payment stat
 router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -1054,6 +1099,54 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
     }
 
     const payingEmployeeCount = Object.keys(payingEmployeeMap).length;
+    res.status(200).json({
+      averageSpent: totalSpent / orders.length,
+      averagePaid: totalPaid / payingEmployeeCount,
+      payingEmployeeCount,
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get payment stat by company
+router.get('/:companyCode/payment-stat/:start/:end', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end, companyCode } = req.params;
+  try {
+    const orders = await Order.find({
+      'company.code': companyCode,
+      status: { $in: ['PROCESSING', 'DELIVERED'] },
+      createdAt: { $gte: start, $lte: end },
+    })
+      .select('customer._id item.total payment.distributed')
+      .lean();
+
+    let totalSpent = 0;
+    let totalPaid = 0;
+    const payingEmployeeMap: Record<string, boolean> = {};
+    for (const order of orders) {
+      totalSpent += order.item.total;
+      if (order.payment?.distributed) {
+        totalPaid += order.payment.distributed;
+        const key = order.customer._id.toString();
+        if (!payingEmployeeMap[key]) payingEmployeeMap[key] = true;
+      }
+    }
+
+    const payingEmployeeCount = Object.keys(payingEmployeeMap).length;
+
     res.status(200).json({
       averageSpent: totalSpent / orders.length,
       averagePaid: totalPaid / payingEmployeeCount,
@@ -1121,5 +1214,78 @@ router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
     throw err;
   }
 });
+
+// Get most liked restaurants and items by company
+router.get(
+  '/:companyCode/restaurant-stat/:start/:end',
+  auth,
+  async (req, res) => {
+    if (
+      !req.user ||
+      req.user.role !== 'CUSTOMER' ||
+      !req.user.isCompanyAdmin ||
+      req.user.companies[0].code !== req.params.companyCode
+    ) {
+      console.error(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
+
+    const { start, end, companyCode } = req.params;
+    try {
+      const orders = await Order.find({
+        'company.code': companyCode,
+        createdAt: { $gte: start, $lte: end },
+      });
+
+      type RestaurantsMap = Record<
+        string,
+        { name: string; orderCount: number }
+      >;
+      type ItemsMap = Record<
+        string,
+        { name: string; restaurant: string; orderCount: number }
+      >;
+      const restaurantsMap: RestaurantsMap = {};
+      const itemsMap: ItemsMap = {};
+
+      for (const order of orders) {
+        const restaurant = order.restaurant._id.toString();
+        if (!restaurantsMap[restaurant]) {
+          restaurantsMap[restaurant] = {
+            name: order.restaurant.name,
+            orderCount: 1,
+          };
+        } else {
+          restaurantsMap[restaurant].orderCount++;
+        }
+
+        const item = order.item._id.toString();
+        if (!itemsMap[item]) {
+          itemsMap[item] = {
+            name: order.item.name,
+            restaurant: order.restaurant.name,
+            orderCount: 1,
+          };
+        } else {
+          itemsMap[item].orderCount++;
+        }
+      }
+      const getData = (dataMap: RestaurantsMap | ItemsMap) =>
+        Object.values(dataMap)
+          .sort((a, b) => b.orderCount - a.orderCount)
+          .slice(0, 10);
+      res
+        .status(200)
+        .json({
+          restaurants: getData(restaurantsMap),
+          items: getData(itemsMap),
+        });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+);
 
 export default router;

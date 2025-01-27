@@ -32,6 +32,33 @@ router.get('/', auth, async (req, res) => {
     const customers = await User.find({ role: 'CUSTOMER' }).select(
       '-__v -updatedAt -password'
     );
+
+    res.status(200).json(customers);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get all customers by company
+router.get('/:companyCode', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const customers = await User.find({
+      role: 'CUSTOMER',
+      'companies.code': req.params.companyCode,
+    }).select('-__v -updatedAt -password');
+
     res.status(200).json(customers);
   } catch (err) {
     console.error(err);

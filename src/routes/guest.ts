@@ -27,6 +27,32 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get all guests by company
+router.get('/:companyCode', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const guests = await User.find({
+      role: 'GUEST',
+      'companies.code': req.params.companyCode,
+    }).select('-__v -updatedAt -password');
+
+    res.status(200).json(guests);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Add guest
 router.post('/add-guest', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {

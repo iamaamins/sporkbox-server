@@ -133,6 +133,56 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
   }
 });
 
+// Get all scheduled restaurants by company
+router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { companyCode } = req.params;
+  try {
+    const restaurants = await Restaurant.find({
+      'schedules.company.code': companyCode,
+      'schedules.date': { $gte: now },
+    }).select('-__v -updatedAt -createdAt -address -items -logo');
+
+    const scheduledRestaurants = [];
+    for (const restaurant of restaurants) {
+      const { schedules, ...rest } = restaurant.toObject();
+      for (const schedule of schedules) {
+        if (
+          dateToMS(schedule.date) >= now &&
+          schedule.company.code === companyCode
+        ) {
+          const scheduledRestaurant = {
+            ...rest,
+            company: schedule.company,
+            schedule: {
+              _id: schedule._id,
+              date: schedule.date,
+              status: schedule.status,
+            },
+          };
+          scheduledRestaurants.push(scheduledRestaurant);
+        }
+      }
+    }
+    scheduledRestaurants.sort(sortByDate);
+
+    res.status(200).json(scheduledRestaurants);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Schedule restaurants
 router.post('/schedule-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
