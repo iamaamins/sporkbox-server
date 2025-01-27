@@ -7,9 +7,15 @@ import {
   deleteFields,
   checkShift,
   subscriptions,
+  checkActions,
 } from '../lib/utils';
 import { Router } from 'express';
-import { invalidShift, requiredFields, unAuthorized } from '../lib/messages';
+import {
+  invalidShift,
+  requiredAction,
+  requiredFields,
+  unAuthorized,
+} from '../lib/messages';
 import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
 
 const router = Router();
@@ -24,7 +30,7 @@ router.get('/', auth, async (req, res) => {
 
   try {
     const customers = await User.find({ role: 'CUSTOMER' }).select(
-      '-__v -updatedAt -password -role'
+      '-__v -updatedAt -password'
     );
     res.status(200).json(customers);
   } catch (err) {
@@ -136,6 +142,7 @@ router.patch(
         { _id: customerId },
         { $set: { companies: companies } }
       ).orFail();
+
       res.status(201).json(companies);
     } catch (err) {
       console.error(err);
@@ -181,6 +188,7 @@ router.patch(
         .select('-__v -password -updatedAt -createdAt')
         .lean()
         .orFail();
+
       res.status(201).json(updatedCustomer);
     } catch (err) {
       console.error(err);
@@ -224,6 +232,45 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
       .orFail();
 
     res.status(200).json(updatedCustomer);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Update customer company admin status
+router.patch('/:customerId/update-company-admin', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { customerId } = req.params;
+  const { action } = req.body;
+
+  if (!action) {
+    console.error(requiredAction);
+    res.status(400);
+    throw new Error(requiredAction);
+  }
+  checkActions(['Make', 'Remove'], action, res);
+
+  try {
+    const updatedCustomer = await User.findOneAndUpdate(
+      { _id: customerId, role: 'CUSTOMER', status: 'ACTIVE' },
+      {
+        ...(action === 'Make'
+          ? { $set: { isCompanyAdmin: true } }
+          : { $unset: { isCompanyAdmin: '' } }),
+      },
+      { returnDocument: 'after' }
+    )
+      .select('-__v -password -updatedAt')
+      .lean()
+      .orFail();
+
+    res.status(201).json(updatedCustomer);
   } catch (err) {
     console.error(err);
     throw err;

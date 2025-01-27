@@ -133,11 +133,12 @@ export interface UserSchema extends GenericUser {
   role: UserRole;
   status: string;
   password: string;
-  foodPreferences?: string[];
   companies: UserCompany[];
   restaurant: Types.ObjectId;
   shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
+  foodPreferences?: string[];
+  isCompanyAdmin?: boolean;
 }
 
 export interface FavRestaurantItem extends GenericItem {

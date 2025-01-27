@@ -25,7 +25,9 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email }).lean().orFail();
+    const user = await User.findOne({ email, status: 'ACTIVE' })
+      .lean()
+      .orFail();
 
     if (!user) {
       console.error(invalidCredentials);
@@ -48,6 +50,7 @@ router.post('/login', async (req, res) => {
 
     setCookie(res, user._id);
     deleteFields(user, ['password', 'createdAt']);
+
     res.status(200).json(user);
   } catch (err) {
     console.error(invalidCredentials);
@@ -108,7 +111,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email }).orFail();
+    const user = await User.findOne({ email, status: 'ACTIVE' }).orFail();
 
     if (user.role === 'GUEST') {
       console.error(unAuthorized);
