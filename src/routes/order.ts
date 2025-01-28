@@ -905,7 +905,11 @@ router.patch('/deliver', auth, async (req, res) => {
 
 // Archive an order by admin
 router.patch('/:orderId/archive', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);

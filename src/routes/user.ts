@@ -189,7 +189,11 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
 
 // Change status
 router.patch('/:userId/change-user-status', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
