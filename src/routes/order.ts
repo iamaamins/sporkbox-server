@@ -109,23 +109,26 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
 router.post('/create-orders', auth, async (req, res) => {
   if (
     !req.user ||
-    (req.user.role !== 'ADMIN' &&
-      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+    (req.user.role !== 'ADMIN' && req.user.role !== 'CUSTOMER')
   ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  const { orderingFor } = req.body;
+  if (req.body.orderingForUser && !req.body.orderingForUser.id) {
+    console.error('User id is required');
+    res.status(400);
+    throw new Error('User id is required');
+  }
+
   try {
-    const user =
-      orderingFor === 'SELF'
-        ? req.user
-        : await User.findOne({ _id: req.body.userId })
-            .select('-__v -updatedAt -password')
-            .lean()
-            .orFail();
+    const user = !req.body.orderingForUser
+      ? req.user
+      : await User.findOne({ _id: req.body.orderingForUser.id })
+          .select('-__v -updatedAt -password')
+          .lean()
+          .orFail();
 
     if (user.status !== 'ACTIVE') {
       res.status(400);

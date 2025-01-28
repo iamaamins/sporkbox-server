@@ -265,7 +265,7 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   }
 });
 
-// Update customer company admin status
+// Update company admin
 router.patch('/:customerId/update-company-admin', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
