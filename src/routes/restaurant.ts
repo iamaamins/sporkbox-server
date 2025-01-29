@@ -896,11 +896,7 @@ router.get('/items/count-and-average/:price?', auth, async (req, res) => {
 
 // Get review stat
 router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
-  if (
-    !req.user ||
-    (req.user.role !== 'ADMIN' &&
-      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
-  ) {
+  if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
@@ -912,7 +908,7 @@ router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
       'items.reviews': {
         $elemMatch: { createdAt: { $gte: start, $lte: end } },
       },
-    });
+    }).select('items');
 
     let reviewCount = 0;
     let totalRating = 0;
@@ -948,5 +944,75 @@ router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
     throw err;
   }
 });
+
+// Get review stat by company
+router.get(
+  '/items/review-stat/:companyCode/:start/:end',
+  auth,
+  async (req, res) => {
+    if (
+      !req.user ||
+      req.user.role !== 'CUSTOMER' ||
+      !req.user.isCompanyAdmin ||
+      req.user.companies[0].code !== req.params.companyCode
+    ) {
+      console.error(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
+    }
+
+    const { companyCode, start, end } = req.params;
+    try {
+      const users = await User.find({ 'companies.code': companyCode }).select(
+        '_id companies'
+      );
+
+      let userMap: Record<string, boolean> = {};
+      for (const user of users) {
+        userMap[user._id.toString()] = true;
+      }
+
+      const restaurants = await Restaurant.find({
+        'items.reviews': {
+          $elemMatch: { createdAt: { $gte: start, $lte: end } },
+        },
+      }).select('items');
+
+      let reviewCount = 0;
+      let totalRating = 0;
+      let reviews = [];
+
+      for (const restaurant of restaurants) {
+        for (const item of restaurant.items) {
+          for (const review of item.reviews) {
+            if (
+              userMap[review.customer.toString()] &&
+              dateToMS(review.createdAt) >= dateToMS(start) &&
+              dateToMS(review.createdAt) <= dateToMS(end)
+            ) {
+              reviewCount += 1;
+              totalRating += review.rating;
+              reviews.push({
+                _id: review._id,
+                date: review.createdAt,
+                rating: review.rating,
+                comment: review.comment,
+              });
+            }
+          }
+        }
+      }
+
+      res.status(200).json({
+        reviews,
+        reviewCount,
+        averageRating: totalRating / reviewCount,
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+);
 
 export default router;
