@@ -894,4 +894,59 @@ router.get('/items/count-and-average/:price?', auth, async (req, res) => {
   }
 });
 
+// Get review stat
+router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+  try {
+    const restaurants = await Restaurant.find({
+      'items.reviews': {
+        $elemMatch: { createdAt: { $gte: start, $lte: end } },
+      },
+    });
+
+    let reviewCount = 0;
+    let totalRating = 0;
+    let reviews = [];
+
+    for (const restaurant of restaurants) {
+      for (const item of restaurant.items) {
+        for (const review of item.reviews) {
+          if (
+            dateToMS(review.createdAt) >= dateToMS(start) &&
+            dateToMS(review.createdAt) <= dateToMS(end)
+          ) {
+            reviewCount += 1;
+            totalRating += review.rating;
+            reviews.push({
+              _id: review._id,
+              date: review.createdAt,
+              rating: review.rating,
+              comment: review.comment,
+            });
+          }
+        }
+      }
+    }
+
+    res.status(200).json({
+      reviews,
+      reviewCount,
+      averageRating: totalRating / reviewCount,
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 export default router;
