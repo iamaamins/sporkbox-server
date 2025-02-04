@@ -17,10 +17,11 @@ module.exports = {
       for (const item of restaurant.items) {
         for (const review of item.reviews) {
           const key = `${item._id.toString()}-${review.customer.toString()}`;
+          const reviewCreationMS = new Date(review.createdAt).getTime();
           if (
-            new Date(review.createdAt).getTime() < new Date('2025-06-01') &&
-            new Date(review.createdAt) > new Date('2025-04-01') &&
-            itemsMap.has(key)
+            itemsMap.has(key) &&
+            reviewCreationMS < new Date('2025-06-01').getTime() &&
+            reviewCreationMS > new Date('2025-04-01').getTime()
           ) {
             bulkUpdates.push({
               updateOne: {
@@ -62,9 +63,10 @@ module.exports = {
     for (const restaurant of restaurants) {
       for (const item of restaurant.items) {
         for (const review of item.reviews) {
+          const reviewCreationMS = new Date(review.createdAt).getTime();
           if (
-            new Date(review.createdAt).getTime() < new Date('2025-06-01') &&
-            new Date(review.createdAt) > new Date('2025-04-01')
+            reviewCreationMS < new Date('2025-06-01').getTime() &&
+            reviewCreationMS > new Date('2025-04-01').getTime()
           ) {
             bulkUpdates.push({
               updateOne: {
@@ -80,7 +82,6 @@ module.exports = {
                 },
                 arrayFilters: [
                   { 'i._id': item._id },
-
                   {
                     'r.customer': review.customer,
                     'r.createdAt': {
