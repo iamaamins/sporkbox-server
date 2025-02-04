@@ -3,7 +3,7 @@ module.exports = {
     const restaurants = await db.collection('restaurants').find().toArray();
     const orders = await db
       .collection('orders')
-      .find({ isReviewed: true, updatedAt: { $lt: new Date('2025-06-01') } })
+      .find({ isReviewed: true, updatedAt: { $lt: new Date('2025-01-06') } })
       .toArray();
 
     const itemsMap = new Map();
@@ -20,8 +20,8 @@ module.exports = {
           const reviewCreationMS = new Date(review.createdAt).getTime();
           if (
             itemsMap.has(key) &&
-            reviewCreationMS < new Date('2025-06-01').getTime() &&
-            reviewCreationMS > new Date('2025-04-01').getTime()
+            reviewCreationMS < new Date('2025-01-06').getTime() &&
+            reviewCreationMS > new Date('2025-01-04').getTime()
           ) {
             bulkUpdates.push({
               updateOne: {
@@ -40,8 +40,8 @@ module.exports = {
                   {
                     'r.customer': review.customer,
                     'r.createdAt': {
-                      $gt: new Date('2025-04-01'),
-                      $lt: new Date('2025-06-01'),
+                      $gt: new Date('2025-01-04'),
+                      $lt: new Date('2025-01-06'),
                     },
                   },
                 ],
@@ -63,10 +63,10 @@ module.exports = {
     for (const restaurant of restaurants) {
       for (const item of restaurant.items) {
         for (const review of item.reviews) {
-          const reviewCreationMS = new Date(review.createdAt).getTime();
+          const reviewCreationTime = new Date(review.createdAt).getTime();
           if (
-            reviewCreationMS < new Date('2025-06-01').getTime() &&
-            reviewCreationMS > new Date('2025-04-01').getTime()
+            reviewCreationTime < new Date('2025-01-06').getTime() &&
+            reviewCreationTime > new Date('2025-01-04').getTime()
           ) {
             bulkUpdates.push({
               updateOne: {
@@ -76,8 +76,8 @@ module.exports = {
                 },
                 update: {
                   $set: {
-                    'items.$[i].reviews.$[r].createdAt': new Date('2025-05-01'),
-                    'items.$[i].reviews.$[r].updatedAt': new Date('2025-05-01'),
+                    'items.$[i].reviews.$[r].createdAt': new Date('2025-01-05'),
+                    'items.$[i].reviews.$[r].updatedAt': new Date('2025-01-05'),
                   },
                 },
                 arrayFilters: [
@@ -85,8 +85,8 @@ module.exports = {
                   {
                     'r.customer': review.customer,
                     'r.createdAt': {
-                      $gt: new Date('2025-04-01'),
-                      $lt: new Date('2025-06-01'),
+                      $gt: new Date('2025-01-04'),
+                      $lt: new Date('2025-01-06'),
                     },
                   },
                 ],
