@@ -4,6 +4,7 @@ module.exports = {
     const orders = await db
       .collection('orders')
       .find({ isReviewed: true, updatedAt: { $lt: new Date('2025-01-06') } })
+      .sort({ 'delivery.date': -1 })
       .toArray();
 
     const itemsMap = new Map();
