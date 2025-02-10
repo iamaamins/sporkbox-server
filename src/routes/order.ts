@@ -903,7 +903,7 @@ router.patch('/deliver', auth, async (req, res) => {
   }
 });
 
-// Archive an order by admin
+// Archive an order by admin and company admin
 router.patch('/:orderId/archive', auth, async (req, res) => {
   if (
     !req.user ||

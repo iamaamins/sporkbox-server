@@ -54,15 +54,21 @@ router.get('/:companyCode', auth, async (req, res) => {
 });
 
 // Add guest
-router.post('/add-guest', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+router.post('/add/:companyId', auth, async (req, res) => {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  const { firstName, lastName, email, companyId } = req.body;
-  if (!firstName || !lastName || !email || !companyId) {
+  const { companyId } = req.params;
+  const { firstName, lastName, email } = req.body;
+
+  if (!firstName || !lastName || !email) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
