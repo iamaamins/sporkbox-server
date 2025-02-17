@@ -21,6 +21,7 @@ import { Addons, RestaurantSchema } from '../types';
 import mail from '@sendgrid/mail';
 import { orderCancel } from '../lib/emails';
 import {
+  invalidExtraRequiredAddOnsFormat,
   invalidOptionalAddOnsFormat,
   invalidRequiredAddOnsFormat,
   requiredAction,
@@ -472,6 +473,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     description,
     optionalAddons,
     requiredAddons,
+    extraRequiredAddons,
     removableIngredients,
   } = req.body;
   if (
@@ -481,7 +483,8 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     !index ||
     !description ||
     !optionalAddons ||
-    !requiredAddons
+    !requiredAddons ||
+    !extraRequiredAddons
   ) {
     console.error(requiredFields);
     res.status(400);
@@ -490,6 +493,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
 
   const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
   const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+  const parsedExtraRequiredAddons: Addons = JSON.parse(extraRequiredAddons);
 
   if (
     parsedOptionalAddons.addons &&
@@ -507,6 +511,14 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     res.status(400);
     throw new Error(invalidRequiredAddOnsFormat);
   }
+  if (
+    parsedExtraRequiredAddons.addons &&
+    !isCorrectAddonsFormat(parsedExtraRequiredAddons)
+  ) {
+    console.error(invalidExtraRequiredAddOnsFormat);
+    res.status(400);
+    throw new Error(invalidExtraRequiredAddOnsFormat);
+  }
 
   let imageUrl;
   if (req.file) {
@@ -519,6 +531,8 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
     parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
   const formattedRequiredAddons =
     parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
+  const formattedExtraRequiredAddons =
+    parsedExtraRequiredAddons.addons && formatAddons(parsedExtraRequiredAddons);
 
   try {
     const updatedRestaurant = await Restaurant.findOneAndUpdate(
@@ -536,6 +550,8 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
             removableIngredients,
             optionalAddons: formattedOptionalAddons || parsedOptionalAddons,
             requiredAddons: formattedRequiredAddons || parsedRequiredAddons,
+            extraRequiredAddons:
+              formattedExtraRequiredAddons || parsedExtraRequiredAddons,
           },
         },
       },
@@ -575,6 +591,7 @@ router.patch(
       description,
       optionalAddons,
       requiredAddons,
+      extraRequiredAddons,
       removableIngredients,
     } = req.body;
     if (
@@ -583,7 +600,8 @@ router.patch(
       !price ||
       !description ||
       !optionalAddons ||
-      !requiredAddons
+      !requiredAddons ||
+      !extraRequiredAddons
     ) {
       console.error(requiredFields);
       res.status(400);
@@ -592,6 +610,7 @@ router.patch(
 
     const parsedOptionalAddons: Addons = JSON.parse(optionalAddons);
     const parsedRequiredAddons: Addons = JSON.parse(requiredAddons);
+    const parsedExtraRequiredAddons: Addons = JSON.parse(extraRequiredAddons);
 
     if (
       parsedOptionalAddons.addons &&
@@ -608,6 +627,14 @@ router.patch(
       console.error(invalidRequiredAddOnsFormat);
       res.status(400);
       throw new Error(invalidRequiredAddOnsFormat);
+    }
+    if (
+      parsedExtraRequiredAddons.addons &&
+      !isCorrectAddonsFormat(parsedExtraRequiredAddons)
+    ) {
+      console.error(invalidExtraRequiredAddOnsFormat);
+      res.status(400);
+      throw new Error(invalidExtraRequiredAddOnsFormat);
     }
 
     if (req.file && image) {
@@ -626,6 +653,9 @@ router.patch(
       parsedOptionalAddons.addons && formatAddons(parsedOptionalAddons);
     const formattedRequiredAddons =
       parsedRequiredAddons.addons && formatAddons(parsedRequiredAddons);
+    const formattedExtraRequiredAddons =
+      parsedExtraRequiredAddons.addons &&
+      formatAddons(parsedExtraRequiredAddons);
 
     try {
       if (!imageUrl) {
@@ -641,6 +671,8 @@ router.patch(
                 formattedOptionalAddons || parsedOptionalAddons,
               'items.$.requiredAddons':
                 formattedRequiredAddons || parsedRequiredAddons,
+              'items.$.extraRequiredAddons':
+                formattedExtraRequiredAddons || parsedExtraRequiredAddons,
               'items.$.removableIngredients': removableIngredients,
             },
             $unset: {
@@ -670,6 +702,8 @@ router.patch(
                 formattedOptionalAddons || parsedOptionalAddons,
               'items.$.requiredAddons':
                 formattedRequiredAddons || parsedRequiredAddons,
+              'items.$.extraRequiredAddons':
+                formattedExtraRequiredAddons || parsedExtraRequiredAddons,
               'items.$.removableIngredients': removableIngredients,
             },
           },

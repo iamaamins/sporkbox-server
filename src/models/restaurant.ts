@@ -92,6 +92,18 @@ const itemSchema = new Schema<ItemSchema>({
       required: [true, 'Please provide required addable'],
     },
   },
+  extraRequiredAddons: {
+    addons: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      required: [true, 'Please provide required addons'],
+    },
+    addable: {
+      type: Number,
+      required: [true, 'Please provide required addable'],
+    },
+  },
   removableIngredients: {
     type: String,
     trim: true,

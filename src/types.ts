@@ -65,6 +65,7 @@ export interface ItemSchema extends GenericItem {
   status: string;
   optionalAddons: Addons;
   requiredAddons: Addons;
+  extraRequiredAddons: Addons;
   averageRating?: number;
   popularityIndex?: number;
   removableIngredients?: string;
