@@ -180,6 +180,11 @@ const orderSchema = new Schema<OrderSchema>(
         trim: true,
         lowercase: true,
       },
+      extraRequiredAddons: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
       removedIngredients: {
         type: String,
         trim: true,

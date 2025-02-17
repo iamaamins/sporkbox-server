@@ -48,7 +48,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.extraRequiredAddons item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -199,6 +199,7 @@ router.post('/create-orders', auth, async (req, res) => {
         ] = {
           optionalAddons: item.optionalAddons,
           requiredAddons: item.requiredAddons,
+          extraRequiredAddons: item.extraRequiredAddons,
           removableIngredients: item.removableIngredients,
         };
       }
@@ -332,8 +333,8 @@ router.post('/create-orders', auth, async (req, res) => {
           const validRequiredAddons = upcomingRequiredAddons.addons
             .split(',')
             .some(
-              (upcomingOptionalAddon) =>
-                upcomingOptionalAddon.split('-')[0].trim() ===
+              (upcomingRequiredAddon) =>
+                upcomingRequiredAddon.split('-')[0].trim() ===
                 orderRequiredAddon.split('-')[0].trim().toLowerCase()
             );
 
@@ -348,6 +349,38 @@ router.post('/create-orders', auth, async (req, res) => {
             res.status(400);
             throw new Error(
               'Your cart contains an item with invalid required addons'
+            );
+          }
+        }
+      }
+
+      // Validate extra required addons
+      if (orderItem.extraRequiredAddons.length > 0) {
+        const upcomingExtraRequiredAddons =
+          upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+            orderItem.restaurantId
+          ].item[orderItem.itemId].extraRequiredAddons;
+
+        for (const orderRequiredAddon of orderItem.extraRequiredAddons) {
+          const validRequiredAddons = upcomingExtraRequiredAddons.addons
+            .split(',')
+            .some(
+              (upcomingExtraRequiredAddon) =>
+                upcomingExtraRequiredAddon.split('-')[0].trim() ===
+                orderRequiredAddon.split('-')[0].trim().toLowerCase()
+            );
+
+          if (
+            orderItem.extraRequiredAddons.length !==
+              upcomingExtraRequiredAddons.addable ||
+            !validRequiredAddons
+          ) {
+            console.error(
+              'Your cart contains an item with invalid extra required addons'
+            );
+            res.status(400);
+            throw new Error(
+              'Your cart contains an item with invalid extra required addons'
             );
           }
         }
@@ -439,6 +472,8 @@ router.post('/create-orders', auth, async (req, res) => {
 
       const optionalAddons = createAddons(orderItem.optionalAddons);
       const requiredAddons = createAddons(orderItem.requiredAddons);
+      const extraRequiredAddons = createAddons(orderItem.extraRequiredAddons);
+
       const optionalAddonsPrice = getAddonsPrice(
         item.optionalAddons.addons,
         optionalAddons
@@ -447,8 +482,15 @@ router.post('/create-orders', auth, async (req, res) => {
         item.requiredAddons.addons,
         requiredAddons
       );
+      const extraRequiredAddonsPrice = getAddonsPrice(
+        item.extraRequiredAddons.addons,
+        extraRequiredAddons
+      );
+
       const totalAddonsPrice =
-        (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
+        (optionalAddonsPrice || 0) +
+        (requiredAddonsPrice || 0) +
+        (extraRequiredAddonsPrice || 0);
 
       return {
         customer: {
@@ -487,6 +529,9 @@ router.post('/create-orders', auth, async (req, res) => {
           image: item.image || restaurant.logo,
           optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
           requiredAddons: requiredAddons.sort(sortIngredients).join(', '),
+          extraRequiredAddons: extraRequiredAddons
+            .sort(sortIngredients)
+            .join(', '),
           removedIngredients: orderItem.removedIngredients
             .sort(sortIngredients)
             .join(', '),
