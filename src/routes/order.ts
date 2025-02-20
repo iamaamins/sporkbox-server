@@ -198,8 +198,8 @@ router.post('/create-orders', auth, async (req, res) => {
           item._id.toString()
         ] = {
           optionalAddons: item.optionalAddons,
-          requiredAddonOne: item.requiredAddonOne,
-          requiredAddonTwo: item.requiredAddonTwo,
+          requiredAddonsOne: item.requiredAddonsOne,
+          requiredAddonsTwo: item.requiredAddonsTwo,
           removableIngredients: item.removableIngredients,
         };
       }
@@ -323,13 +323,13 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate required addons
-      if (orderItem.requiredAddonOne.length > 0) {
+      if (orderItem.requiredAddonsOne.length > 0) {
         const upcomingRequiredAddonOne =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ].item[orderItem.itemId].requiredAddonOne;
+          ].item[orderItem.itemId].requiredAddonsOne;
 
-        for (const orderRequiredAddon of orderItem.requiredAddonOne) {
+        for (const orderRequiredAddon of orderItem.requiredAddonsOne) {
           const validRequiredAddons = upcomingRequiredAddonOne.addons
             .split(',')
             .some(
@@ -339,29 +339,29 @@ router.post('/create-orders', auth, async (req, res) => {
             );
 
           if (
-            orderItem.requiredAddonOne.length !==
+            orderItem.requiredAddonsOne.length !==
               upcomingRequiredAddonOne.addable ||
             !validRequiredAddons
           ) {
             console.error(
-              'Your cart contains an item with invalid required addons'
+              'Your cart contains an item with invalid required addons 1'
             );
             res.status(400);
             throw new Error(
-              'Your cart contains an item with invalid required addons'
+              'Your cart contains an item with invalid required addons 1'
             );
           }
         }
       }
 
       // Validate extra required addons
-      if (orderItem.requiredAddonTwo.length > 0) {
+      if (orderItem.requiredAddonsTwo.length > 0) {
         const upcomingExtraRequiredAddonTwo =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ].item[orderItem.itemId].requiredAddonTwo;
+          ].item[orderItem.itemId].requiredAddonsTwo;
 
-        for (const orderRequiredAddon of orderItem.requiredAddonTwo) {
+        for (const orderRequiredAddon of orderItem.requiredAddonsTwo) {
           const validRequiredAddons = upcomingExtraRequiredAddonTwo.addons
             .split(',')
             .some(
@@ -371,16 +371,16 @@ router.post('/create-orders', auth, async (req, res) => {
             );
 
           if (
-            orderItem.requiredAddonTwo.length !==
+            orderItem.requiredAddonsTwo.length !==
               upcomingExtraRequiredAddonTwo.addable ||
             !validRequiredAddons
           ) {
             console.error(
-              'Your cart contains an item with invalid extra required addons'
+              'Your cart contains an item with invalid extra required addons 2'
             );
             res.status(400);
             throw new Error(
-              'Your cart contains an item with invalid extra required addons'
+              'Your cart contains an item with invalid extra required addons 2'
             );
           }
         }
@@ -471,26 +471,26 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       const optionalAddons = createAddons(orderItem.optionalAddons);
-      const requiredAddonOne = createAddons(orderItem.requiredAddonOne);
-      const requiredAddonTwo = createAddons(orderItem.requiredAddonTwo);
+      const requiredAddonsOne = createAddons(orderItem.requiredAddonsOne);
+      const requiredAddonsTwo = createAddons(orderItem.requiredAddonsTwo);
 
-      const optionalAddonPrice = getAddonsPrice(
+      const optionalAddonsPrice = getAddonsPrice(
         item.optionalAddons.addons,
         optionalAddons
       );
-      const requiredAddonOnePrice = getAddonsPrice(
-        item.requiredAddonOne.addons,
-        requiredAddonOne
+      const requiredAddonsOnePrice = getAddonsPrice(
+        item.requiredAddonsOne.addons,
+        requiredAddonsOne
       );
-      const requiredAddonTwoPrice = getAddonsPrice(
-        item.requiredAddonTwo.addons,
-        requiredAddonTwo
+      const requiredAddonsTwoPrice = getAddonsPrice(
+        item.requiredAddonsTwo.addons,
+        requiredAddonsTwo
       );
 
-      const totalAddonPrice =
-        (optionalAddonPrice || 0) +
-        (requiredAddonOnePrice || 0) +
-        (requiredAddonTwoPrice || 0);
+      const totalAddonsPrice =
+        (optionalAddonsPrice || 0) +
+        (requiredAddonsOnePrice || 0) +
+        (requiredAddonsTwoPrice || 0);
 
       return {
         customer: {
@@ -528,13 +528,13 @@ router.post('/create-orders', auth, async (req, res) => {
           quantity: orderItem.quantity,
           image: item.image || restaurant.logo,
           optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
-          requiredAddonOne: requiredAddonOne.sort(sortIngredients).join(', '),
-          requiredAddonTwo: requiredAddonTwo.sort(sortIngredients).join(', '),
+          requiredAddonsOne: requiredAddonsOne.sort(sortIngredients).join(', '),
+          requiredAddonsTwo: requiredAddonsTwo.sort(sortIngredients).join(', '),
           removedIngredients: orderItem.removedIngredients
             .sort(sortIngredients)
             .join(', '),
           total: toUSNumber(
-            (item.price + totalAddonPrice) * orderItem.quantity
+            (item.price + totalAddonsPrice) * orderItem.quantity
           ),
         },
       };

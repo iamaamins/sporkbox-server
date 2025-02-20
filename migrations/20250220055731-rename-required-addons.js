@@ -16,8 +16,8 @@ module.exports = {
                   $mergeObjects: [
                     '$$item',
                     {
-                      requiredAddonOne: '$$item.requiredAddons',
-                      requiredAddonTwo: '$$item.extraRequiredAddons',
+                      requiredAddonsOne: '$$item.requiredAddons',
+                      requiredAddonsTwo: '$$item.extraRequiredAddons',
                     },
                   ],
                 },
@@ -39,8 +39,8 @@ module.exports = {
       [
         {
           $set: {
-            'item.requiredAddonOne': '$item.requiredAddons',
-            'item.requiredAddonTwo': '$item.extraRequiredAddons',
+            'item.requiredAddonsOne': '$item.requiredAddons',
+            'item.requiredAddonsTwo': '$item.extraRequiredAddons',
           },
         },
         {
@@ -53,8 +53,8 @@ module.exports = {
   async down(db) {
     await db.collection('restaurants').updateMany(
       {
-        'items.requiredAddonOne': { $exists: true },
-        'items.requiredAddonTwo': { $exists: true },
+        'items.requiredAddonsOne': { $exists: true },
+        'items.requiredAddonsTwo': { $exists: true },
       },
       [
         {
@@ -67,8 +67,8 @@ module.exports = {
                   $mergeObjects: [
                     '$$item',
                     {
-                      requiredAddons: '$$item.requiredAddonOne',
-                      extraRequiredAddons: '$$item.requiredAddonTwo',
+                      requiredAddons: '$$item.requiredAddonsOne',
+                      extraRequiredAddons: '$$item.requiredAddonsTwo',
                     },
                   ],
                 },
@@ -77,25 +77,25 @@ module.exports = {
           },
         },
         {
-          $unset: ['items.requiredAddonOne', 'items.requiredAddonTwo'],
+          $unset: ['items.requiredAddonsOne', 'items.requiredAddonsTwo'],
         },
       ]
     );
 
     await db.collection('orders').updateMany(
       {
-        'item.requiredAddonOne': { $exists: true },
-        'item.requiredAddonTwo': { $exists: true },
+        'item.requiredAddonsOne': { $exists: true },
+        'item.requiredAddonsTwo': { $exists: true },
       },
       [
         {
           $set: {
-            'item.requiredAddons': '$item.requiredAddonOne',
-            'item.extraRequiredAddons': '$item.requiredAddonTwo',
+            'item.requiredAddons': '$item.requiredAddonsOne',
+            'item.extraRequiredAddons': '$item.requiredAddonsTwo',
           },
         },
         {
-          $unset: ['item.requiredAddonOne', 'item.requiredAddonTwo'],
+          $unset: ['item.requiredAddonsOne', 'item.requiredAddonsTwo'],
         },
       ]
     );

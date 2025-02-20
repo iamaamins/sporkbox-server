@@ -80,7 +80,7 @@ const itemSchema = new Schema<ItemSchema>({
       required: [true, 'Please provide optional addable'],
     },
   },
-  requiredAddonOne: {
+  requiredAddonsOne: {
     addons: {
       type: String,
       trim: true,
@@ -92,7 +92,7 @@ const itemSchema = new Schema<ItemSchema>({
       required: [true, 'Please provide required addable'],
     },
   },
-  requiredAddonTwo: {
+  requiredAddonsTwo: {
     addons: {
       type: String,
       trim: true,
