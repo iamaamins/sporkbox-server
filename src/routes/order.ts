@@ -808,16 +808,26 @@ router.post('/create-orders', auth, async (req, res) => {
       );
     }
 
+    const ordersPlacedBy =
+      req.user._id.toString() === _id.toString()
+        ? 'SELF'
+        : req.user.role === 'ADMIN'
+        ? 'ADMIN'
+        : 'COMPANY_ADMIN';
+
     const session = await stripeCheckout(
-      req.user.role,
+      _id.toString(),
       email,
       pendingOrderId,
       discountCodeId,
       discountAmount,
+      ordersPlacedBy,
       ordersWithPayment
     );
+
     await Order.insertMany(orders);
     res.status(200).json(session.url);
+
     updateScheduleStatus(
       restaurantIds,
       deliveryDates,

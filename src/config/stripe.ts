@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { UserRole } from '../types';
 
 interface OrdersWithPayment {
   items: string[];
@@ -15,11 +14,12 @@ export const stripe = new Stripe(process.env.STRIPE_KEY as string, {
 });
 
 export async function stripeCheckout(
-  role: UserRole,
+  customerId: string,
   customerEmail: string,
   pendingOrderId: string,
   discountCodeId: string,
   discountAmount: number,
+  ordersPlacedBy: 'ADMIN' | 'COMPANY_ADMIN' | 'SELF',
   ordersWithPayment: OrdersWithPayment[]
 ) {
   try {
@@ -48,15 +48,16 @@ export async function stripeCheckout(
         }),
       },
       customer_email: customerEmail,
-      success_url: `${process.env.CLIENT_URL}${
-        role === 'CUSTOMER'
-          ? '/success?session={CHECKOUT_SESSION_ID}'
-          : '/admin/dashboard'
-      }`,
+      success_url: `${process.env.CLIENT_URL}/checkout/${customerId}/success?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}${
-        role === 'CUSTOMER' ? '/dashboard' : '/admin/dashboard'
+        ordersPlacedBy === 'SELF'
+          ? '/cart'
+          : ordersPlacedBy === 'COMPANY_ADMIN'
+          ? `/company/${customerId}/cart`
+          : `/admin/dashboard/${customerId}/cart`
       }`,
     });
+
     return session;
   } catch (err) {
     console.log(err);
