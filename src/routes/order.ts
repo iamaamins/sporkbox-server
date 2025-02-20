@@ -48,7 +48,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddonOne item.requiredAddonTwo item.removedIngredients'
+        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddonsOne item.requiredAddonsTwo item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -324,13 +324,13 @@ router.post('/create-orders', auth, async (req, res) => {
 
       // Validate required addons
       if (orderItem.requiredAddonsOne.length > 0) {
-        const upcomingRequiredAddonOne =
+        const upcomingRequiredAddonsOne =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
           ].item[orderItem.itemId].requiredAddonsOne;
 
         for (const orderRequiredAddon of orderItem.requiredAddonsOne) {
-          const validRequiredAddons = upcomingRequiredAddonOne.addons
+          const validRequiredAddons = upcomingRequiredAddonsOne.addons
             .split(',')
             .some(
               (upcomingRequiredAddon) =>
@@ -340,7 +340,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
           if (
             orderItem.requiredAddonsOne.length !==
-              upcomingRequiredAddonOne.addable ||
+              upcomingRequiredAddonsOne.addable ||
             !validRequiredAddons
           ) {
             console.error(
@@ -356,13 +356,13 @@ router.post('/create-orders', auth, async (req, res) => {
 
       // Validate extra required addons
       if (orderItem.requiredAddonsTwo.length > 0) {
-        const upcomingExtraRequiredAddonTwo =
+        const upcomingExtraRequiredAddonsTwo =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
           ].item[orderItem.itemId].requiredAddonsTwo;
 
         for (const orderRequiredAddon of orderItem.requiredAddonsTwo) {
-          const validRequiredAddons = upcomingExtraRequiredAddonTwo.addons
+          const validRequiredAddons = upcomingExtraRequiredAddonsTwo.addons
             .split(',')
             .some(
               (upcomingExtraRequiredAddon) =>
@@ -372,7 +372,7 @@ router.post('/create-orders', auth, async (req, res) => {
 
           if (
             orderItem.requiredAddonsTwo.length !==
-              upcomingExtraRequiredAddonTwo.addable ||
+              upcomingExtraRequiredAddonsTwo.addable ||
             !validRequiredAddons
           ) {
             console.error(
