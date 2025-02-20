@@ -175,12 +175,12 @@ const orderSchema = new Schema<OrderSchema>(
         trim: true,
         lowercase: true,
       },
-      requiredAddons: {
+      requiredAddonOne: {
         type: String,
         trim: true,
         lowercase: true,
       },
-      extraRequiredAddons: {
+      requiredAddonTwo: {
         type: String,
         trim: true,
         lowercase: true,

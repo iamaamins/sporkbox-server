@@ -48,7 +48,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.extraRequiredAddons item.removedIngredients'
+        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddonOne item.requiredAddonTwo item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -198,8 +198,8 @@ router.post('/create-orders', auth, async (req, res) => {
           item._id.toString()
         ] = {
           optionalAddons: item.optionalAddons,
-          requiredAddons: item.requiredAddons,
-          extraRequiredAddons: item.extraRequiredAddons,
+          requiredAddonOne: item.requiredAddonOne,
+          requiredAddonTwo: item.requiredAddonTwo,
           removableIngredients: item.removableIngredients,
         };
       }
@@ -323,14 +323,14 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate required addons
-      if (orderItem.requiredAddons.length > 0) {
-        const upcomingRequiredAddons =
+      if (orderItem.requiredAddonOne.length > 0) {
+        const upcomingRequiredAddonOne =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ].item[orderItem.itemId].requiredAddons;
+          ].item[orderItem.itemId].requiredAddonOne;
 
-        for (const orderRequiredAddon of orderItem.requiredAddons) {
-          const validRequiredAddons = upcomingRequiredAddons.addons
+        for (const orderRequiredAddon of orderItem.requiredAddonOne) {
+          const validRequiredAddons = upcomingRequiredAddonOne.addons
             .split(',')
             .some(
               (upcomingRequiredAddon) =>
@@ -339,8 +339,8 @@ router.post('/create-orders', auth, async (req, res) => {
             );
 
           if (
-            orderItem.requiredAddons.length !==
-              upcomingRequiredAddons.addable ||
+            orderItem.requiredAddonOne.length !==
+              upcomingRequiredAddonOne.addable ||
             !validRequiredAddons
           ) {
             console.error(
@@ -355,14 +355,14 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate extra required addons
-      if (orderItem.extraRequiredAddons.length > 0) {
-        const upcomingExtraRequiredAddons =
+      if (orderItem.requiredAddonTwo.length > 0) {
+        const upcomingExtraRequiredAddonTwo =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ].item[orderItem.itemId].extraRequiredAddons;
+          ].item[orderItem.itemId].requiredAddonTwo;
 
-        for (const orderRequiredAddon of orderItem.extraRequiredAddons) {
-          const validRequiredAddons = upcomingExtraRequiredAddons.addons
+        for (const orderRequiredAddon of orderItem.requiredAddonTwo) {
+          const validRequiredAddons = upcomingExtraRequiredAddonTwo.addons
             .split(',')
             .some(
               (upcomingExtraRequiredAddon) =>
@@ -371,8 +371,8 @@ router.post('/create-orders', auth, async (req, res) => {
             );
 
           if (
-            orderItem.extraRequiredAddons.length !==
-              upcomingExtraRequiredAddons.addable ||
+            orderItem.requiredAddonTwo.length !==
+              upcomingExtraRequiredAddonTwo.addable ||
             !validRequiredAddons
           ) {
             console.error(
@@ -471,26 +471,26 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       const optionalAddons = createAddons(orderItem.optionalAddons);
-      const requiredAddons = createAddons(orderItem.requiredAddons);
-      const extraRequiredAddons = createAddons(orderItem.extraRequiredAddons);
+      const requiredAddonOne = createAddons(orderItem.requiredAddonOne);
+      const requiredAddonTwo = createAddons(orderItem.requiredAddonTwo);
 
-      const optionalAddonsPrice = getAddonsPrice(
+      const optionalAddonPrice = getAddonsPrice(
         item.optionalAddons.addons,
         optionalAddons
       );
-      const requiredAddonsPrice = getAddonsPrice(
-        item.requiredAddons.addons,
-        requiredAddons
+      const requiredAddonOnePrice = getAddonsPrice(
+        item.requiredAddonOne.addons,
+        requiredAddonOne
       );
-      const extraRequiredAddonsPrice = getAddonsPrice(
-        item.extraRequiredAddons.addons,
-        extraRequiredAddons
+      const requiredAddonTwoPrice = getAddonsPrice(
+        item.requiredAddonTwo.addons,
+        requiredAddonTwo
       );
 
-      const totalAddonsPrice =
-        (optionalAddonsPrice || 0) +
-        (requiredAddonsPrice || 0) +
-        (extraRequiredAddonsPrice || 0);
+      const totalAddonPrice =
+        (optionalAddonPrice || 0) +
+        (requiredAddonOnePrice || 0) +
+        (requiredAddonTwoPrice || 0);
 
       return {
         customer: {
@@ -528,15 +528,13 @@ router.post('/create-orders', auth, async (req, res) => {
           quantity: orderItem.quantity,
           image: item.image || restaurant.logo,
           optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
-          requiredAddons: requiredAddons.sort(sortIngredients).join(', '),
-          extraRequiredAddons: extraRequiredAddons
-            .sort(sortIngredients)
-            .join(', '),
+          requiredAddonOne: requiredAddonOne.sort(sortIngredients).join(', '),
+          requiredAddonTwo: requiredAddonTwo.sort(sortIngredients).join(', '),
           removedIngredients: orderItem.removedIngredients
             .sort(sortIngredients)
             .join(', '),
           total: toUSNumber(
-            (item.price + totalAddonsPrice) * orderItem.quantity
+            (item.price + totalAddonPrice) * orderItem.quantity
           ),
         },
       };

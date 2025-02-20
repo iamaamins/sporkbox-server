@@ -4,8 +4,8 @@ export const unAuthorized = 'Not authorized';
 export const invalidShift = 'Please provide a valid shift';
 export const noItem = 'No item found';
 export const invalidOptionalAddOnsFormat = 'Invalid optional addons format';
-export const invalidRequiredAddOnsFormat = 'Invalid required addons format';
-export const invalidExtraRequiredAddOnsFormat =
+export const invalidRequiredAddOnOneFormat = 'Invalid required addons format';
+export const invalidRequiredAddOnTwoFormat =
   'Invalid extra required addons format';
 export const invalidEmail = 'Please provide a valid email';
 export const requiredLogo = 'Please provide a logo';
