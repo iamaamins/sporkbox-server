@@ -1163,7 +1163,7 @@ router.get('/:companyCode/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get most liked restaurants and items
+// Get most liked restaurants
 router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -1173,54 +1173,64 @@ router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
 
   const { start, end } = req.params;
   try {
-    const orders = await Order.find({
-      createdAt: { $gte: start, $lte: end },
-    });
+    const restaurants = await Order.aggregate([
+      {
+        $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } },
+      },
+      {
+        $group: {
+          _id: '$restaurant._id',
+          name: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, orderCount: 1 } },
+    ]);
 
-    type RestaurantsMap = Record<string, { name: string; orderCount: number }>;
-    type ItemsMap = Record<
-      string,
-      { name: string; restaurant: string; orderCount: number }
-    >;
-    const restaurantsMap: RestaurantsMap = {};
-    const itemsMap: ItemsMap = {};
-
-    for (const order of orders) {
-      const restaurant = order.restaurant._id.toString();
-      if (!restaurantsMap[restaurant]) {
-        restaurantsMap[restaurant] = {
-          name: order.restaurant.name,
-          orderCount: 1,
-        };
-      } else {
-        restaurantsMap[restaurant].orderCount++;
-      }
-
-      const item = order.item._id.toString();
-      if (!itemsMap[item]) {
-        itemsMap[item] = {
-          name: order.item.name,
-          restaurant: order.restaurant.name,
-          orderCount: 1,
-        };
-      } else {
-        itemsMap[item].orderCount++;
-      }
-    }
-    const getData = (dataMap: RestaurantsMap | ItemsMap) =>
-      Object.values(dataMap)
-        .sort((a, b) => b.orderCount - a.orderCount)
-        .slice(0, 10);
-    res
-      .status(200)
-      .json({ restaurants: getData(restaurantsMap), items: getData(itemsMap) });
+    res.status(200).json(restaurants);
   } catch (err) {
     console.error(err);
     throw err;
   }
 });
 
-// Get most liked restaurants and items by company
+// Get most liked items
+router.get('/item-stat/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+  try {
+    const items = await Order.aggregate([
+      {
+        $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          restaurant: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
+    ]);
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get most liked restaurants by company
 router.get(
   '/:companyCode/restaurant-stat/:start/:end',
   auth,
@@ -1238,57 +1248,73 @@ router.get(
 
     const { start, end, companyCode } = req.params;
     try {
-      const orders = await Order.find({
-        'company.code': companyCode,
-        createdAt: { $gte: start, $lte: end },
-      });
+      const restaurants = await Order.aggregate([
+        {
+          $match: {
+            'company.code': companyCode,
+            createdAt: { $gte: new Date(start), $lte: new Date(end) },
+          },
+        },
+        {
+          $group: {
+            _id: '$restaurant._id',
+            name: { $first: '$restaurant.name' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        { $sort: { orderCount: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, name: 1, orderCount: 1 } },
+      ]);
 
-      type RestaurantsMap = Record<
-        string,
-        { name: string; orderCount: number }
-      >;
-      type ItemsMap = Record<
-        string,
-        { name: string; restaurant: string; orderCount: number }
-      >;
-      const restaurantsMap: RestaurantsMap = {};
-      const itemsMap: ItemsMap = {};
-
-      for (const order of orders) {
-        const restaurant = order.restaurant._id.toString();
-        if (!restaurantsMap[restaurant]) {
-          restaurantsMap[restaurant] = {
-            name: order.restaurant.name,
-            orderCount: 1,
-          };
-        } else {
-          restaurantsMap[restaurant].orderCount++;
-        }
-
-        const item = order.item._id.toString();
-        if (!itemsMap[item]) {
-          itemsMap[item] = {
-            name: order.item.name,
-            restaurant: order.restaurant.name,
-            orderCount: 1,
-          };
-        } else {
-          itemsMap[item].orderCount++;
-        }
-      }
-      const getData = (dataMap: RestaurantsMap | ItemsMap) =>
-        Object.values(dataMap)
-          .sort((a, b) => b.orderCount - a.orderCount)
-          .slice(0, 10);
-      res.status(200).json({
-        restaurants: getData(restaurantsMap),
-        items: getData(itemsMap),
-      });
+      res.status(200).json(restaurants);
     } catch (err) {
       console.error(err);
       throw err;
     }
   }
 );
+
+// Get most liked items by company
+router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end, companyCode } = req.params;
+  try {
+    const items = await Order.aggregate([
+      {
+        $match: {
+          'company.code': companyCode,
+          createdAt: { $gte: new Date(start), $lte: new Date(end) },
+        },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          restaurant: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
+    ]);
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
 
 export default router;
