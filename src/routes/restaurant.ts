@@ -109,7 +109,7 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
   try {
     const restaurants = await Restaurant.find({
       'schedules.date': {
-        $gte: now,
+        $gte: now(),
       },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
@@ -117,7 +117,7 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
     for (const restaurant of restaurants) {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
-        if (dateToMS(schedule.date) >= now) {
+        if (dateToMS(schedule.date) >= now()) {
           const scheduledRestaurant = {
             ...rest,
             company: schedule.company,
@@ -164,7 +164,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
         if (
-          dateToMS(schedule.date) >= now &&
+          dateToMS(schedule.date) >= now() &&
           schedule.company.code === companyCode
         ) {
           const scheduledRestaurant = {
@@ -202,7 +202,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
     res.status(400);
     throw new Error(requiredFields);
   }
-  if (dateToMS(date) < now) {
+  if (dateToMS(date) < now()) {
     console.error("Cant' schedule on the provided date");
     res.status(400);
     throw new Error("Cant' schedule on the provided date");
@@ -219,7 +219,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
       {
         $pull: {
           schedules: {
-            date: { $lt: now },
+            date: { $lt: now() },
           },
         },
       }
