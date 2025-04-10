@@ -108,16 +108,14 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
 
   try {
     const restaurants = await Restaurant.find({
-      'schedules.date': {
-        $gte: now(),
-      },
+      'schedules.date': { $gt: now() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
     const scheduledRestaurants = [];
     for (const restaurant of restaurants) {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
-        if (dateToMS(schedule.date) >= now()) {
+        if (dateToMS(schedule.date) > now()) {
           const scheduledRestaurant = {
             ...rest,
             company: schedule.company,
@@ -164,7 +162,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
         if (
-          dateToMS(schedule.date) >= now() &&
+          dateToMS(schedule.date) > now() &&
           schedule.company.code === companyCode
         ) {
           const scheduledRestaurant = {

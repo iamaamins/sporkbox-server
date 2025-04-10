@@ -99,7 +99,7 @@ export async function getUpcomingRestaurants(
     const scheduledRestaurants = await Restaurant.find({
       schedules: {
         $elemMatch: {
-          date: { $gte: now() },
+          date: { $gt: now() },
           'company._id': activeCompany._id,
           ...(getActiveSchedules && { status: 'ACTIVE' }),
         },
@@ -123,7 +123,7 @@ export async function getUpcomingRestaurants(
       const { schedules, ...rest } = scheduledRestaurant;
       for (const schedule of schedules) {
         if (
-          dateToMS(schedule.date) >= now() &&
+          dateToMS(schedule.date) > now() &&
           (getActiveSchedules ? schedule.status === 'ACTIVE' : true) &&
           activeCompany._id.toString() === schedule.company._id.toString()
         ) {
