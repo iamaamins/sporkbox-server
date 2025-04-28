@@ -17,7 +17,7 @@ router.get('/', auth, async (req, res) => {
 
   try {
     const admins = await User.find({
-      role: { $in: ['ADMIN', 'DELIVERY_DRIVER'] },
+      role: { $in: ['ADMIN', 'DRIVER'] },
     }).select('-password -__v -companies -foodPreferences -updatedAt -shifts');
 
     res.status(200).json(admins);
@@ -43,7 +43,7 @@ router.post('/add-admin', auth, async (req, res) => {
     throw new Error(requiredFields);
   }
 
-  if (role !== 'ADMIN' && role !== 'DELIVERY_DRIVER') {
+  if (role !== 'ADMIN' && role !== 'DRIVER') {
     console.error('Please provide a valid role');
     res.status(400);
     throw new Error('Please provide a valid role');

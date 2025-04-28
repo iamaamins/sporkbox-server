@@ -16,6 +16,7 @@ import {
   updateScheduleStatus,
   createOrders,
   docToObj,
+  getTodayTimestamp,
 } from '../lib/utils';
 import {
   orderArchive,
@@ -1364,6 +1365,27 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
     ]);
 
     res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get today's orders for delivery driver
+router.get('/driver-orders', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'DRIVER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const orders = await Order.find({
+      status: 'PROCESSING',
+      'delivery.date': getTodayTimestamp(),
+    });
+
+    res.status(200).json(orders);
   } catch (err) {
     console.error(err);
     throw err;
