@@ -127,7 +127,12 @@ export interface RestaurantSchema {
   schedules: Types.DocumentArray<SchedulesSchema>;
 }
 
-export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER' | 'GUEST';
+export type UserRole =
+  | 'ADMIN'
+  | 'VENDOR'
+  | 'CUSTOMER'
+  | 'GUEST'
+  | 'DELIVERY_DRIVER';
 
 export interface UserSchema extends GenericUser {
   _id: Types.ObjectId;
