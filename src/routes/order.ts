@@ -926,7 +926,7 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
 
 // Deliver orders
 router.patch('/deliver', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'DRIVER')) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
@@ -942,14 +942,26 @@ router.patch('/deliver', auth, async (req, res) => {
   try {
     await Order.updateMany(
       { _id: { $in: orderIds }, status: 'PROCESSING' },
-      { $set: { status: 'DELIVERED' } }
+      {
+        $set: {
+          status: 'DELIVERED',
+          deliveredBy: {
+            id: req.user._id,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+          },
+        },
+      }
     );
+
     const orders = await Order.find({ _id: { $in: orderIds } });
+
     await Promise.all(
       orders.map(
         async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
     );
+
     res.status(200).json('Delivery email sent');
   } catch (err) {
     console.error(err);
