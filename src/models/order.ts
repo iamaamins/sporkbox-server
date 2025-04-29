@@ -12,20 +12,15 @@ interface OrderSchema {
   customer: OrderCustomer;
   restaurant: OrderRestaurant;
   company: OrderCompany;
-  delivery: {
-    date: Date;
-    address: Address;
-  };
+  delivery: { date: Date; address: Address };
   status: string;
-  payment?: {
-    intent: string;
-    distributed: number;
-  };
+  payment?: { intent: string; distributed: number };
   item: OrderItem;
   createdAt: Date;
   isReviewed: boolean;
   discount?: Discount;
   pendingOrderId?: string;
+  deliveredBy: { id: string; firstName: string; lastName: string };
 }
 
 const orderSchema = new Schema<OrderSchema>(
@@ -121,11 +116,6 @@ const orderSchema = new Schema<OrderSchema>(
       intent: String,
       distributed: Number,
     },
-    isReviewed: {
-      type: Boolean,
-      default: false,
-    },
-    pendingOrderId: String,
     status: {
       type: String,
       enum: ['PENDING', 'PROCESSING', 'DELIVERED', 'ARCHIVED', 'CANCELLED'],
@@ -191,6 +181,27 @@ const orderSchema = new Schema<OrderSchema>(
         lowercase: true,
       },
     },
+    deliveredBy: {
+      id: {
+        type: Schema.Types.ObjectId,
+        required: [true, 'Please provide delivery person id'],
+      },
+      firstName: {
+        type: String,
+        trim: true,
+        required: [true, 'Please provide delivery person first name'],
+      },
+      lastName: {
+        type: String,
+        trim: true,
+        required: [true, 'Please provide delivery person last name'],
+      },
+    },
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    pendingOrderId: String,
   },
   {
     timestamps: true,
