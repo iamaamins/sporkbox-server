@@ -31,6 +31,7 @@ import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
 import { OrdersPayload, UpcomingDataMap, Order as OrderType } from '../types';
 import User from '../models/user';
+import { postSlackMessage } from '../config/slack';
 
 const router = Router();
 
@@ -961,6 +962,8 @@ router.patch('/deliver', auth, async (req, res) => {
         async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
     );
+
+    await postSlackMessage(orders[0].restaurant.name);
 
     res.status(200).json('Delivery email sent');
   } catch (err) {
