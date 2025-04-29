@@ -19,7 +19,7 @@ interface OrderSchema {
   createdAt: Date;
   isReviewed: boolean;
   discount?: Discount;
-  pendingOrderId?: string;
+  pendingKey?: string;
   deliveredBy: { id: string; firstName: string; lastName: string };
 }
 
@@ -201,7 +201,7 @@ const orderSchema = new Schema<OrderSchema>(
       type: Boolean,
       default: false,
     },
-    pendingOrderId: String,
+    pendingKey: String,
   },
   {
     timestamps: true,

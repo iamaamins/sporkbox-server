@@ -292,6 +292,6 @@ export type Order = {
     removedIngredients: string;
     total: number;
   };
-  pendingOrderId?: string;
+  pendingKey?: string;
   payment?: { distributed?: number };
 };
