@@ -744,12 +744,12 @@ router.post('/create-orders', auth, async (req, res) => {
     }
 
     // Update orders with payment and discount info
-    const pendingOrderId = generateRandomString();
+    const pendingKey = generateRandomString();
     for (const order of orders) {
       // Update order status and add payment info
       if (ordersWithPayment.length) {
         order.status = 'PENDING';
-        order.pendingOrderId = pendingOrderId;
+        order.pendingKey = pendingKey;
 
         const orderWithPayment = ordersWithPayment.find(
           (orderWithPayment) =>
@@ -819,7 +819,7 @@ router.post('/create-orders', auth, async (req, res) => {
     const session = await stripeCheckout(
       _id.toString(),
       email,
-      pendingOrderId,
+      pendingKey,
       discountCodeId,
       discountAmount,
       ordersPlacedBy,
