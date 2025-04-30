@@ -5,7 +5,7 @@ module.exports = {
     const admin = await db.collection('users').findOne({
       role: 'ADMIN',
       status: 'ACTIVE',
-      email: 'hello@octib.com',
+      email: 'tim@sporkbytes.com',
     });
 
     await db.collection('orders').updateMany(
