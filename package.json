@@ -8,8 +8,7 @@
     "start": "node ./dist/app.js",
     "postinstall": "npm run tsc",
     "migrate-mongo": "migrate-mongo",
-    "dev": "nodemon --files ./src/app.ts",
-    "heroku-postbuild": "npm run migrate-mongo up"
+    "dev": "nodemon --files ./src/app.ts"
   },
   "author": "",
   "license": "ISC",
@@ -50,6 +49,6 @@
     "typescript": "^4.8.4"
   },
   "engines": {
-    "node": "20.12.2"
+    "node": "20.18.0"
   }
 }

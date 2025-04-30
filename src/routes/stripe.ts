@@ -64,11 +64,15 @@ router.post('/webhook', async (req, res) => {
 
 // Get session details
 router.get('/session/:sessionId', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'CUSTOMER') {
+  if (
+    !req.user ||
+    (req.user.role !== 'CUSTOMER' && req.user.role !== 'ADMIN')
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
+
   const { sessionId } = req.params;
   try {
     const response = await stripe.checkout.sessions.retrieve(sessionId);

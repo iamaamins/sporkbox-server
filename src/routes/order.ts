@@ -48,7 +48,7 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
     })
       .sort({ 'delivery.date': 1 })
       .select(
-        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddons item.removedIngredients'
+        'customer.firstName customer.lastName restaurant._id restaurant.name company._id company.code company.shift delivery.date item._id item.name item.quantity item.optionalAddons item.requiredAddonsOne item.requiredAddonsTwo item.removedIngredients'
       );
     res.status(200).json(allUpcomingOrders);
   } catch (err) {
@@ -198,7 +198,8 @@ router.post('/create-orders', auth, async (req, res) => {
           item._id.toString()
         ] = {
           optionalAddons: item.optionalAddons,
-          requiredAddons: item.requiredAddons,
+          requiredAddonsOne: item.requiredAddonsOne,
+          requiredAddonsTwo: item.requiredAddonsTwo,
           removableIngredients: item.removableIngredients,
         };
       }
@@ -322,32 +323,64 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate required addons
-      if (orderItem.requiredAddons.length > 0) {
-        const upcomingRequiredAddons =
+      if (orderItem.requiredAddonsOne.length > 0) {
+        const upcomingRequiredAddonsOne =
           upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
             orderItem.restaurantId
-          ].item[orderItem.itemId].requiredAddons;
+          ].item[orderItem.itemId].requiredAddonsOne;
 
-        for (const orderRequiredAddon of orderItem.requiredAddons) {
-          const validRequiredAddons = upcomingRequiredAddons.addons
+        for (const orderRequiredAddon of orderItem.requiredAddonsOne) {
+          const validRequiredAddons = upcomingRequiredAddonsOne.addons
             .split(',')
             .some(
-              (upcomingOptionalAddon) =>
-                upcomingOptionalAddon.split('-')[0].trim() ===
+              (upcomingRequiredAddon) =>
+                upcomingRequiredAddon.split('-')[0].trim() ===
                 orderRequiredAddon.split('-')[0].trim().toLowerCase()
             );
 
           if (
-            orderItem.requiredAddons.length !==
-              upcomingRequiredAddons.addable ||
+            orderItem.requiredAddonsOne.length !==
+              upcomingRequiredAddonsOne.addable ||
             !validRequiredAddons
           ) {
             console.error(
-              'Your cart contains an item with invalid required addons'
+              'Your cart contains an item with invalid required addons 1'
             );
             res.status(400);
             throw new Error(
-              'Your cart contains an item with invalid required addons'
+              'Your cart contains an item with invalid required addons 1'
+            );
+          }
+        }
+      }
+
+      // Validate extra required addons
+      if (orderItem.requiredAddonsTwo.length > 0) {
+        const upcomingExtraRequiredAddonsTwo =
+          upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
+            orderItem.restaurantId
+          ].item[orderItem.itemId].requiredAddonsTwo;
+
+        for (const orderRequiredAddon of orderItem.requiredAddonsTwo) {
+          const validRequiredAddons = upcomingExtraRequiredAddonsTwo.addons
+            .split(',')
+            .some(
+              (upcomingExtraRequiredAddon) =>
+                upcomingExtraRequiredAddon.split('-')[0].trim() ===
+                orderRequiredAddon.split('-')[0].trim().toLowerCase()
+            );
+
+          if (
+            orderItem.requiredAddonsTwo.length !==
+              upcomingExtraRequiredAddonsTwo.addable ||
+            !validRequiredAddons
+          ) {
+            console.error(
+              'Your cart contains an item with invalid extra required addons 2'
+            );
+            res.status(400);
+            throw new Error(
+              'Your cart contains an item with invalid extra required addons 2'
             );
           }
         }
@@ -438,17 +471,26 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       const optionalAddons = createAddons(orderItem.optionalAddons);
-      const requiredAddons = createAddons(orderItem.requiredAddons);
+      const requiredAddonsOne = createAddons(orderItem.requiredAddonsOne);
+      const requiredAddonsTwo = createAddons(orderItem.requiredAddonsTwo);
+
       const optionalAddonsPrice = getAddonsPrice(
         item.optionalAddons.addons,
         optionalAddons
       );
-      const requiredAddonsPrice = getAddonsPrice(
-        item.requiredAddons.addons,
-        requiredAddons
+      const requiredAddonsOnePrice = getAddonsPrice(
+        item.requiredAddonsOne.addons,
+        requiredAddonsOne
       );
+      const requiredAddonsTwoPrice = getAddonsPrice(
+        item.requiredAddonsTwo.addons,
+        requiredAddonsTwo
+      );
+
       const totalAddonsPrice =
-        (optionalAddonsPrice || 0) + (requiredAddonsPrice || 0);
+        (optionalAddonsPrice || 0) +
+        (requiredAddonsOnePrice || 0) +
+        (requiredAddonsTwoPrice || 0);
 
       return {
         customer: {
@@ -486,7 +528,8 @@ router.post('/create-orders', auth, async (req, res) => {
           quantity: orderItem.quantity,
           image: item.image || restaurant.logo,
           optionalAddons: optionalAddons.sort(sortIngredients).join(', '),
-          requiredAddons: requiredAddons.sort(sortIngredients).join(', '),
+          requiredAddonsOne: requiredAddonsOne.sort(sortIngredients).join(', '),
+          requiredAddonsTwo: requiredAddonsTwo.sort(sortIngredients).join(', '),
           removedIngredients: orderItem.removedIngredients
             .sort(sortIngredients)
             .join(', '),
@@ -765,16 +808,26 @@ router.post('/create-orders', auth, async (req, res) => {
       );
     }
 
+    const ordersPlacedBy =
+      req.user._id.toString() === _id.toString()
+        ? 'SELF'
+        : req.user.role === 'ADMIN'
+        ? 'ADMIN'
+        : 'COMPANY_ADMIN';
+
     const session = await stripeCheckout(
-      req.user.role,
+      _id.toString(),
       email,
       pendingOrderId,
       discountCodeId,
       discountAmount,
+      ordersPlacedBy,
       ordersWithPayment
     );
+
     await Order.insertMany(orders);
     res.status(200).json(session.url);
+
     updateScheduleStatus(
       restaurantIds,
       deliveryDates,
@@ -1163,7 +1216,7 @@ router.get('/:companyCode/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get most liked restaurants and items
+// Get most liked restaurants
 router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -1173,54 +1226,64 @@ router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
 
   const { start, end } = req.params;
   try {
-    const orders = await Order.find({
-      createdAt: { $gte: start, $lte: end },
-    });
+    const restaurants = await Order.aggregate([
+      {
+        $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } },
+      },
+      {
+        $group: {
+          _id: '$restaurant._id',
+          name: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, orderCount: 1 } },
+    ]);
 
-    type RestaurantsMap = Record<string, { name: string; orderCount: number }>;
-    type ItemsMap = Record<
-      string,
-      { name: string; restaurant: string; orderCount: number }
-    >;
-    const restaurantsMap: RestaurantsMap = {};
-    const itemsMap: ItemsMap = {};
-
-    for (const order of orders) {
-      const restaurant = order.restaurant._id.toString();
-      if (!restaurantsMap[restaurant]) {
-        restaurantsMap[restaurant] = {
-          name: order.restaurant.name,
-          orderCount: 1,
-        };
-      } else {
-        restaurantsMap[restaurant].orderCount++;
-      }
-
-      const item = order.item._id.toString();
-      if (!itemsMap[item]) {
-        itemsMap[item] = {
-          name: order.item.name,
-          restaurant: order.restaurant.name,
-          orderCount: 1,
-        };
-      } else {
-        itemsMap[item].orderCount++;
-      }
-    }
-    const getData = (dataMap: RestaurantsMap | ItemsMap) =>
-      Object.values(dataMap)
-        .sort((a, b) => b.orderCount - a.orderCount)
-        .slice(0, 10);
-    res
-      .status(200)
-      .json({ restaurants: getData(restaurantsMap), items: getData(itemsMap) });
+    res.status(200).json(restaurants);
   } catch (err) {
     console.error(err);
     throw err;
   }
 });
 
-// Get most liked restaurants and items by company
+// Get most liked items
+router.get('/item-stat/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+  try {
+    const items = await Order.aggregate([
+      {
+        $match: { createdAt: { $gte: new Date(start), $lte: new Date(end) } },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          restaurant: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
+    ]);
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get most liked restaurants by company
 router.get(
   '/:companyCode/restaurant-stat/:start/:end',
   auth,
@@ -1238,57 +1301,73 @@ router.get(
 
     const { start, end, companyCode } = req.params;
     try {
-      const orders = await Order.find({
-        'company.code': companyCode,
-        createdAt: { $gte: start, $lte: end },
-      });
+      const restaurants = await Order.aggregate([
+        {
+          $match: {
+            'company.code': companyCode,
+            createdAt: { $gte: new Date(start), $lte: new Date(end) },
+          },
+        },
+        {
+          $group: {
+            _id: '$restaurant._id',
+            name: { $first: '$restaurant.name' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        { $sort: { orderCount: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, name: 1, orderCount: 1 } },
+      ]);
 
-      type RestaurantsMap = Record<
-        string,
-        { name: string; orderCount: number }
-      >;
-      type ItemsMap = Record<
-        string,
-        { name: string; restaurant: string; orderCount: number }
-      >;
-      const restaurantsMap: RestaurantsMap = {};
-      const itemsMap: ItemsMap = {};
-
-      for (const order of orders) {
-        const restaurant = order.restaurant._id.toString();
-        if (!restaurantsMap[restaurant]) {
-          restaurantsMap[restaurant] = {
-            name: order.restaurant.name,
-            orderCount: 1,
-          };
-        } else {
-          restaurantsMap[restaurant].orderCount++;
-        }
-
-        const item = order.item._id.toString();
-        if (!itemsMap[item]) {
-          itemsMap[item] = {
-            name: order.item.name,
-            restaurant: order.restaurant.name,
-            orderCount: 1,
-          };
-        } else {
-          itemsMap[item].orderCount++;
-        }
-      }
-      const getData = (dataMap: RestaurantsMap | ItemsMap) =>
-        Object.values(dataMap)
-          .sort((a, b) => b.orderCount - a.orderCount)
-          .slice(0, 10);
-      res.status(200).json({
-        restaurants: getData(restaurantsMap),
-        items: getData(itemsMap),
-      });
+      res.status(200).json(restaurants);
     } catch (err) {
       console.error(err);
       throw err;
     }
   }
 );
+
+// Get most liked items by company
+router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
+  if (
+    !req.user ||
+    req.user.role !== 'CUSTOMER' ||
+    !req.user.isCompanyAdmin ||
+    req.user.companies[0].code !== req.params.companyCode
+  ) {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end, companyCode } = req.params;
+  try {
+    const items = await Order.aggregate([
+      {
+        $match: {
+          'company.code': companyCode,
+          createdAt: { $gte: new Date(start), $lte: new Date(end) },
+        },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          restaurant: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
+    ]);
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
 
 export default router;

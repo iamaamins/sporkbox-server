@@ -53,9 +53,10 @@ export interface OrderItem extends GenericItem {
   _id: Types.ObjectId;
   total: number;
   quantity: number;
-  optionalAddons?: string;
-  requiredAddons?: string;
-  removedIngredients?: string;
+  optionalAddons: string;
+  requiredAddonsOne: string;
+  requiredAddonsTwo: string;
+  removedIngredients: string;
 }
 
 export interface ItemSchema extends GenericItem {
@@ -64,7 +65,8 @@ export interface ItemSchema extends GenericItem {
   price: number;
   status: string;
   optionalAddons: Addons;
-  requiredAddons: Addons;
+  requiredAddonsOne: Addons;
+  requiredAddonsTwo: Addons;
   averageRating?: number;
   popularityIndex?: number;
   removableIngredients?: string;
@@ -156,7 +158,8 @@ export interface OrdersPayload {
     restaurantId: string;
     deliveryDate: number;
     optionalAddons: string[];
-    requiredAddons: string[];
+    requiredAddonsOne: string[];
+    requiredAddonsTwo: string[];
     removedIngredients: string[];
   }[];
   discountCodeId: string;
@@ -229,7 +232,11 @@ export type UpcomingDataMap = {
               addons: string;
               addable: number;
             };
-            requiredAddons: {
+            requiredAddonsOne: {
+              addons: string;
+              addable: number;
+            };
+            requiredAddonsTwo: {
               addons: string;
               addable: number;
             };
@@ -280,7 +287,8 @@ export type Order = {
     quantity: number;
     image: string;
     optionalAddons: string;
-    requiredAddons: string;
+    requiredAddonsOne: string;
+    requiredAddonsTwo: string;
     removedIngredients: string;
     total: number;
   };
