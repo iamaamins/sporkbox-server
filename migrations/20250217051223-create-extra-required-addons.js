@@ -1,55 +1,67 @@
 module.exports = {
   async up(db) {
-    const restaurants = await db.collection('restaurants').find().toArray();
-
-    for (const restaurant of restaurants) {
-      await db.collection('restaurants').updateOne(
-        { _id: restaurant._id },
-        {
-          $set: {
-            'items.$[].extraRequiredAddons': { addons: '', addable: 0 },
+    await db.collection('restaurants').updateMany({}, [
+      {
+        $set: {
+          items: {
+            $map: {
+              input: '$items',
+              as: 'item',
+              in: {
+                $mergeObjects: [
+                  '$$item',
+                  {
+                    extraRequiredAddons: {
+                      $cond: {
+                        if: {
+                          $ifNull: ['$$item.extraRequiredAddons', false],
+                        },
+                        then: '$$item.extraRequiredAddons',
+                        else: { addons: '', addable: 0 },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
           },
-        }
-      );
-    }
+        },
+      },
+    ]);
 
-    const orders = await db.collection('orders').find().toArray();
-
-    for (const order of orders) {
-      await db.collection('orders').updateOne(
-        { _id: order._id },
-        {
-          $set: {
-            'item.extraRequiredAddons': '',
-          },
-        }
+    await db
+      .collection('orders')
+      .updateMany(
+        { 'item.extraRequiredAddons': { $exists: false } },
+        { $set: { 'item.extraRequiredAddons': '' } }
       );
-    }
   },
 
   async down(db) {
-    const restaurants = await db.collection('restaurants').find().toArray();
-
-    for (const restaurant of restaurants) {
-      await db.collection('restaurants').updateOne(
-        { _id: restaurant._id },
-        {
-          $unset: { 'items.$[].extraRequiredAddons': '' },
-        }
-      );
-    }
-
-    const orders = await db.collection('orders').find().toArray();
-
-    for (const order of orders) {
-      await db.collection('orders').updateOne(
-        { _id: order._id },
-        {
-          $unset: {
-            'item.extraRequiredAddons': '',
+    await db.collection('restaurants').updateMany({}, [
+      {
+        $set: {
+          items: {
+            $map: {
+              input: '$items',
+              as: 'item',
+              in: {
+                $arrayToObject: {
+                  $filter: {
+                    input: { $objectToArray: '$$item' },
+                    as: 'field',
+                    cond: { $ne: ['$$field.k', 'extraRequiredAddons'] },
+                  },
+                },
+              },
+            },
           },
-        }
-      );
-    }
+        },
+      },
+    ]);
+
+    await db
+      .collection('orders')
+      .updateMany({}, { $unset: { 'item.extraRequiredAddons': '' } });
   },
 };
