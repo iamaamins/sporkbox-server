@@ -980,7 +980,7 @@ router.patch('/deliver', auth, async (req, res) => {
       }
     );
 
-    await Promise.all(
+    await Promise.allSettled(
       orders.map(
         async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
@@ -990,7 +990,7 @@ router.patch('/deliver', auth, async (req, res) => {
       .find({ _id: { $in: companyIds } })
       .select('slackChannelId');
 
-    await Promise.all(
+    await Promise.allSettled(
       companies.map(
         async (company) =>
           company.slackChannelId &&
