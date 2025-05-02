@@ -32,6 +32,7 @@ import { invalidCredentials, unAuthorized } from '../lib/messages';
 import { OrdersPayload, UpcomingDataMap, Order as OrderType } from '../types';
 import User from '../models/user';
 import { postSlackMessage } from '../config/slack';
+import company from '../models/company';
 
 const router = Router();
 
@@ -934,13 +935,37 @@ router.patch('/deliver', auth, async (req, res) => {
   }
 
   const { orderIds } = req.body;
-  if (!orderIds) {
+  if (!orderIds || !orderIds.length) {
     console.error('Please provide order ids');
     res.status(400);
     throw new Error('Please provide order ids');
   }
 
   try {
+    const orders = await Order.find({
+      _id: { $in: orderIds },
+      status: 'PROCESSING',
+    });
+
+    let groupKey: string | null = null;
+    let companyIds: string[] = [];
+    for (const order of orders) {
+      const tempKey = `${order.delivery.date.toISOString()}-${
+        order.company.code
+      }-${order.restaurant._id}`;
+
+      if (!groupKey) {
+        groupKey = tempKey;
+      } else if (groupKey !== tempKey) {
+        console.error('Invalid order ids');
+        res.status(400);
+        throw new Error('Invalid order ids');
+      }
+
+      const companyId = order.company._id.toString();
+      if (!companyIds.includes(companyId)) companyIds.push(companyId);
+    }
+
     await Order.updateMany(
       { _id: { $in: orderIds }, status: 'PROCESSING' },
       {
@@ -955,15 +980,26 @@ router.patch('/deliver', auth, async (req, res) => {
       }
     );
 
-    const orders = await Order.find({ _id: { $in: orderIds } });
-
     await Promise.all(
       orders.map(
         async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
     );
 
-    await postSlackMessage(orders[0].restaurant.name);
+    const companies = await company
+      .find({ _id: { $in: companyIds } })
+      .select('slackChannelId');
+
+    await Promise.all(
+      companies.map(
+        async (company) =>
+          company.slackChannelId &&
+          (await postSlackMessage(
+            orders[0].restaurant.name,
+            company.slackChannelId
+          ))
+      )
+    );
 
     res.status(200).json('Delivery email sent');
   } catch (err) {
