@@ -219,6 +219,7 @@ export interface CompanySchema extends CompanyDetails {
   createdAt: Date;
   address: Address;
   status: 'ACTIVE' | 'ARCHIVED';
+  slackChannelId?: string;
 }
 
 export type UpcomingDataMap = {

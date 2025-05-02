@@ -35,6 +35,7 @@ router.post('/add-company', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
+
   const {
     name,
     code,
@@ -46,6 +47,7 @@ router.post('/add-company', auth, async (req, res) => {
     shiftBudget,
     addressLine1,
     addressLine2,
+    slackChannelId,
   } = req.body;
   if (
     !name ||
@@ -65,11 +67,13 @@ router.post('/add-company', auth, async (req, res) => {
 
   try {
     const companies = await Company.find({ code }).lean();
+
     if (companies.some((company) => company.shift === shift)) {
       console.error('A company with the same shift already exists');
       res.status(400);
       throw new Error('A company with the same shift already exists');
     }
+
     if (companies.some((company) => company.shift === 'general')) {
       console.error('A non-shift company with the same code already exists');
       res.status(400);
@@ -89,8 +93,10 @@ router.post('/add-company', auth, async (req, res) => {
       },
       shiftBudget,
       status: 'ACTIVE',
+      slackChannelId,
       shift: shift || 'general',
     });
+
     const company = response.toObject();
     deleteFields(company);
     const { website: companyWebsite, createdAt, ...rest } = company;
@@ -106,6 +112,7 @@ router.post('/add-company', auth, async (req, res) => {
         }
       );
     }
+
     res.status(200).json(company);
   } catch (err) {
     console.error(err);
@@ -120,6 +127,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     res.status(403);
     throw new Error(unAuthorized);
   }
+
   const { companyId } = req.params;
   const {
     name,
@@ -130,7 +138,9 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     shiftBudget,
     addressLine1,
     addressLine2,
+    slackChannelId,
   } = req.body;
+
   if (
     !zip ||
     !name ||
@@ -159,11 +169,13 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
           addressLine2,
         },
         shiftBudget,
+        slackChannelId,
       },
       { returnDocument: 'after' }
     )
       .lean()
       .orFail();
+
     await User.updateMany(
       { 'companies._id': companyId },
       {
@@ -175,6 +187,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
       }
     );
     deleteFields(updatedCompany);
+
     res.status(201).json(updatedCompany);
   } catch (err) {
     console.error(err);
@@ -241,6 +254,7 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
           },
         }
       );
+
       res.status(200).json(updatedCompany);
     } else if (updatedCompany.status === 'ACTIVE') {
       await User.updateMany(
@@ -251,6 +265,7 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
           },
         }
       );
+
       res.status(200).json(updatedCompany);
     }
   } catch (err) {
