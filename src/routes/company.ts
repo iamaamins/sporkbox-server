@@ -47,7 +47,7 @@ router.post('/add-company', auth, async (req, res) => {
     shiftBudget,
     addressLine1,
     addressLine2,
-    slackChannelId,
+    slackChannel,
   } = req.body;
   if (
     !name ||
@@ -93,7 +93,7 @@ router.post('/add-company', auth, async (req, res) => {
       },
       shiftBudget,
       status: 'ACTIVE',
-      slackChannelId,
+      slackChannel,
       shift: shift || 'general',
     });
 
@@ -138,7 +138,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     shiftBudget,
     addressLine1,
     addressLine2,
-    slackChannelId,
+    slackChannel,
   } = req.body;
 
   if (
@@ -169,7 +169,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
           addressLine2,
         },
         shiftBudget,
-        slackChannelId,
+        slackChannel,
       },
       { returnDocument: 'after' }
     )

@@ -988,15 +988,15 @@ router.patch('/deliver', auth, async (req, res) => {
 
     const companies = await company
       .find({ _id: { $in: companyIds } })
-      .select('slackChannelId');
+      .select('slackChannel');
 
     await Promise.allSettled(
       companies.map(
         async (company) =>
-          company.slackChannelId &&
+          company.slackChannel &&
           (await postSlackMessage(
             orders[0].restaurant.name,
-            company.slackChannelId
+            company.slackChannel
           ))
       )
     );

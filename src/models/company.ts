@@ -59,7 +59,7 @@ const companySchema = new Schema<CompanySchema>(
       enum: ['ACTIVE', 'ARCHIVED'],
       required: [true, 'Please provide a status'],
     },
-    slackChannelId: { type: String, trim: true },
+    slackChannel: { type: String, trim: true },
   },
   {
     timestamps: true,
