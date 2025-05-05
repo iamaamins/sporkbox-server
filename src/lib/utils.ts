@@ -78,8 +78,8 @@ export const sortByDate = (
   b: SortScheduledRestaurant
 ): number => dateToMS(a.schedule.date) - dateToMS(b.schedule.date);
 
-export const getUTCStartOfDayTimestamp = () =>
-  moment.utc(moment().startOf('day')).startOf('day').valueOf();
+export const getTodayTimestamp = () =>
+  dateToMS(moment().utc().format('YYYY-MM-DD'));
 
 export async function getUpcomingRestaurants(
   res: Response,
@@ -99,7 +99,7 @@ export async function getUpcomingRestaurants(
     const scheduledRestaurants = await Restaurant.find({
       schedules: {
         $elemMatch: {
-          date: { $gt: getUTCStartOfDayTimestamp() },
+          date: { $gt: getTodayTimestamp() },
           'company._id': activeCompany._id,
           ...(getActiveSchedules && { status: 'ACTIVE' }),
         },
@@ -123,7 +123,7 @@ export async function getUpcomingRestaurants(
       const { schedules, ...rest } = scheduledRestaurant;
       for (const schedule of schedules) {
         if (
-          dateToMS(schedule.date) > getUTCStartOfDayTimestamp() &&
+          dateToMS(schedule.date) > getTodayTimestamp() &&
           (getActiveSchedules ? schedule.status === 'ACTIVE' : true) &&
           activeCompany._id.toString() === schedule.company._id.toString()
         ) {

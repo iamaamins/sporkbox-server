@@ -127,7 +127,7 @@ export interface RestaurantSchema {
   schedules: Types.DocumentArray<SchedulesSchema>;
 }
 
-export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER' | 'GUEST';
+export type UserRole = 'ADMIN' | 'VENDOR' | 'CUSTOMER' | 'GUEST' | 'DRIVER';
 
 export interface UserSchema extends GenericUser {
   _id: Types.ObjectId;
@@ -219,6 +219,7 @@ export interface CompanySchema extends CompanyDetails {
   createdAt: Date;
   address: Address;
   status: 'ACTIVE' | 'ARCHIVED';
+  slackChannel?: string;
 }
 
 export type UpcomingDataMap = {
@@ -292,6 +293,6 @@ export type Order = {
     removedIngredients: string;
     total: number;
   };
-  pendingOrderId?: string;
+  pendingKey?: string;
   payment?: { distributed?: number };
 };

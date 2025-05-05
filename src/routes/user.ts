@@ -26,17 +26,15 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email, status: 'ACTIVE' })
-      .lean()
-      .orFail();
+    const user = await User.findOne({ email }).lean();
 
     if (!user) {
       console.error(invalidCredentials);
-      res.status(403);
+      res.status(401);
       throw new Error(invalidCredentials);
     }
 
-    if (user.role === 'GUEST') {
+    if (user.status !== 'ACTIVE' || user.role === 'GUEST') {
       console.error(unAuthorized);
       res.status(403);
       throw new Error(unAuthorized);
@@ -45,7 +43,7 @@ router.post('/login', async (req, res) => {
     const correctPassword = await bcrypt.compare(password, user.password);
     if (!correctPassword) {
       console.error(invalidCredentials);
-      res.status(403);
+      res.status(401);
       throw new Error(invalidCredentials);
     }
 
@@ -54,9 +52,8 @@ router.post('/login', async (req, res) => {
 
     res.status(200).json(user);
   } catch (err) {
-    console.error(invalidCredentials);
-    res.status(403);
-    throw new Error(invalidCredentials);
+    console.error(err);
+    throw err;
   }
 });
 
