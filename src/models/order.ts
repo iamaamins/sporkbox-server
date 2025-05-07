@@ -20,7 +20,7 @@ interface OrderSchema {
   isReviewed: boolean;
   discount?: Discount;
   pendingKey?: string;
-  deliveredBy: { id: string; firstName: string; lastName: string };
+  deliveredBy?: { id: string; firstName: string; lastName: string };
 }
 
 const orderSchema = new Schema<OrderSchema>(
@@ -182,20 +182,9 @@ const orderSchema = new Schema<OrderSchema>(
       },
     },
     deliveredBy: {
-      id: {
-        type: Schema.Types.ObjectId,
-        required: [true, 'Please provide delivery person id'],
-      },
-      firstName: {
-        type: String,
-        trim: true,
-        required: [true, 'Please provide delivery person first name'],
-      },
-      lastName: {
-        type: String,
-        trim: true,
-        required: [true, 'Please provide delivery person last name'],
-      },
+      id: Schema.Types.ObjectId,
+      firstName: String,
+      lastName: String,
     },
     isReviewed: {
       type: Boolean,
