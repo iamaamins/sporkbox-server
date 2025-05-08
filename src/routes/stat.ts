@@ -174,7 +174,7 @@ router.get('/review', auth, async (req, res) => {
           const customer = await User.findById(review.customer._id);
           if (customer) {
             results.push({
-              date: dateToText(review.createdAt),
+              date: review.createdAt.toISOString().split('T')[0],
               restaurant: restaurant.name,
               item: item.name,
               rating: review.rating,
