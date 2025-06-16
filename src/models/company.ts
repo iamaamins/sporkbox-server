@@ -42,10 +42,7 @@ const companySchema = new Schema<CompanySchema>(
         trim: true,
         required: [true, 'Please provide address line 1'],
       },
-      addressLine2: {
-        type: String,
-        trim: true,
-      },
+      addressLine2: { type: String, trim: true },
     },
     code: {
       type: String,
@@ -62,6 +59,7 @@ const companySchema = new Schema<CompanySchema>(
       enum: ['ACTIVE', 'ARCHIVED'],
       required: [true, 'Please provide a status'],
     },
+    slackChannel: { type: String, trim: true },
   },
   {
     timestamps: true,

@@ -15,7 +15,7 @@ router.post('/webhook', async (req, res) => {
     parsedBody.data.object.metadata.details
   );
   const isSporkBox = parsedMetadataDetails.company === 'sporkbox';
-  const pendingOrderId = parsedMetadataDetails.pendingOrderId;
+  const pendingKey = parsedMetadataDetails.pendingKey;
   const discountCodeId = parsedMetadataDetails.discountCodeId;
   const discountAmount = parsedMetadataDetails.discountAmount;
   const signature = req.headers['stripe-signature'] as string;
@@ -29,15 +29,13 @@ router.post('/webhook', async (req, res) => {
     if (event.type === 'checkout.session.completed' && isSporkBox) {
       const session = event.data.object as Stripe.Checkout.Session;
       await Order.updateMany(
-        { pendingOrderId, status: 'PENDING' },
+        { pendingKey, status: 'PENDING' },
         {
           $set: {
             status: 'PROCESSING',
             'payment.intent': session.payment_intent,
           },
-          $unset: {
-            pendingOrderId,
-          },
+          $unset: { pendingKey },
         }
       );
       if (+discountAmount) {
@@ -53,7 +51,7 @@ router.post('/webhook', async (req, res) => {
       res.status(201).json('Orders status updated');
     }
     if (event.type === 'checkout.session.expired' && isSporkBox) {
-      await Order.deleteMany({ pendingOrderId, status: 'PENDING' });
+      await Order.deleteMany({ pendingKey, status: 'PENDING' });
       res.status(201).json('Orders deleted');
     }
   } catch (err) {

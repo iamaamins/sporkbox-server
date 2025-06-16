@@ -4,7 +4,7 @@ import Restaurant from '../models/restaurant';
 import auth from '../middleware/auth';
 import { Router } from 'express';
 import {
-  getUTCStartOfDayTimestamp,
+  getTodayTimestamp,
   sortByDate,
   resizeImage,
   deleteFields,
@@ -109,14 +109,14 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
 
   try {
     const restaurants = await Restaurant.find({
-      'schedules.date': { $gt: getUTCStartOfDayTimestamp() },
+      'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
     const scheduledRestaurants = [];
     for (const restaurant of restaurants) {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
-        if (dateToMS(schedule.date) > getUTCStartOfDayTimestamp()) {
+        if (dateToMS(schedule.date) > getTodayTimestamp()) {
           const scheduledRestaurant = {
             ...rest,
             company: schedule.company,
@@ -155,7 +155,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
   try {
     const restaurants = await Restaurant.find({
       'schedules.company.code': companyCode,
-      'schedules.date': { $gte: getUTCStartOfDayTimestamp() },
+      'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
     const scheduledRestaurants = [];
@@ -163,7 +163,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
       const { schedules, ...rest } = restaurant.toObject();
       for (const schedule of schedules) {
         if (
-          dateToMS(schedule.date) > getUTCStartOfDayTimestamp() &&
+          dateToMS(schedule.date) > getTodayTimestamp() &&
           schedule.company.code === companyCode
         ) {
           const scheduledRestaurant = {
@@ -201,10 +201,10 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
     res.status(400);
     throw new Error(requiredFields);
   }
-  if (dateToMS(date) < getUTCStartOfDayTimestamp()) {
-    console.error("Cant' schedule on the provided date");
+  if (dateToMS(date) <= getTodayTimestamp()) {
+    console.error('Please provide a future date');
     res.status(400);
-    throw new Error("Cant' schedule on the provided date");
+    throw new Error('Please provide a future date');
   }
 
   try {
@@ -218,7 +218,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
       {
         $pull: {
           schedules: {
-            date: { $lt: getUTCStartOfDayTimestamp() },
+            date: { $lt: getTodayTimestamp() },
           },
         },
       }

@@ -16,6 +16,7 @@ import {
   updateScheduleStatus,
   createOrders,
   docToObj,
+  getTodayTimestamp,
 } from '../lib/utils';
 import {
   orderArchive,
@@ -30,6 +31,8 @@ import Restaurant from '../models/restaurant';
 import { invalidCredentials, unAuthorized } from '../lib/messages';
 import { OrdersPayload, UpcomingDataMap, Order as OrderType } from '../types';
 import User from '../models/user';
+import { postSlackMessage } from '../config/slack';
+import company from '../models/company';
 
 const router = Router();
 
@@ -743,12 +746,12 @@ router.post('/create-orders', auth, async (req, res) => {
     }
 
     // Update orders with payment and discount info
-    const pendingOrderId = generateRandomString();
+    const pendingKey = generateRandomString();
     for (const order of orders) {
       // Update order status and add payment info
       if (ordersWithPayment.length) {
         order.status = 'PENDING';
-        order.pendingOrderId = pendingOrderId;
+        order.pendingKey = pendingKey;
 
         const orderWithPayment = ordersWithPayment.find(
           (orderWithPayment) =>
@@ -818,7 +821,7 @@ router.post('/create-orders', auth, async (req, res) => {
     const session = await stripeCheckout(
       _id.toString(),
       email,
-      pendingOrderId,
+      pendingKey,
       discountCodeId,
       discountAmount,
       ordersPlacedBy,
@@ -925,30 +928,79 @@ router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
 
 // Deliver orders
 router.patch('/deliver', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'DRIVER')) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
   const { orderIds } = req.body;
-  if (!orderIds) {
+  if (!orderIds || !orderIds.length) {
     console.error('Please provide order ids');
     res.status(400);
     throw new Error('Please provide order ids');
   }
 
   try {
+    const orders = await Order.find({
+      _id: { $in: orderIds },
+      status: 'PROCESSING',
+    });
+
+    let groupKey: string | null = null;
+    let companyIds: string[] = [];
+    for (const order of orders) {
+      const tempKey = `${order.delivery.date.toISOString()}-${
+        order.company.code
+      }-${order.restaurant._id}`;
+
+      if (!groupKey) {
+        groupKey = tempKey;
+      } else if (groupKey !== tempKey) {
+        console.error('Invalid order ids');
+        res.status(400);
+        throw new Error('Invalid order ids');
+      }
+
+      const companyId = order.company._id.toString();
+      if (!companyIds.includes(companyId)) companyIds.push(companyId);
+    }
+
     await Order.updateMany(
       { _id: { $in: orderIds }, status: 'PROCESSING' },
-      { $set: { status: 'DELIVERED' } }
+      {
+        $set: {
+          status: 'DELIVERED',
+          deliveredBy: {
+            id: req.user._id,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+          },
+        },
+      }
     );
-    const orders = await Order.find({ _id: { $in: orderIds } });
-    await Promise.all(
+
+    await Promise.allSettled(
       orders.map(
         async (order) => await mail.send(orderDelivery(docToObj(order)))
       )
     );
+
+    const companies = await company
+      .find({ _id: { $in: companyIds } })
+      .select('slackChannel');
+
+    await Promise.allSettled(
+      companies.map(
+        async (company) =>
+          company.slackChannel &&
+          (await postSlackMessage(
+            orders[0].restaurant.name,
+            company.slackChannel
+          ))
+      )
+    );
+
     res.status(200).json('Delivery email sent');
   } catch (err) {
     console.error(err);
@@ -1364,6 +1416,27 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
     ]);
 
     res.status(200).json(items);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get today's orders for delivery driver
+router.get('/driver-orders', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'DRIVER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const orders = await Order.find({
+      status: 'PROCESSING',
+      'delivery.date': getTodayTimestamp(),
+    });
+
+    res.status(200).json(orders);
   } catch (err) {
     console.error(err);
     throw err;
