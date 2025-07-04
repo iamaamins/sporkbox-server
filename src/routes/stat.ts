@@ -242,35 +242,39 @@ router.get('/review', auth, async (req, res) => {
   }
 
   try {
-    const restaurants = await Restaurant.find({
-      items: {
-        $elemMatch: {
-          reviews: { $exists: true, $ne: [] },
+    const results = await Restaurant.aggregate([
+      { $unwind: '$items' },
+      { $match: { 'items.reviews': { $exists: true, $ne: [] } } },
+      { $unwind: '$items.reviews' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'items.reviews.customer',
+          foreignField: '_id',
+          as: 'customer',
         },
       },
-    })
-      .lean()
-      .orFail();
+      { $match: { customer: { $exists: true, $ne: null } } },
+      { $unwind: '$customer' },
+      {
+        $project: {
+          _id: 0,
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$items.reviews.createdAt',
+            },
+          },
+          restaurant: '$name',
+          item: '$items.name',
+          rating: '$items.reviews.rating',
+          comment: '$items.reviews.comment',
+          customer: '$customer.email',
+          company: '$customer.companies.0.code',
+        },
+      },
+    ]);
 
-    const results = [];
-    for (const restaurant of restaurants) {
-      for (const item of restaurant.items) {
-        for (const review of item.reviews) {
-          const customer = await User.findById(review.customer._id);
-          if (customer) {
-            results.push({
-              date: review.createdAt.toISOString().split('T')[0],
-              restaurant: restaurant.name,
-              item: item.name,
-              rating: review.rating,
-              comment: review.comment,
-              customer: customer.email,
-              company: customer.companies[0].code,
-            });
-          }
-        }
-      }
-    }
     res.status(200).json(results);
   } catch (err) {
     console.error(err);
