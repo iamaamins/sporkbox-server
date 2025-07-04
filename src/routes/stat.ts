@@ -66,13 +66,14 @@ router.get('/order', auth, async (req, res) => {
 
   try {
     const { from, to } = getDates();
+    const companyIds = getCompanyIds();
 
     const results = await Order.aggregate([
       {
         $match: {
           status: 'DELIVERED',
+          'company._id': { $in: companyIds },
           'delivery.date': { $gte: from, $lte: to },
-          'company._id': { $in: getCompanyIds() },
         },
       },
       {
@@ -110,13 +111,14 @@ router.get('/item', auth, async (req, res) => {
 
   try {
     const { from, to } = getDates();
+    const companyIds = getCompanyIds();
 
     const results = await Order.aggregate([
       {
         $match: {
           status: 'DELIVERED',
+          'company._id': { $in: companyIds },
           'delivery.date': { $gte: from, $lte: to },
-          'company._id': { $in: getCompanyIds() },
         },
       },
       {
@@ -160,23 +162,56 @@ router.get('/people', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
-  const orders = await getDeliveredOrders();
-  const resultsMap: Record<string, CustomerStat> = {};
-  for (const order of orders) {
-    const customerId = order.customer._id.toString();
-    const deliveryDate = dateToMS(order.delivery.date);
+  try {
+    const { from, to } = getDates();
+    const companyIds = getCompanyIds();
 
-    if (!resultsMap[deliveryDate]) {
-      resultsMap[deliveryDate] = {
-        date: deliveryDate,
-        customers: [customerId],
-      };
-    } else {
-      if (!resultsMap[deliveryDate].customers.includes(customerId))
-        resultsMap[deliveryDate].customers.push(customerId);
-    }
+    const results = await Order.aggregate([
+      {
+        $match: {
+          status: 'DELIVERED',
+          'company._id': { $in: companyIds },
+          'delivery.date': { $gte: from, $lte: to },
+        },
+      },
+      {
+        $addFields: {
+          deliveryDateMS: {
+            $toLong: {
+              $dateFromString: {
+                dateString: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$delivery.date',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$deliveryDateMS',
+          customers: {
+            $addToSet: { $toString: '$customer._id' },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          customers: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json(results);
+  } catch (err) {
+    console.error(err);
+    throw err;
   }
-  res.status(200).json(Object.values(resultsMap));
 });
 
 router.get('/restaurant-items', auth, async (req, res) => {
