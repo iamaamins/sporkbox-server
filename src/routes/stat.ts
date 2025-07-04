@@ -52,7 +52,10 @@ function getDates() {
   return { from, to };
 }
 
-const createObjectId = (id: string) => new Types.ObjectId(id);
+const getCompanyIds = () => [
+  new Types.ObjectId('643dec49e88d25d4249723ef'),
+  new Types.ObjectId('643e162fe88d25d424972a55'),
+];
 
 router.get('/order', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
@@ -63,20 +66,13 @@ router.get('/order', auth, async (req, res) => {
 
   try {
     const { from, to } = getDates();
+
     const results = await Order.aggregate([
       {
         $match: {
           status: 'DELIVERED',
-          'delivery.date': {
-            $gte: from,
-            $lte: to,
-          },
-          'company._id': {
-            $in: [
-              createObjectId('643dec49e88d25d4249723ef'),
-              createObjectId('643e162fe88d25d424972a55'),
-            ],
-          },
+          'delivery.date': { $gte: from, $lte: to },
+          'company._id': { $in: getCompanyIds() },
         },
       },
       {
@@ -98,7 +94,7 @@ router.get('/order', auth, async (req, res) => {
       },
     ]);
 
-    res.status(200).json(Object.values(results));
+    res.status(200).json(results);
   } catch (err) {
     console.error(err);
     throw err;
@@ -112,27 +108,49 @@ router.get('/item', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
-  const orders = await getDeliveredOrders();
-  const resultsMap: Record<string, ItemStat> = {};
-  for (const order of orders) {
-    const key = `${order.item._id}${order.restaurant._id}`;
-    if (!resultsMap[key]) {
-      resultsMap[key] = {
-        restaurant: {
-          id: order.restaurant._id.toString(),
-          name: order.restaurant.name,
+  try {
+    const { from, to } = getDates();
+
+    const results = await Order.aggregate([
+      {
+        $match: {
+          status: 'DELIVERED',
+          'delivery.date': { $gte: from, $lte: to },
+          'company._id': { $in: getCompanyIds() },
         },
-        item: {
-          id: order.item._id.toString(),
-          name: order.item.name,
-          quantity: order.item.quantity,
+      },
+      {
+        $group: {
+          _id: {
+            itemId: '$item._id',
+            restaurantId: '$restaurant._id',
+          },
+          restaurant: { $first: '$restaurant' },
+          item: { $first: '$item' },
+          quantity: { $sum: '$item.quantity' },
         },
-      };
-    } else {
-      resultsMap[key].item.quantity += order.item.quantity;
-    }
+      },
+      {
+        $project: {
+          _id: 0,
+          restaurant: {
+            id: { $toString: '$restaurant._id' },
+            name: '$restaurant.name',
+          },
+          item: {
+            id: { $toString: '$item._id' },
+            name: '$item.name',
+            quantity: '$quantity',
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json(results);
+  } catch (err) {
+    console.error(err);
+    throw err;
   }
-  res.status(200).json(Object.values(resultsMap));
 });
 
 router.get('/people', auth, async (req, res) => {
