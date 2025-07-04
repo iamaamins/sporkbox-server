@@ -195,25 +195,6 @@ interface StatRestaurant {
   name: string;
 }
 
-export interface OrderStat {
-  restaurant: StatRestaurant;
-  quantity: number;
-}
-
-export interface ItemStat {
-  restaurant: StatRestaurant;
-  item: {
-    id: string;
-    name: string;
-    quantity: number;
-  };
-}
-
-export interface CustomerStat {
-  date: number;
-  customers: string[];
-}
-
 export interface CompanySchema extends CompanyDetails {
   _id: Types.ObjectId;
   createdAt: Date;

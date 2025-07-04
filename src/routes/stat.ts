@@ -1,44 +1,11 @@
 import { Router } from 'express';
 import Order from '../models/order';
 import auth from '../middleware/auth';
-import { dateToMS, dateToText } from '../lib/utils';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
-import { CustomerStat, ItemStat, OrderStat } from '../types';
-import User from '../models/user';
 import { Types } from 'mongoose';
 
 const router = Router();
-
-async function getDeliveredOrders() {
-  const newDate = new Date();
-  const year = newDate.getFullYear();
-  const month = `${newDate.getMonth() + 1}`.padStart(2, '0');
-  const date = `${newDate.getDate()}`.padStart(2, '0');
-
-  const from = `${year}-01-01`;
-  const to = `${year}-${month}-${date}`;
-
-  try {
-    const orders = await Order.find({
-      status: 'DELIVERED',
-      // 'company._id': {
-      //   $in: ['643dec49e88d25d4249723ef', '643e162fe88d25d424972a55'],
-      // },
-      'delivery.date': {
-        $gte: from,
-        $lte: to,
-      },
-    })
-      .lean()
-      .orFail();
-
-    return orders;
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-}
 
 function getDates() {
   const newDate = new Date();
