@@ -193,18 +193,10 @@ router.get('/people', auth, async (req, res) => {
       {
         $group: {
           _id: '$deliveryDateMS',
-          customers: {
-            $addToSet: { $toString: '$customer._id' },
-          },
+          customers: { $addToSet: { $toString: '$customer._id' } },
         },
       },
-      {
-        $project: {
-          _id: 0,
-          date: '$_id',
-          customers: 1,
-        },
-      },
+      { $project: { _id: 0, date: '$_id', customers: 1 } },
     ]);
 
     res.status(200).json(results);
@@ -222,20 +214,20 @@ router.get('/restaurant-items', auth, async (req, res) => {
   }
 
   try {
-    const restaurants = await Restaurant.find().lean().orFail();
-    const items = [];
-    for (const restaurant of restaurants) {
-      for (const item of restaurant.items) {
-        if (item.status === 'ACTIVE') {
-          items.push({
-            restaurant: restaurant.name,
-            name: item.name,
-            price: item.price,
-          });
-        }
-      }
-    }
-    res.status(200).json(items);
+    const results = await Restaurant.aggregate([
+      { $unwind: '$items' },
+      { $match: { 'items.status': 'ACTIVE' } },
+      {
+        $project: {
+          _id: 0,
+          restaurant: '$name',
+          name: '$items.name',
+          price: '$items.price',
+        },
+      },
+    ]);
+
+    res.status(200).json(results);
   } catch (err) {
     console.error(err);
     throw err;
