@@ -237,7 +237,14 @@ router.get('/review', auth, async (req, res) => {
           rating: '$items.reviews.rating',
           comment: '$items.reviews.comment',
           customer: '$customer.email',
-          company: { $arrayElemAt: ['$customer.companies.code', 0] },
+          company: {
+            $let: {
+              vars: {
+                firstCompany: { $arrayElemAt: ['$customer.companies', 0] },
+              },
+              in: '$$firstCompany.code',
+            },
+          },
         },
       },
     ]);
