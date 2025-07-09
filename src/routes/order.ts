@@ -934,9 +934,12 @@ router.patch('/deliver', auth, async (req, res) => {
     throw new Error(unAuthorized);
   }
 
-  const { action, orderIds } = req.body;
+  const { action, orderIds } = req.body as {
+    action: 'deliver' | 'mark delivered';
+    orderIds: string[];
+  };
 
-  if (!action || action !== 'deliver' || action !== 'mark delivered') {
+  if (!action || (action !== 'deliver' && action !== 'mark delivered')) {
     console.error('Please provide a valid delivery action');
     res.status(400);
     throw new Error('Please provide a valid delivery action');
