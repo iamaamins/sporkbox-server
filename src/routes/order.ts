@@ -939,16 +939,16 @@ router.patch('/deliver', auth, async (req, res) => {
     orderIds: string[];
   };
 
+  if (req.user.role === 'DRIVER' && action === 'mark delivered') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
   if (!action || (action !== 'deliver' && action !== 'mark delivered')) {
     console.error('Please provide a valid delivery action');
     res.status(400);
     throw new Error('Please provide a valid delivery action');
-  }
-
-  if (action === 'mark delivered' && req.user.role === 'DRIVER') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
   }
 
   if (!orderIds || !orderIds.length) {
