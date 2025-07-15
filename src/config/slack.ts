@@ -12,7 +12,10 @@ export async function postSlackMessage(restaurant: string, channel: string) {
       text: `If you placed an order from ${restaurant} today, your lunch has been delivered!`,
     });
 
-    if (!response.ok) throw new Error('Failed to send Slack message');
+    if (!response.ok)
+      throw new Error(
+        `Failed to send Slack message to ${channel}: ${response}`
+      );
   } catch (err) {
     console.error(err);
     throw err;
