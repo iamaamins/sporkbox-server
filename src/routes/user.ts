@@ -184,6 +184,49 @@ router.patch('/reset-password/:userId/:token', async (req, res) => {
   }
 });
 
+// Change password
+router.patch('/change-password', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    console.error(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+
+  try {
+    const user = await User.findById(req.user._id).orFail();
+
+    const correctPassword = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!correctPassword) {
+      console.error(invalidCredentials);
+      res.status(401);
+      throw new Error(invalidCredentials);
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { password: hashedPassword }
+    ).orFail();
+
+    res.status(201).json('Password changed successfully');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Change status
 router.patch('/:userId/change-user-status', auth, async (req, res) => {
   if (
