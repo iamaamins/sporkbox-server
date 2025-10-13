@@ -1,13 +1,13 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 
+dotenv.config();
+
 interface OrdersWithPayment {
   items: string[];
   amount: number;
   dateShift: string;
 }
-
-dotenv.config();
 
 export const stripe = new Stripe(process.env.STRIPE_KEY as string, {
   apiVersion: '2022-11-15',

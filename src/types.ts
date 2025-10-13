@@ -140,6 +140,7 @@ export interface UserSchema extends GenericUser {
   shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
   foodPreferences?: string[];
+  foodVibe?: string;
   isCompanyAdmin?: boolean;
 }
 

@@ -111,6 +111,7 @@ const userSchema = new Schema<UserSchema>(
       orderReminder: Boolean,
     },
     foodPreferences: [{ type: String, trim: true }],
+    foodVibe: { type: String, trim: true },
     isCompanyAdmin: { type: Boolean },
   },
   {

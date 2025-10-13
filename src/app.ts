@@ -1,3 +1,4 @@
+import './lib/cronJobs';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
