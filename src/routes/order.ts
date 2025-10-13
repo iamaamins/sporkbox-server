@@ -108,6 +108,72 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 });
 
+// Get customer's most liked restaurants and items
+router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    // Get the date 6 months past today
+    const start = new Date();
+    start.setMonth(start.getMonth() - 6);
+
+    // Aggregate both restaurants and items order history
+    const [restaurants, items] = await Promise.all([
+      Order.aggregate([
+        {
+          $match: {
+            status: { $in: ['DELIVERED', 'PROCESSING'] },
+            'customer._id': req.user._id,
+            createdAt: { $gte: start },
+          },
+        },
+        {
+          $group: {
+            _id: '$restaurant._id',
+            name: { $first: '$restaurant.name' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        { $sort: { orderCount: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, name: 1 } },
+      ]),
+
+      Order.aggregate([
+        {
+          $match: {
+            status: { $in: ['DELIVERED', 'PROCESSING'] },
+            'customer._id': req.user._id,
+            createdAt: { $gte: start },
+          },
+        },
+        {
+          $group: {
+            _id: '$item._id',
+            name: { $first: '$item.name' },
+            orderCount: { $sum: 1 },
+          },
+        },
+        { $sort: { orderCount: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, name: 1 } },
+      ]),
+    ]);
+
+    res.status(200).json({
+      restaurants: restaurants.map((restaurant) => restaurant.name),
+      items: items.map((item) => item.name),
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Create orders
 router.post('/create-orders', auth, async (req, res) => {
   if (
