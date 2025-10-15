@@ -161,48 +161,47 @@ router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
     const start = new Date();
     start.setMonth(start.getMonth() - 6);
 
-    // Aggregate both restaurants and items order history
-    const [restaurants, items] = await Promise.all([
-      Order.aggregate([
-        {
-          $match: {
-            status: { $in: ['DELIVERED', 'PROCESSING'] },
-            'customer._id': req.user._id,
-            createdAt: { $gte: start },
-          },
+    // Get restaurant order history
+    const restaurants = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['DELIVERED', 'PROCESSING'] },
+          'customer._id': req.user._id,
+          createdAt: { $gte: start },
         },
-        {
-          $group: {
-            _id: '$restaurant._id',
-            name: { $first: '$restaurant.name' },
-            orderCount: { $sum: 1 },
-          },
+      },
+      {
+        $group: {
+          _id: '$restaurant._id',
+          name: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
         },
-        { $sort: { orderCount: -1 } },
-        { $limit: 5 },
-        { $project: { _id: 0, name: 1 } },
-      ]),
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 5 },
+      { $project: { _id: 0, name: 1 } },
+    ]).allowDiskUse(true);
 
-      Order.aggregate([
-        {
-          $match: {
-            status: { $in: ['DELIVERED', 'PROCESSING'] },
-            'customer._id': req.user._id,
-            createdAt: { $gte: start },
-          },
+    // Get item order history
+    const items = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['DELIVERED', 'PROCESSING'] },
+          'customer._id': req.user._id,
+          createdAt: { $gte: start },
         },
-        {
-          $group: {
-            _id: '$item._id',
-            name: { $first: '$item.name' },
-            orderCount: { $sum: 1 },
-          },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          orderCount: { $sum: 1 },
         },
-        { $sort: { orderCount: -1 } },
-        { $limit: 5 },
-        { $project: { _id: 0, name: 1 } },
-      ]),
-    ]);
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 5 },
+      { $project: { _id: 0, name: 1 } },
+    ]).allowDiskUse(true);
 
     res.status(200).json({
       restaurants: restaurants.map((restaurant) => restaurant.name),
@@ -1422,7 +1421,7 @@ router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(restaurants);
   } catch (err) {
@@ -1456,7 +1455,7 @@ router.get('/item-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(items);
   } catch (err) {
@@ -1500,7 +1499,7 @@ router.get(
         { $sort: { orderCount: -1 } },
         { $limit: 10 },
         { $project: { _id: 0, name: 1, orderCount: 1 } },
-      ]);
+      ]).allowDiskUse(true);
 
       res.status(200).json(restaurants);
     } catch (err) {
@@ -1543,7 +1542,7 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(items);
   } catch (err) {
