@@ -108,7 +108,7 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 });
 
-// Get customer's food stat
+// Get customer's food stats
 router.get('/me/food-stats', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
@@ -207,6 +207,80 @@ router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
       restaurants: restaurants.map((restaurant) => restaurant.name),
       items: items.map((item) => item.name),
     });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get customer's reviewed orders' rating data
+router.post('/me/rating-data', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { orderIds }: { orderIds: string[] } = req.body;
+  if (!orderIds || !Array.isArray(orderIds) || !orderIds.length) {
+    console.error('Order Ids are required');
+    res.status(400);
+    throw new Error('Order Ids are required');
+  }
+
+  try {
+    const orders = await Order.find({
+      'customer._id': req.user._id,
+      _id: { $in: orderIds },
+      status: 'DELIVERED',
+      isReviewed: true,
+    })
+      .select('_id restaurant item')
+      .limit(5)
+      .lean();
+
+    const restaurantIds = orders
+      .map((order) => order.restaurant._id.toString())
+      .filter((id, index, ids) => ids.indexOf(id) === index);
+
+    const itemIds = orders
+      .map((order) => order.item._id.toString())
+      .filter((id, index, ids) => ids.indexOf(id) === index);
+
+    const restaurants = await Restaurant.find({
+      _id: { $in: restaurantIds },
+      'items._id': { $in: itemIds },
+    })
+      .select('items')
+      .lean();
+
+    const userId = req.user._id.toString();
+    const ratingData: { orderId: string; rating: number }[] = [];
+
+    for (const order of orders) {
+      const restaurant = restaurants.find(
+        (restaurant) =>
+          restaurant._id.toString() === order.restaurant._id.toString()
+      );
+      if (!restaurant) continue;
+
+      const item = restaurant.items.find(
+        (item) => item._id.toString() === order.item._id.toString()
+      );
+      if (!item) continue;
+
+      const latestReview = item.reviews
+        .filter((review) => review.customer?.toString() === userId)
+        .pop();
+      if (!latestReview) continue;
+
+      ratingData.push({
+        orderId: order._id.toString(),
+        rating: latestReview.rating,
+      });
+    }
+
+    res.status(200).json(ratingData);
   } catch (err) {
     console.error(err);
     throw err;
