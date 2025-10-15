@@ -108,6 +108,46 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 });
 
+// Get customer's food stat
+router.get('/me/food-stats', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const filters = {
+      'customer._id': req.user._id,
+      status: { $in: ['DELIVERED', 'PROCESSING'] },
+    };
+
+    const orderCount = await Order.countDocuments(filters);
+    const [{ itemCount, restaurantCount }] = await Order.aggregate([
+      { $match: filters },
+      {
+        $group: {
+          _id: null,
+          itemCount: { $sum: '$item.quantity' },
+          restaurantCount: { $addToSet: '$restaurant._id' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCount: 1,
+          restaurantCount: { $size: '$restaurantCount' },
+        },
+      },
+    ]).allowDiskUse(true);
+
+    res.status(200).json({ orderCount, itemCount, restaurantCount });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Get customer's most liked restaurants and items
 router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
