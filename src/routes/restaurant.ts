@@ -39,6 +39,32 @@ interface ItemsIndexPayload {
 
 const router = Router();
 
+// Get all active restaurants for customer feedback
+router.get('/active', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const vendors = await User.find({ role: 'VENDOR', status: 'ACTIVE' })
+      .select('restaurant')
+      .lean();
+
+    const restaurants = await Restaurant.find({
+      _id: { $in: vendors.map((vendor) => vendor.restaurant) },
+    })
+      .select('name')
+      .lean();
+
+    res.status(200).json(restaurants);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Get customer's upcoming restaurants
 router.get('/upcoming-restaurants', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
