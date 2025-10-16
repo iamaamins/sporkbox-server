@@ -82,6 +82,8 @@ router.post('/register-vendor', upload, async (req, res) => {
     const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
     const logoUrl = await uploadImage(res, modifiedBuffer, mimetype);
 
+    const status = 'ARCHIVED';
+
     const restaurant = await Restaurant.create({
       name: restaurantName,
       logo: logoUrl,
@@ -93,6 +95,7 @@ router.post('/register-vendor', upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      status,
       orderCapacity: orderCapacity || Infinity,
     });
 
@@ -103,7 +106,7 @@ router.post('/register-vendor', upload, async (req, res) => {
       lastName,
       email,
       role: 'VENDOR',
-      status: 'ARCHIVED',
+      status,
       password: hashedPassword,
       restaurant: restaurant.id,
     });
@@ -116,6 +119,7 @@ router.post('/register-vendor', upload, async (req, res) => {
 
     setCookie(res, vendor._id);
     deleteFields(vendor, ['createdAt', 'password']);
+
     res.status(200).json(vendor);
   } catch (err) {
     console.error(err);
@@ -180,6 +184,8 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
     const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
     const logoUrl = await uploadImage(res, modifiedBuffer, mimetype);
 
+    const status = 'ARCHIVED';
+
     const restaurant = await Restaurant.create({
       name: restaurantName,
       logo: logoUrl,
@@ -191,6 +197,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      status,
       orderCapacity: orderCapacity || Infinity,
     });
 
@@ -202,7 +209,7 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
       lastName,
       email,
       role: 'VENDOR',
-      status: 'ARCHIVED',
+      status,
       password: hashedPassword,
       restaurant: restaurant.id,
     });
@@ -212,8 +219,8 @@ router.post('/add-vendor', auth, upload, async (req, res) => {
       '-__v -updatedAt'
     );
     const vendor = vendorWithRestaurant.toObject();
-
     deleteFields(vendor, ['createdAt', 'password']);
+
     res.status(200).json(vendor);
   } catch (err) {
     console.error(err);
@@ -335,9 +342,7 @@ router.patch(
           },
           orderCapacity: orderCapacity || Infinity,
         },
-        {
-          returnDocument: 'after',
-        }
+        { returnDocument: 'after' }
       )
         .lean()
         .orFail();
@@ -349,6 +354,7 @@ router.patch(
         ...updatedVendor,
         restaurant: updatedRestaurant,
       };
+
       res.status(201).json(updatedVendorAndRestaurant);
     } catch (err) {
       console.error(err);
@@ -388,6 +394,12 @@ router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
       .populate('restaurant', '-__v -updatedAt')
       .lean()
       .orFail();
+
+    await Restaurant.findOneAndUpdate(
+      { _id: updatedVendor.restaurant },
+      { status: updatedVendor.status }
+    );
+
     res.status(200).json(updatedVendor);
   } catch (err) {
     console.error(err);

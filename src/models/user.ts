@@ -96,27 +96,14 @@ const userSchema = new Schema<UserSchema>(
         },
       },
     ],
-    shifts: [
-      {
-        type: String,
-        trim: true,
-        enum: ['day', 'night'],
-      },
-    ],
-    restaurant: {
-      type: Schema.Types.ObjectId,
-      ref: 'Restaurant',
-    },
-    subscribedTo: {
-      orderReminder: Boolean,
-    },
+    shifts: [{ type: String, trim: true, enum: ['day', 'night'] }],
+    restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
+    subscribedTo: { orderReminder: Boolean },
     foodPreferences: [{ type: String, trim: true }],
     foodVibe: { type: String, trim: true },
-    isCompanyAdmin: { type: Boolean },
+    isCompanyAdmin: Boolean,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('User', userSchema);

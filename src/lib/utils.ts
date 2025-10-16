@@ -86,6 +86,7 @@ export async function getUpcomingRestaurants(
 
   try {
     const scheduledRestaurants = await Restaurant.find({
+      status: 'ACTIVE',
       schedules: {
         $elemMatch: {
           date: { $gt: getTodayTimestamp() },

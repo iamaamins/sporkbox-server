@@ -48,13 +48,7 @@ router.get('/active', auth, async (req, res) => {
   }
 
   try {
-    const vendors = await User.find({ role: 'VENDOR', status: 'ACTIVE' })
-      .select('restaurant')
-      .lean();
-
-    const restaurants = await Restaurant.find({
-      _id: { $in: vendors.map((vendor) => vendor.restaurant) },
-    })
+    const restaurants = await Restaurant.find({ status: 'ACTIVE' })
       .select('name')
       .lean();
 
@@ -236,21 +230,14 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
   try {
     // Remove past dates from the restaurants
     await Restaurant.updateMany(
-      {
-        _id: {
-          $in: restaurantIds,
-        },
-      },
-      {
-        $pull: {
-          schedules: {
-            date: { $lt: getTodayTimestamp() },
-          },
-        },
-      }
+      { _id: { $in: restaurantIds }, status: 'ACTIVE' },
+      { $pull: { schedules: { date: { $lt: getTodayTimestamp() } } } }
     );
 
-    const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } })
+    const restaurants = await Restaurant.find({
+      _id: { $in: restaurantIds },
+      status: 'ACTIVE',
+    })
       .select('name schedules')
       .orFail();
 
@@ -323,6 +310,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
       deleteFields(scheduledRestaurant);
       scheduledRestaurants.push(scheduledRestaurant);
     }
+
     res.status(201).json(scheduledRestaurants);
   } catch (err) {
     console.error(err);
@@ -912,6 +900,7 @@ router.get('/:id', auth, async (req, res) => {
       .select('-__v -createdAt -updatedAt -items')
       .lean()
       .orFail();
+
     res.status(200).json(restaurant);
   } catch (err) {
     console.error(err);

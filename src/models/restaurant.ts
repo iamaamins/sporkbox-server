@@ -192,6 +192,12 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
+    status: {
+      type: String,
+      trim: true,
+      enum: ['ACTIVE', 'ARCHIVED'],
+      required: [true, 'Please provide a status'],
+    },
     isFeatured: {
       type: Boolean,
       required: [true, 'Please provide featured value'],

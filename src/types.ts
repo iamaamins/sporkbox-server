@@ -121,6 +121,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
+  status: 'ACTIVE' | 'ARCHIVED';
   isFeatured: boolean;
   orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
