@@ -36,8 +36,8 @@ import company from '../models/company';
 
 const router = Router();
 
-// Get vendor's all upcoming orders
-router.get('/vendor/upcoming-orders', auth, async (req, res) => {
+// Get all upcoming orders of a vendor
+router.get('/vendor/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
     console.error(unAuthorized);
     res.status(403);
@@ -60,8 +60,8 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
   }
 });
 
-// Get customer's all upcoming orders
-router.get('/me/upcoming-orders', auth, async (req, res) => {
+// Get all upcoming orders of a customer
+router.get('/me/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -82,8 +82,8 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
   }
 });
 
-// Get customer's limited delivered orders
-router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
+// Get limited delivered orders of a customer
+router.get('/me/delivered/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -108,7 +108,7 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 });
 
-// Get customer's food stats
+// Get food stats of a customer
 router.get('/me/food-stats', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
@@ -148,7 +148,7 @@ router.get('/me/food-stats', auth, async (req, res) => {
   }
 });
 
-// Get customer's most liked restaurants and items
+// Get most liked restaurants and items of a customer
 router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
@@ -213,7 +213,7 @@ router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
   }
 });
 
-// Get customer's reviewed orders' rating data
+// Get reviewed orders' rating data of a customer
 router.post('/me/rating-data', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
@@ -288,7 +288,7 @@ router.post('/me/rating-data', auth, async (req, res) => {
 });
 
 // Create orders
-router.post('/create-orders', auth, async (req, res) => {
+router.post('/create', auth, async (req, res) => {
   if (
     !req.user ||
     (req.user.role !== 'ADMIN' && req.user.role !== 'CUSTOMER')
@@ -1023,7 +1023,7 @@ router.post('/create-orders', auth, async (req, res) => {
 });
 
 // Get all upcoming orders
-router.get('/all-upcoming-orders', auth, async (req, res) => {
+router.get('/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -1042,7 +1042,7 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
 });
 
 // Get limited delivered orders
-router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
+router.get('/delivered/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -1082,7 +1082,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
 });
 
 // Get all delivered orders of a customer
-router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
+router.get('/:customerId/delivered', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -1337,7 +1337,7 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get weekly order stat by company
+// Get weekly order stat of a company
 router.get('/:companyCode/weekly-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1423,7 +1423,7 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get payment stat by company
+// Get payment stat of a company
 router.get('/:companyCode/payment-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1538,7 +1538,7 @@ router.get('/item-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get most liked restaurants by company
+// Get most liked restaurants of a company
 router.get(
   '/:companyCode/restaurant-stat/:start/:end',
   auth,
@@ -1583,7 +1583,7 @@ router.get(
   }
 );
 
-// Get most liked items by company
+// Get most liked items of a company
 router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||

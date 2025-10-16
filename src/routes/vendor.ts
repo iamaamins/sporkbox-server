@@ -32,7 +32,7 @@ interface VendorPayload extends GenericUser, Address {
 }
 
 // Register a vendor and a restaurant
-router.post('/register-vendor', upload, async (req, res) => {
+router.post('/register', upload, async (req, res) => {
   const {
     zip,
     city,
@@ -128,7 +128,7 @@ router.post('/register-vendor', upload, async (req, res) => {
 });
 
 // Add a vendor and a restaurant
-router.post('/add-vendor', auth, upload, async (req, res) => {
+router.post('/add', auth, upload, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -263,108 +263,103 @@ router.get('/:limit', auth, async (req, res) => {
 });
 
 // Update a vendor
-router.patch(
-  '/:vendorId/update-vendor-details',
-  auth,
-  upload,
-  async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      console.error(unAuthorized);
-      res.status(403);
-      throw new Error(unAuthorized);
-    }
-
-    const { vendorId } = req.params;
-    const {
-      zip,
-      city,
-      logo,
-      email,
-      state,
-      firstName,
-      lastName,
-      isFeatured,
-      addressLine1,
-      addressLine2,
-      orderCapacity,
-      restaurantName,
-    } = req.body;
-    if (
-      !zip ||
-      !city ||
-      !email ||
-      !state ||
-      !lastName ||
-      !firstName ||
-      !isFeatured ||
-      !addressLine1 ||
-      !restaurantName
-    ) {
-      console.error(requiredFields);
-      res.status(400);
-      throw new Error(requiredFields);
-    }
-
-    let logoUrl;
-    if (req.file && logo) {
-      const name = logo.split('/')[logo.split('/').length - 1];
-      await deleteImage(res, name);
-      const { buffer, mimetype } = req.file;
-      const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
-      logoUrl = await uploadImage(res, modifiedBuffer, mimetype);
-    }
-
-    try {
-      const updatedVendor = await User.findOneAndUpdate(
-        { _id: vendorId },
-        {
-          email,
-          lastName,
-          firstName,
-        },
-        { returnDocument: 'after' }
-      )
-        .lean()
-        .orFail();
-
-      const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        { _id: updatedVendor.restaurant._id },
-        {
-          name: restaurantName,
-          logo: logoUrl,
-          isFeatured,
-          address: {
-            city,
-            state,
-            zip,
-            addressLine1,
-            addressLine2,
-          },
-          orderCapacity: orderCapacity || Infinity,
-        },
-        { returnDocument: 'after' }
-      )
-        .lean()
-        .orFail();
-
-      deleteFields(updatedRestaurant, ['createdAt']);
-      deleteFields(updatedVendor, ['createdAt', 'password']);
-
-      const updatedVendorAndRestaurant = {
-        ...updatedVendor,
-        restaurant: updatedRestaurant,
-      };
-
-      res.status(201).json(updatedVendorAndRestaurant);
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+router.patch('/:vendorId/update', auth, upload, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
 
-// Change vendor status
-router.patch('/:vendorId/change-vendor-status', auth, async (req, res) => {
+  const { vendorId } = req.params;
+  const {
+    zip,
+    city,
+    logo,
+    email,
+    state,
+    firstName,
+    lastName,
+    isFeatured,
+    addressLine1,
+    addressLine2,
+    orderCapacity,
+    restaurantName,
+  } = req.body;
+  if (
+    !zip ||
+    !city ||
+    !email ||
+    !state ||
+    !lastName ||
+    !firstName ||
+    !isFeatured ||
+    !addressLine1 ||
+    !restaurantName
+  ) {
+    console.error(requiredFields);
+    res.status(400);
+    throw new Error(requiredFields);
+  }
+
+  let logoUrl;
+  if (req.file && logo) {
+    const name = logo.split('/')[logo.split('/').length - 1];
+    await deleteImage(res, name);
+    const { buffer, mimetype } = req.file;
+    const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+    logoUrl = await uploadImage(res, modifiedBuffer, mimetype);
+  }
+
+  try {
+    const updatedVendor = await User.findOneAndUpdate(
+      { _id: vendorId },
+      {
+        email,
+        lastName,
+        firstName,
+      },
+      { returnDocument: 'after' }
+    )
+      .lean()
+      .orFail();
+
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: updatedVendor.restaurant._id },
+      {
+        name: restaurantName,
+        logo: logoUrl,
+        isFeatured,
+        address: {
+          city,
+          state,
+          zip,
+          addressLine1,
+          addressLine2,
+        },
+        orderCapacity: orderCapacity || Infinity,
+      },
+      { returnDocument: 'after' }
+    )
+      .lean()
+      .orFail();
+
+    deleteFields(updatedRestaurant, ['createdAt']);
+    deleteFields(updatedVendor, ['createdAt', 'password']);
+
+    const updatedVendorAndRestaurant = {
+      ...updatedVendor,
+      restaurant: updatedRestaurant,
+    };
+
+    res.status(201).json(updatedVendorAndRestaurant);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Change vendor and restaurant status
+router.patch('/:vendorId/update-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);

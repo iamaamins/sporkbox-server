@@ -227,8 +227,8 @@ router.patch('/change-password', auth, async (req, res) => {
   }
 });
 
-// Change status
-router.patch('/:userId/change-user-status', auth, async (req, res) => {
+// Update user status
+router.patch('/:userId/update-status', auth, async (req, res) => {
   if (
     !req.user ||
     (req.user.role !== 'ADMIN' &&
@@ -268,8 +268,8 @@ router.patch('/:userId/change-user-status', auth, async (req, res) => {
   }
 });
 
-// Edit user details
-router.patch('/:userId/update-user-details', auth, async (req, res) => {
+// Update user details
+router.patch('/:userId/update', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -305,7 +305,7 @@ router.patch('/:userId/update-user-details', auth, async (req, res) => {
   }
 });
 
-// Get user data by company
+// Get user of a company
 router.get('/:companyCode/:userId/data', auth, async (req, res) => {
   if (
     !req.user ||

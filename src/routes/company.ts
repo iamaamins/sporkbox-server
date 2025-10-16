@@ -29,7 +29,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add a company
-router.post('/add-company', auth, async (req, res) => {
+router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -121,7 +121,7 @@ router.post('/add-company', auth, async (req, res) => {
 });
 
 // Update company details
-router.patch('/:companyId/update-company-details', auth, async (req, res) => {
+router.patch('/:companyId/update', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -195,8 +195,8 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
   }
 });
 
-// Change company status
-router.patch('/:companyId/change-company-status', auth, async (req, res) => {
+// Update company status
+router.patch('/:companyId/update-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);

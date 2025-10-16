@@ -67,7 +67,7 @@ router.get('/:companyCode', auth, async (req, res) => {
 });
 
 // Register customer
-router.post('/register-customer', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;
   if (!firstName || !lastName || !email || !password) {
     console.error(requiredFields);
@@ -118,9 +118,9 @@ router.post('/register-customer', async (req, res) => {
   }
 });
 
-// Change customer shift
+// Update customer shift
 router.patch(
-  '/:customerId/:companyCode/change-customer-shift',
+  '/:customerId/:companyCode/update-shift',
   auth,
   async (req, res) => {
     if (!req.user || req.user.role !== 'CUSTOMER') {
