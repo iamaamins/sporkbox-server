@@ -112,10 +112,7 @@ const orderSchema = new Schema<OrderSchema>(
         },
       },
     },
-    payment: {
-      intent: String,
-      distributed: Number,
-    },
+    payment: { intent: String, distributed: Number },
     status: {
       type: String,
       enum: ['PENDING', 'PROCESSING', 'DELIVERED', 'ARCHIVED', 'CANCELLED'],
@@ -186,15 +183,10 @@ const orderSchema = new Schema<OrderSchema>(
       firstName: String,
       lastName: String,
     },
-    isReviewed: {
-      type: Boolean,
-      default: false,
-    },
+    isReviewed: { type: Boolean, default: false },
     pendingKey: String,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Order', orderSchema);

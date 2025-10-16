@@ -196,16 +196,11 @@ const restaurantSchema = new Schema<RestaurantSchema>(
       type: Boolean,
       required: [true, 'Please provide featured value'],
     },
-    orderCapacity: {
-      type: Number,
-      default: Infinity,
-    },
+    orderCapacity: { type: Number, default: Infinity },
     items: [itemSchema],
     schedules: [scheduleSchema],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Restaurant', restaurantSchema);
