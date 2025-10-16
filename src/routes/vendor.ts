@@ -12,6 +12,7 @@ import {
   checkActions,
   resizeImage,
   dateToMS,
+  getTodayTimestamp,
 } from '../lib/utils';
 import {
   requiredAction,
@@ -376,14 +377,31 @@ router.patch('/:vendorId/update-status', auth, async (req, res) => {
   checkActions(undefined, action, res);
 
   try {
+    const vendor = await User.findById(vendorId)
+      .select('restaurant')
+      .populate<{ restaurant: RestaurantSchema }>('restaurant', 'schedules')
+      .lean()
+      .orFail();
+
+    console.log(vendor);
+
+    if (
+      action === 'Archive' &&
+      vendor.restaurant.schedules.some(
+        (schedule) =>
+          schedule.status === 'ACTIVE' &&
+          dateToMS(schedule.date) > getTodayTimestamp()
+      )
+    ) {
+      console.error("Can't archive a vendor with scheduled restaurant");
+      res.status(400);
+      throw new Error("Can't archive a vendor with scheduled restaurant");
+    }
+
     const updatedVendor = await User.findOneAndUpdate(
       { _id: vendorId },
-      {
-        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-      },
-      {
-        returnDocument: 'after',
-      }
+      { status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE' },
+      { returnDocument: 'after' }
     )
       .select('-__v -password -updatedAt')
       .populate('restaurant', '-__v -updatedAt')

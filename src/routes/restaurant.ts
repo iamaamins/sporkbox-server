@@ -40,7 +40,7 @@ interface ItemsIndexPayload {
 const router = Router();
 
 // Get all active restaurants' name and id for customer feedback
-router.get('/active', auth, async (req, res) => {
+router.get('/active/support', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -284,11 +284,7 @@ router.post('/schedule', auth, async (req, res) => {
     for (const restaurant of sortedRestaurants) {
       const updatedRestaurant = await Restaurant.findByIdAndUpdate(
         restaurant.id,
-        {
-          $push: {
-            schedules: schedule,
-          },
-        },
+        { $push: { schedules: schedule } },
         { returnDocument: 'after' }
       )
         .select('-__v -updatedAt -createdAt -address -items -logo')
@@ -318,9 +314,9 @@ router.post('/schedule', auth, async (req, res) => {
   }
 });
 
-// Change schedule statues
+// Update the status of a schedule
 router.patch(
-  '/:restaurantId/:date/:companyCode/change-schedule-status',
+  '/:restaurantId/:date/:companyCode/update-schedule-status',
   auth,
   async (req, res) => {
     if (
@@ -343,6 +339,7 @@ router.patch(
     try {
       const restaurant = await Restaurant.findOne({
         _id: restaurantId,
+        status: 'ACTIVE',
         'schedules.date': +date,
         'schedules.company.code': companyCode,
       })
@@ -418,12 +415,8 @@ router.patch('/:restaurantId/:scheduleId/remove', auth, async (req, res) => {
   try {
     // Find the restaurant and remove the schedule
     const updatedRestaurant = await Restaurant.findOneAndUpdate(
-      { _id: restaurantId },
-      {
-        $pull: {
-          schedules: { _id: scheduleId },
-        },
-      }
+      { _id: restaurantId, status: 'ACTIVE' },
+      { $pull: { schedules: { _id: scheduleId } } }
     )
       .select('-__v -updatedAt -createdAt -address -items')
       .lean()
