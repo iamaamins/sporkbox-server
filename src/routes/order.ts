@@ -1167,7 +1167,7 @@ router.patch('/deliver', auth, async (req, res) => {
         $set: {
           status: 'DELIVERED',
           deliveredBy: {
-            id: req.user._id,
+            _id: req.user._id,
             firstName: req.user.firstName,
             lastName: req.user.lastName,
           },
