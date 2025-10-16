@@ -383,8 +383,6 @@ router.patch('/:vendorId/update-status', auth, async (req, res) => {
       .lean()
       .orFail();
 
-    console.log(vendor);
-
     if (
       action === 'Archive' &&
       vendor.restaurant.schedules.some(

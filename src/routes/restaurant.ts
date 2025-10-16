@@ -129,6 +129,7 @@ router.get('/scheduled', auth, async (req, res) => {
 
   try {
     const restaurants = await Restaurant.find({
+      status: 'ACTIVE',
       'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
@@ -174,6 +175,7 @@ router.get('/:companyCode/scheduled', auth, async (req, res) => {
   const { companyCode } = req.params;
   try {
     const restaurants = await Restaurant.find({
+      status: 'ACTIVE',
       'schedules.company.code': companyCode,
       'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
