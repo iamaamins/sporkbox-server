@@ -71,7 +71,10 @@ router.post('/:type', auth, async (req, res) => {
         rating: data.rating,
       });
     } else {
-      const restaurant = await Restaurant.findById(data.restaurantId)
+      const restaurant = await Restaurant.findOne({
+        _id: data.restaurantId,
+        status: 'ACTIVE',
+      })
         .select('name')
         .lean()
         .orFail();
@@ -133,18 +136,21 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
         createdAt: { $gte: start, $lte: end },
       });
 
-    const complaintRate = !orderCount
-      ? 0
-      : (validatedIssueCount / orderCount) * 100;
+    const complaintRate = (validatedIssueCount / orderCount) * 100;
 
-    const orderAccuracy = !orderCount
-      ? 100
-      : (1 - validatedMissingAndIncorrectMealIssueCount / orderCount) * 100;
+    const orderAccuracy =
+      (1 - validatedMissingAndIncorrectMealIssueCount / orderCount) * 100;
 
     res.status(200).json({
       issues,
-      complaintRate: toUSNumber(complaintRate),
-      orderAccuracy: toUSNumber(orderAccuracy),
+      complaintRate:
+        isNaN(complaintRate) || !isFinite(complaintRate)
+          ? 0
+          : toUSNumber(complaintRate),
+      orderAccuracy:
+        isNaN(orderAccuracy) || !isFinite(orderAccuracy)
+          ? 0
+          : toUSNumber(orderAccuracy),
     });
   } catch (err) {
     console.error(err);
