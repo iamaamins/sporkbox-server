@@ -137,7 +137,6 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
       });
 
     const complaintRate = (validatedIssueCount / orderCount) * 100;
-
     const orderAccuracy =
       (1 - validatedMissingAndIncorrectMealIssueCount / orderCount) * 100;
 
