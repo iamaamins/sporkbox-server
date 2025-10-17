@@ -6,14 +6,16 @@ module.exports = {
       .project({ restaurant: 1, status: 1 })
       .toArray();
 
-    const bulkOps = vendors.map((vendor) => ({
+    const bulkUpdates = vendors.map((vendor) => ({
       updateOne: {
         filter: { _id: vendor.restaurant },
         update: { $set: { status: vendor.status } },
       },
     }));
 
-    await db.collection('restaurants').bulkWrite(bulkOps, { ordered: false });
+    await db
+      .collection('restaurants')
+      .bulkWrite(bulkUpdates, { ordered: false });
   },
 
   async down(db) {
