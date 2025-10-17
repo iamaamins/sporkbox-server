@@ -4,6 +4,8 @@ import Feedback from '../models/feedback';
 import { ISSUE_CATEGORIES, FeedbackType, TYPES } from '../data/FEEDBACK';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
+import Order from '../models/order';
+import { toUSNumber } from '../lib/utils';
 
 const router = Router();
 
@@ -88,6 +90,62 @@ router.post('/:type', auth, async (req, res) => {
     }
 
     res.status(200).json('Feedback submitted');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get compliant rate, order accuracy, and issues
+router.get('/issue/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+
+  try {
+    const issues = await Feedback.find({
+      type: 'ISSUE',
+      createdAt: { $gte: start, $lte: end },
+    })
+      .select('-rating')
+      .lean();
+
+    const orderCount = await Order.countDocuments({
+      status: 'DELIVERED',
+      createdAt: { $gte: start, $lte: end },
+    });
+
+    const validatedIssueCount = await Feedback.countDocuments({
+      type: 'ISSUE',
+      'issue.isValidated': true,
+      createdAt: { $gte: start, $lte: end },
+    });
+
+    const validatedMissingAndIncorrectMealIssueCount =
+      await Feedback.countDocuments({
+        type: 'ISSUE',
+        'issue.isValidated': true,
+        'issue.category': { $in: ['Missing Meal', 'Incorrect Meal'] },
+        createdAt: { $gte: start, $lte: end },
+      });
+
+    const complaintRate = !orderCount
+      ? 0
+      : (validatedIssueCount / orderCount) * 100;
+
+    const orderAccuracy = !orderCount
+      ? 100
+      : (1 - validatedMissingAndIncorrectMealIssueCount / orderCount) * 100;
+
+    res.status(200).json({
+      issues,
+      complaintRate: toUSNumber(complaintRate),
+      orderAccuracy: toUSNumber(orderAccuracy),
+    });
   } catch (err) {
     console.error(err);
     throw err;
