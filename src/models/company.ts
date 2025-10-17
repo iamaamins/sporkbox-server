@@ -61,9 +61,7 @@ const companySchema = new Schema<CompanySchema>(
     },
     slackChannel: { type: String, trim: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Company', companySchema);

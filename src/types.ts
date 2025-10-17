@@ -121,6 +121,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
+  status: 'ACTIVE' | 'ARCHIVED';
   isFeatured: boolean;
   orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
@@ -140,6 +141,7 @@ export interface UserSchema extends GenericUser {
   shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
   foodPreferences?: string[];
+  foodVibe?: string;
   isCompanyAdmin?: boolean;
 }
 

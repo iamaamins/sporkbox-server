@@ -15,7 +15,7 @@ export interface FavoriteRestaurant {
   items: FavRestaurantItem[];
 }
 
-// Get all favorite
+// Get favorite items of a customer
 router.get('/me', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
@@ -62,7 +62,7 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // Add a favorite
-router.post('/add-to-favorite', auth, async (req, res) => {
+router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -114,7 +114,7 @@ router.post('/add-to-favorite', auth, async (req, res) => {
 });
 
 // Remove a favorite
-router.delete('/:favoriteId/remove-from-favorite', auth, async (req, res) => {
+router.delete('/:favoriteId/remove', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);

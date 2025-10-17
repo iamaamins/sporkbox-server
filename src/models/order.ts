@@ -20,7 +20,7 @@ interface OrderSchema {
   isReviewed: boolean;
   discount?: Discount;
   pendingKey?: string;
-  deliveredBy?: { id: string; firstName: string; lastName: string };
+  deliveredBy?: { _id: string; firstName: string; lastName: string };
 }
 
 const orderSchema = new Schema<OrderSchema>(
@@ -112,10 +112,7 @@ const orderSchema = new Schema<OrderSchema>(
         },
       },
     },
-    payment: {
-      intent: String,
-      distributed: Number,
-    },
+    payment: { intent: String, distributed: Number },
     status: {
       type: String,
       enum: ['PENDING', 'PROCESSING', 'DELIVERED', 'ARCHIVED', 'CANCELLED'],
@@ -182,19 +179,14 @@ const orderSchema = new Schema<OrderSchema>(
       },
     },
     deliveredBy: {
-      id: Schema.Types.ObjectId,
+      _id: Schema.Types.ObjectId,
       firstName: String,
       lastName: String,
     },
-    isReviewed: {
-      type: Boolean,
-      default: false,
-    },
+    isReviewed: { type: Boolean, default: false },
     pendingKey: String,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Order', orderSchema);

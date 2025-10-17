@@ -60,7 +60,7 @@ router.get('/order', auth, async (req, res) => {
           quantity: 1,
         },
       },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(results);
   } catch (err) {
@@ -113,7 +113,7 @@ router.get('/item', auth, async (req, res) => {
           },
         },
       },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(results);
   } catch (err) {
@@ -164,7 +164,7 @@ router.get('/people', auth, async (req, res) => {
         },
       },
       { $project: { _id: 0, date: '$_id', customers: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(results);
   } catch (err) {
@@ -192,7 +192,7 @@ router.get('/restaurant-items', auth, async (req, res) => {
           price: '$items.price',
         },
       },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(results);
   } catch (err) {
@@ -247,7 +247,7 @@ router.get('/review', auth, async (req, res) => {
           },
         },
       },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(results);
   } catch (err) {

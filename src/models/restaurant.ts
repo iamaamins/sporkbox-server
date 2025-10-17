@@ -192,20 +192,21 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
+    status: {
+      type: String,
+      trim: true,
+      enum: ['ACTIVE', 'ARCHIVED'],
+      required: [true, 'Please provide a status'],
+    },
     isFeatured: {
       type: Boolean,
       required: [true, 'Please provide featured value'],
     },
-    orderCapacity: {
-      type: Number,
-      default: Infinity,
-    },
+    orderCapacity: { type: Number, default: Infinity },
     items: [itemSchema],
     schedules: [scheduleSchema],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Restaurant', restaurantSchema);
