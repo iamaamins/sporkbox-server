@@ -25,6 +25,7 @@ import cookieParser from 'cookie-parser';
 import Restaurant from './routes/restaurant';
 import Discount from './routes/discount';
 import Health from './routes/health';
+import Feedback from './routes/feedback';
 import mongoSanitize from 'express-mongo-sanitize';
 
 dotenv.config();
@@ -62,6 +63,7 @@ app.use('/discount-code', Discount);
 app.use('/email', Email);
 app.use('/guests', Guest);
 app.use('/health', Health);
+app.use('/feedback', Feedback);
 
 app.use(error);
 
