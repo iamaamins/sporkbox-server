@@ -1,109 +1,121 @@
 import { Router } from 'express';
 import auth from '../middleware/auth';
 import Feedback from '../models/feedback';
-import { ISSUE_CATEGORIES, FeedbackType, TYPES } from '../data/FEEDBACK';
+import { ISSUE_CATEGORIES } from '../data/FEEDBACK';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
 import Order from '../models/order';
-import { toUSNumber } from '../lib/utils';
+import { resizeImage, toUSNumber } from '../lib/utils';
+import { upload } from '../config/multer';
+import { uploadImage } from '../config/s3';
 
 const router = Router();
 
-// Add a feedback
-router.post('/:type', auth, async (req, res) => {
+// Add a general feedback
+router.post('/general', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
   }
 
-  const { type } = req.params;
-  const { data } = req.body;
-
-  if (!type || !data) {
-    console.error('Feedback type and data are required');
+  const { rating } = req.body;
+  if (!rating || rating < 1 || rating > 5) {
+    console.error('Rating must be between 1 and 5');
     res.status(400);
-    throw new Error('Feedback type and data are required');
+    throw new Error('Rating must be between 1 and 5');
   }
 
-  const feedbackType = type.toUpperCase() as FeedbackType;
+  try {
+    await Feedback.create({
+      customer: {
+        _id: req.user._id,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+      },
+      type: 'GENERAL',
+      rating,
+    });
 
-  if (!TYPES.includes(feedbackType)) {
-    console.error('Invalid feedback type');
-    res.status(400);
-    throw new Error('Invalid feedback type');
+    res.status(200).json('Feedback submitted');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Add an issue feedback
+router.post('/issue', auth, upload, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
 
-  if (feedbackType === 'GENERAL' && !data.rating) {
-    console.error('General feedback must provide a rating');
-    res.status(400);
-    throw new Error('General feedback must provide a rating');
-  }
-
+  const { category, date, restaurant, message } = req.body;
   if (
-    feedbackType === 'ISSUE' &&
-    (!data.category ||
-      !data.date ||
-      !data.restaurant ||
-      !data.message ||
-      !ISSUE_CATEGORIES.includes(data.category))
+    !category ||
+    !date ||
+    !restaurant ||
+    !message ||
+    !ISSUE_CATEGORIES.includes(category)
   ) {
-    console.error(
-      'Issue feedback must provide a valid category, date, restaurant and message'
-    );
+    console.error('Issue category, date, restaurant and message are required');
     res.status(400);
     throw new Error(
-      'Issue feedback must provide a valid category, date, restaurant and message'
+      'Issue category, date, restaurant and message are required'
     );
   }
 
   try {
+    let imageUrl;
+    if (req.file) {
+      const { buffer, mimetype } = req.file;
+      const modifiedBuffer = await resizeImage(res, buffer, 800, 500);
+      imageUrl = await uploadImage(res, modifiedBuffer, mimetype);
+    }
+
+    const issue = {
+      category,
+      date,
+      message,
+      isValidated: false,
+      isRejected: false,
+      ...(imageUrl && { image: imageUrl }),
+    };
+
     const customer = {
       _id: req.user._id,
       firstName: req.user.firstName,
       lastName: req.user.lastName,
     };
 
-    if (feedbackType === 'GENERAL') {
+    if (restaurant === 'Not Applicable') {
       await Feedback.create({
         customer,
-        type: feedbackType,
-        rating: data.rating,
+        type: 'ISSUE',
+        issue: { ...issue, restaurant: null },
       });
     } else {
-      const issue = {
-        category: data.category,
-        date: data.date,
-        message: data.message,
-      };
+      const response = await Restaurant.findOne({
+        _id: restaurant,
+        status: 'ACTIVE',
+      })
+        .select('name')
+        .lean()
+        .orFail();
 
-      if (data.restaurant === 'Not Applicable') {
-        await Feedback.create({
-          customer,
-          type: feedbackType,
-          issue: { ...issue, restaurant: null },
-        });
-      } else {
-        const restaurant = await Restaurant.findOne({
-          _id: data.restaurant,
-          status: 'ACTIVE',
-        })
-          .select('name')
-          .lean()
-          .orFail();
-
-        await Feedback.create({
-          customer,
-          type: feedbackType,
-          issue: {
-            ...issue,
-            restaurant: { _id: restaurant._id, name: restaurant.name },
-          },
-        });
-      }
+      await Feedback.create({
+        customer,
+        type: 'ISSUE',
+        issue: {
+          ...issue,
+          restaurant: { _id: response._id, name: response.name },
+        },
+      });
     }
 
-    res.status(200).json('Feedback submitted');
+    res.status(200).json('Issue submitted');
   } catch (err) {
     console.error(err);
     throw err;
