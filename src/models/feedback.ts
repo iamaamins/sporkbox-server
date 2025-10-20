@@ -6,7 +6,9 @@ export interface Issue {
   date: Date;
   restaurant: { _id: Types.ObjectId; name: string };
   message: string;
+  image?: string;
   isValidated: boolean;
+  isRejected: boolean;
 }
 
 export interface FeedbackSchema {
@@ -48,8 +50,9 @@ const feedbackSchema = new Schema<FeedbackSchema>(
         name: { type: String, trim: true },
       },
       message: { type: String, trim: true },
-      isValidated: { type: Boolean, default: false },
-      isRejected: { type: Boolean, default: false },
+      image: { type: String, trim: true },
+      isValidated: Boolean,
+      isRejected: Boolean,
     },
   },
   { timestamps: true }
