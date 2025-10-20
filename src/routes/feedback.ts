@@ -75,7 +75,6 @@ router.post('/:type', auth, async (req, res) => {
         category: data.category,
         date: data.date,
         message: data.message,
-        isValidated: false,
       };
 
       if (data.restaurant === 'Not Applicable') {
@@ -105,6 +104,44 @@ router.post('/:type', auth, async (req, res) => {
     }
 
     res.status(200).json('Feedback submitted');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Validate or reject an issue
+router.patch('/issue/:id/:action', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { id, action } = req.params;
+
+  if (!['validate', 'reject'].includes(action)) {
+    console.error('Invalid action');
+    res.status(400);
+    throw new Error('Invalid action');
+  }
+
+  try {
+    const updatedIssue = await Feedback.findOneAndUpdate(
+      {
+        _id: id,
+        type: 'ISSUE',
+        'issue.isValidated': false,
+        'issue.isRejected': false,
+      },
+      {
+        ...(action === 'validate'
+          ? { 'issue.isValidated': true }
+          : { 'issue.isRejected': true }),
+      }
+    ).orFail();
+
+    res.status(200).json(updatedIssue);
   } catch (err) {
     console.error(err);
     throw err;

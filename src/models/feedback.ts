@@ -48,7 +48,8 @@ const feedbackSchema = new Schema<FeedbackSchema>(
         name: { type: String, trim: true },
       },
       message: { type: String, trim: true },
-      isValidated: Boolean,
+      isValidated: { type: Boolean, default: false },
+      isRejected: { type: Boolean, default: false },
     },
   },
   { timestamps: true }
