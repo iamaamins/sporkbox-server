@@ -44,16 +44,16 @@ router.post('/:type', auth, async (req, res) => {
     feedbackType === 'ISSUE' &&
     (!data.category ||
       !data.date ||
-      !data.restaurantId ||
+      !data.restaurant ||
       !data.message ||
       !ISSUE_CATEGORIES.includes(data.category))
   ) {
     console.error(
-      'Issue feedback must provide a valid category, date, restaurant id and message'
+      'Issue feedback must provide a valid category, date, restaurant and message'
     );
     res.status(400);
     throw new Error(
-      'Issue feedback must provide a valid category, date, restaurant id and message'
+      'Issue feedback must provide a valid category, date, restaurant and message'
     );
   }
 
@@ -71,25 +71,37 @@ router.post('/:type', auth, async (req, res) => {
         rating: data.rating,
       });
     } else {
-      const restaurant = await Restaurant.findOne({
-        _id: data.restaurantId,
-        status: 'ACTIVE',
-      })
-        .select('name')
-        .lean()
-        .orFail();
+      const issue = {
+        category: data.category,
+        date: data.date,
+        message: data.message,
+        isValidated: false,
+      };
 
-      await Feedback.create({
-        customer,
-        type: feedbackType,
-        issue: {
-          category: data.category,
-          date: data.date,
-          restaurant: { _id: restaurant._id, name: restaurant.name },
-          message: data.message,
-          isValidated: false,
-        },
-      });
+      if (data.restaurant === 'Not Applicable') {
+        await Feedback.create({
+          customer,
+          type: feedbackType,
+          issue: { ...issue, restaurant: null },
+        });
+      } else {
+        const restaurant = await Restaurant.findOne({
+          _id: data.restaurant,
+          status: 'ACTIVE',
+        })
+          .select('name')
+          .lean()
+          .orFail();
+
+        await Feedback.create({
+          customer,
+          type: feedbackType,
+          issue: {
+            ...issue,
+            restaurant: { _id: restaurant._id, name: restaurant.name },
+          },
+        });
+      }
     }
 
     res.status(200).json('Feedback submitted');
