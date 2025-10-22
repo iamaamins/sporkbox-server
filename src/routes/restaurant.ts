@@ -894,39 +894,47 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Get item stat
-router.get('/items/count-and-average/:price?', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  const { price } = req.params;
-  try {
-    const restaurants = await Restaurant.find().select('items').lean();
-
-    let activeItemsTotal = 0;
-    let activeItemsCount = 0;
-    let itemsCount = 0;
-    for (const restaurant of restaurants) {
-      for (const item of restaurant.items) {
-        if (item.status === 'ACTIVE') {
-          activeItemsTotal += item.price;
-          activeItemsCount++;
-          if (price && item.price <= +price) itemsCount++;
-        }
-      }
+router.get(
+  '/items/active/count-percentage-and-average-price/:price?',
+  auth,
+  async (req, res) => {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.error(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
     }
 
-    res.status(200).json({
-      itemsCount,
-      averagePrice: activeItemsTotal / activeItemsCount,
-    });
-  } catch (err) {
-    console.error(err);
-    throw err;
+    const { price } = req.params;
+    try {
+      const restaurants = await Restaurant.find().select('items').lean();
+
+      let totalActiveItemPrice = 0;
+      let totalActiveItemCount = 0;
+      let activeItemCountByPrice = 0;
+      for (const restaurant of restaurants) {
+        for (const item of restaurant.items) {
+          if (item.status === 'ACTIVE') {
+            totalActiveItemPrice += item.price;
+            totalActiveItemCount++;
+            if (price && item.price <= +price) activeItemCountByPrice++;
+          }
+        }
+      }
+
+      res.status(200).json({
+        activeItemCountByPrice,
+        activeItemPercentageByPrice: (
+          (activeItemCountByPrice / totalActiveItemCount) *
+          100
+        ).toFixed(2),
+        averageActiveItemPrice: totalActiveItemPrice / totalActiveItemCount,
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }
-});
+);
 
 // Get review stat
 router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
