@@ -171,7 +171,7 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
   const { start, end } = req.params;
 
   try {
-    const issues = await Feedback.find({
+    const feedback = await Feedback.find({
       type: 'ISSUE',
       createdAt: { $gte: start, $lte: end },
     })
@@ -202,15 +202,17 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
       (1 - validatedMissingAndIncorrectMealIssueCount / orderCount) * 100;
 
     res.status(200).json({
-      issues,
-      complaintRate:
-        isNaN(complaintRate) || !isFinite(complaintRate)
-          ? 0
-          : toUSNumber(complaintRate),
-      orderAccuracy:
-        isNaN(orderAccuracy) || !isFinite(orderAccuracy)
-          ? 0
-          : toUSNumber(orderAccuracy),
+      feedback,
+      stats: {
+        complaintRate:
+          isNaN(complaintRate) || !isFinite(complaintRate)
+            ? 0
+            : toUSNumber(complaintRate),
+        orderAccuracy:
+          isNaN(orderAccuracy) || !isFinite(orderAccuracy)
+            ? 0
+            : toUSNumber(orderAccuracy),
+      },
     });
   } catch (err) {
     console.error(err);
