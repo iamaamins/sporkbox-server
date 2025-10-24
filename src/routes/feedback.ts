@@ -162,7 +162,11 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
 
 // Get compliant rate, order accuracy, and issues
 router.get('/issue/:start/:end', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' &&
+      (req.user.role !== 'CUSTOMER' || !req.user.isCompanyAdmin))
+  ) {
     console.error(unAuthorized);
     res.status(403);
     throw new Error(unAuthorized);
