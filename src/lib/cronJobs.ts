@@ -235,7 +235,7 @@ new CronJob(
 
 // Analyze food vibe at the last day of each month
 new CronJob(
-  '0 0 3 28-31 * *',
+  '0 0 3 28 * *',
   () => {
     updateFoodVibe();
   },
