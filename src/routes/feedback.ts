@@ -174,23 +174,28 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
 
   const { start, end } = req.params;
 
+  // Get the next day date of the end date
+  // to include the feedback from today in the query
+  const dayAfterEndDate = new Date(end);
+  dayAfterEndDate.setDate(dayAfterEndDate.getDate() + 1);
+
   try {
     const feedback = await Feedback.find({
       type: 'ISSUE',
-      createdAt: { $gte: start, $lte: end },
+      createdAt: { $gte: start, $lt: dayAfterEndDate },
     })
       .select('-rating')
       .lean();
 
     const orderCount = await Order.countDocuments({
       status: 'DELIVERED',
-      createdAt: { $gte: start, $lte: end },
+      createdAt: { $gte: start, $lt: dayAfterEndDate },
     });
 
     const validatedIssueCount = await Feedback.countDocuments({
       type: 'ISSUE',
       'issue.isValidated': true,
-      createdAt: { $gte: start, $lte: end },
+      createdAt: { $gte: start, $lt: dayAfterEndDate },
     });
 
     const validatedMissingAndIncorrectMealIssueCount =
@@ -198,7 +203,7 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
         type: 'ISSUE',
         'issue.isValidated': true,
         'issue.category': { $in: ['Missing Meal', 'Incorrect Meal'] },
-        createdAt: { $gte: start, $lte: end },
+        createdAt: { $gte: start, $lt: dayAfterEndDate },
       });
 
     const complaintRate = (validatedIssueCount / orderCount) * 100;
