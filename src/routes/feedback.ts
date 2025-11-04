@@ -156,7 +156,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
           'issue.status': action === 'validate' ? 'VALIDATED' : 'REJECTED',
           'issue.audit': {
             note: auditNote,
-            auditedBy: {
+            admin: {
               _id: req.user._id,
               firstName: req.user.firstName,
               lastName: req.user.lastName,

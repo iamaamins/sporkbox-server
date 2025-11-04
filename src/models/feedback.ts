@@ -10,7 +10,7 @@ export interface Issue {
   status: 'PENDING' | 'VALIDATED' | 'REJECTED';
   audit?: {
     note: string;
-    auditedBy: { _id: Types.ObjectId; firstName: string; lastName: string };
+    admin: { _id: Types.ObjectId; firstName: string; lastName: string };
   };
 }
 
@@ -57,7 +57,7 @@ const feedbackSchema = new Schema<FeedbackSchema>(
       status: { type: String, enum: ['PENDING', 'VALIDATED', 'REJECTED'] },
       audit: {
         note: { type: String, trim: true },
-        auditedBy: {
+        admin: {
           _id: Schema.Types.ObjectId,
           firstName: String,
           lastName: String,
