@@ -79,8 +79,7 @@ router.post('/issue', auth, upload, async (req, res) => {
       category,
       date,
       message,
-      isValidated: false,
-      isRejected: false,
+      status: 'PENDING',
       ...(imageUrl && { image: imageUrl }),
     };
 
@@ -131,6 +130,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
   }
 
   const { id, action } = req.params;
+  const { reason } = req.body;
 
   if (!['validate', 'reject'].includes(action)) {
     console.error('Invalid action');
@@ -138,20 +138,37 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
     throw new Error('Invalid action');
   }
 
+  if (!reason) {
+    console.error('Resolution reason is required');
+    res.status(400);
+    throw new Error('Resolution reason is required');
+  }
+
   try {
     const updatedIssue = await Feedback.findOneAndUpdate(
       {
         _id: id,
         type: 'ISSUE',
-        'issue.isValidated': false,
-        'issue.isRejected': false,
+        'issue.status': 'PENDING',
       },
       {
-        ...(action === 'validate'
-          ? { 'issue.isValidated': true }
-          : { 'issue.isRejected': true }),
-      }
-    ).orFail();
+        $set: {
+          'issue.status': action === 'validate' ? 'VALIDATED' : 'REJECTED',
+          'issue.audit': {
+            note: reason,
+            auditedBy: {
+              _id: req.user._id,
+              firstName: req.user.firstName,
+              lastName: req.user.lastName,
+            },
+          },
+        },
+      },
+      { returnDocument: 'after' }
+    )
+      .select('issue.status issue.audit.note')
+      .lean()
+      .orFail();
 
     res.status(200).json(updatedIssue);
   } catch (err) {
@@ -194,14 +211,14 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
 
     const validatedIssueCount = await Feedback.countDocuments({
       type: 'ISSUE',
-      'issue.isValidated': true,
+      'issue.status': 'VALIDATED',
       createdAt: { $gte: start, $lt: dayAfterEndDate },
     });
 
     const validatedMissingAndIncorrectMealIssueCount =
       await Feedback.countDocuments({
         type: 'ISSUE',
-        'issue.isValidated': true,
+        'issue.status': 'VALIDATED',
         'issue.category': { $in: ['Missing Meal', 'Incorrect Meal'] },
         createdAt: { $gte: start, $lt: dayAfterEndDate },
       });
