@@ -139,9 +139,9 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
   }
 
   if (!auditNote) {
-    console.error('Resolution reason is required');
+    console.error('Audit note is required');
     res.status(400);
-    throw new Error('Resolution reason is required');
+    throw new Error('Audit note is required');
   }
 
   try {
