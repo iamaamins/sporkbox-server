@@ -130,7 +130,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
   }
 
   const { id, action } = req.params;
-  const { reason } = req.body;
+  const { auditNote } = req.body;
 
   if (!['validate', 'reject'].includes(action)) {
     console.error('Invalid action');
@@ -138,10 +138,10 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
     throw new Error('Invalid action');
   }
 
-  if (!reason) {
-    console.error('Resolution reason is required');
+  if (!auditNote) {
+    console.error('Audit note is required');
     res.status(400);
-    throw new Error('Resolution reason is required');
+    throw new Error('Audit note is required');
   }
 
   try {
@@ -155,7 +155,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
         $set: {
           'issue.status': action === 'validate' ? 'VALIDATED' : 'REJECTED',
           'issue.audit': {
-            note: reason,
+            note: auditNote,
             auditedBy: {
               _id: req.user._id,
               firstName: req.user.firstName,
