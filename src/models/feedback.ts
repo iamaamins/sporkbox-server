@@ -7,11 +7,10 @@ export interface Issue {
   restaurant: { _id: Types.ObjectId; name: string };
   message: string;
   image?: string;
-  isValidated: boolean;
-  isRejected: boolean;
-  resolution?: {
-    reason: string;
-    resolvedBy: { _id: Types.ObjectId; firstName: string; lastName: string };
+  status: 'PENDING' | 'VALIDATED' | 'REJECTED';
+  audit?: {
+    note: string;
+    auditedBy: { _id: Types.ObjectId; firstName: string; lastName: string };
   };
 }
 
@@ -55,11 +54,10 @@ const feedbackSchema = new Schema<FeedbackSchema>(
       },
       message: { type: String, trim: true },
       image: { type: String, trim: true },
-      isValidated: Boolean,
-      isRejected: Boolean,
-      resolution: {
-        reason: { type: String, trim: true },
-        resolvedBy: {
+      status: { type: String, enum: ['PENDING', 'VALIDATED', 'REJECTED'] },
+      audit: {
+        note: { type: String, trim: true },
+        auditedBy: {
           _id: Schema.Types.ObjectId,
           firstName: String,
           lastName: String,
