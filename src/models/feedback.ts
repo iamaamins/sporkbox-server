@@ -9,6 +9,10 @@ export interface Issue {
   image?: string;
   isValidated: boolean;
   isRejected: boolean;
+  resolution?: {
+    reason: string;
+    resolvedBy: { _id: Types.ObjectId; firstName: string; lastName: string };
+  };
 }
 
 export interface FeedbackSchema {
@@ -53,6 +57,14 @@ const feedbackSchema = new Schema<FeedbackSchema>(
       image: { type: String, trim: true },
       isValidated: Boolean,
       isRejected: Boolean,
+      resolution: {
+        reason: { type: String, trim: true },
+        resolvedBy: {
+          _id: Schema.Types.ObjectId,
+          firstName: String,
+          lastName: String,
+        },
+      },
     },
   },
   { timestamps: true }

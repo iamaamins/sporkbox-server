@@ -131,11 +131,18 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
   }
 
   const { id, action } = req.params;
+  const { reason } = req.body;
 
   if (!['validate', 'reject'].includes(action)) {
     console.error('Invalid action');
     res.status(400);
     throw new Error('Invalid action');
+  }
+
+  if (!reason) {
+    console.error('Resolution reason is required');
+    res.status(400);
+    throw new Error('Resolution reason is required');
   }
 
   try {
@@ -150,8 +157,19 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
         ...(action === 'validate'
           ? { 'issue.isValidated': true }
           : { 'issue.isRejected': true }),
-      }
-    ).orFail();
+        'issue.resolution': {
+          reason,
+          resolvedBy: {
+            _id: req.user._id,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+          },
+        },
+      },
+      { returnDocument: 'after' }
+    )
+      .lean()
+      .orFail();
 
     res.status(200).json(updatedIssue);
   } catch (err) {
