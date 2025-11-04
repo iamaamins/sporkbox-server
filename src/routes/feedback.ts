@@ -152,6 +152,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
         type: 'ISSUE',
         'issue.isValidated': false,
         'issue.isRejected': false,
+        'issue.resolution': { $exists: false },
       },
       {
         ...(action === 'validate'
@@ -168,6 +169,7 @@ router.patch('/issue/:id/:action', auth, async (req, res) => {
       },
       { returnDocument: 'after' }
     )
+      .select('issue.isValidated issue.isRejected issue.resolution.reason')
       .lean()
       .orFail();
 
