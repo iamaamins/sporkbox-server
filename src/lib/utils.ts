@@ -250,10 +250,6 @@ export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
         .reduce((acc, curr) => acc + +curr[1], 0)
     : 0;
 
-export const subscriptions = {
-  orderReminder: true,
-};
-
 export function checkOrderCapacity(
   deliveryDate: number,
   restaurantId: string,

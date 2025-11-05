@@ -6,7 +6,6 @@ import {
   setCookie,
   deleteFields,
   checkShift,
-  subscriptions,
   checkActions,
 } from '../lib/utils';
 import { Router } from 'express';
@@ -17,6 +16,10 @@ import {
   unAuthorized,
 } from '../lib/messages';
 import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
+import {
+  EMAIL_SUBSCRIPTIONS,
+  EmailSubscriptions,
+} from '../data/EMAIL_SUBSCRIPTIONS';
 
 const router = Router();
 
@@ -105,7 +108,7 @@ router.post('/register', async (req, res) => {
       status: 'ACTIVE',
       role: 'CUSTOMER',
       password: hashedPassword,
-      subscribedTo: subscriptions,
+      subscribedTo: EMAIL_SUBSCRIPTIONS,
     });
     const customer = response.toObject();
 
@@ -190,29 +193,29 @@ router.patch(
     }
 
     const { customerId } = req.params;
-    const { isSubscribed } = req.body;
+    const { emailSubscriptions } = req.body;
 
-    let updatedSubscriptions = {};
-    for (let subscription in subscriptions) {
-      updatedSubscriptions = {
-        ...updatedSubscriptions,
-        [subscription]: !isSubscribed,
-      };
+    if (!emailSubscriptions) {
+      console.error('Email subscriptions are required');
+      res.status(400);
+      throw new Error('Email subscriptions are required');
+    }
+
+    for (const key in emailSubscriptions) {
+      if (!EMAIL_SUBSCRIPTIONS[key as keyof EmailSubscriptions]) {
+        console.error('Invalid email subscriptions');
+        res.status(400);
+        throw new Error('Invalid email subscriptions');
+      }
     }
 
     try {
       const updatedCustomer = await User.findByIdAndUpdate(
         customerId,
-        {
-          $set: {
-            subscribedTo: updatedSubscriptions,
-          },
-        },
-        {
-          returnDocument: 'after',
-        }
+        { $set: { subscribedTo: emailSubscriptions } },
+        { returnDocument: 'after' }
       )
-        .select('-__v -password -updatedAt -createdAt')
+        .select('subscribedTo')
         .lean()
         .orFail();
 
