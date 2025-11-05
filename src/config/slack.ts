@@ -6,18 +6,31 @@ dotenv.config();
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 export async function postSlackMessage(restaurant: string, channel: string) {
-  try {
-    const response = await web.chat.postMessage({
-      channel,
-      text: `If you placed an order from ${restaurant} today, your lunch has been delivered!`,
-    });
+  const maxRetries = 3;
+  const delayMs = 1000;
 
-    if (!response.ok)
-      throw new Error(
-        `Failed to send Slack message to ${channel}: ${response}`
-      );
-  } catch (err) {
-    console.error(err);
-    throw err;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await web.chat.postMessage({
+        channel,
+        text: `If you placed an order from ${restaurant} today, your lunch has been delivered!`,
+      });
+
+      if (!response.ok)
+        throw new Error(
+          `Failed to send Slack message to ${channel}: ${response}`
+        );
+
+      return response;
+    } catch (err) {
+      console.error(`Attempt ${attempt} failed:`, err);
+
+      if (attempt === maxRetries) {
+        console.error(`All ${maxRetries} attempts failed.`);
+        throw err;
+      }
+
+      await new Promise((res) => setTimeout(res, delayMs * attempt));
+    }
   }
 }
