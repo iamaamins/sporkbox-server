@@ -98,7 +98,11 @@ const userSchema = new Schema<UserSchema>(
     ],
     shifts: [{ type: String, trim: true, enum: ['day', 'night'] }],
     restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
-    subscribedTo: { orderReminder: Boolean },
+    subscribedTo: {
+      deliveryNotification: Boolean,
+      orderReminder: Boolean,
+      newsletter: Boolean,
+    },
     foodPreferences: [{ type: String, trim: true }],
     foodVibe: { type: String, trim: true },
     isCompanyAdmin: Boolean,

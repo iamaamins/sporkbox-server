@@ -246,4 +246,43 @@ router.get('/issue/:start/:end', auth, async (req, res) => {
   }
 });
 
+// Get general feedback satisfaction rate and submission count
+router.get('/general/:start/:end', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { start, end } = req.params;
+
+  // Get the next day date of the end date
+  // to include the feedback from today in the query
+  const dayAfterEndDate = new Date(end);
+  dayAfterEndDate.setDate(dayAfterEndDate.getDate() + 1);
+
+  try {
+    const feedback = await Feedback.find({
+      type: 'GENERAL',
+      createdAt: { $gte: start, $lt: dayAfterEndDate },
+    })
+      .select('-issue')
+      .lean();
+
+    const totalFeedbackCount = feedback.length;
+    const totalRating = feedback.reduce(
+      (acc, curr) => acc + (curr.rating || 0),
+      0
+    );
+
+    res.status(200).json({
+      satisfactionRate: (totalRating / (totalFeedbackCount * 5)) * 100,
+      submissionCount: totalFeedbackCount,
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 export default router;
