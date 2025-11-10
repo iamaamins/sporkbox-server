@@ -2,14 +2,11 @@ module.exports = {
   async up(db) {
     await db
       .collection('users')
-      .updateMany(
-        { role: 'CUSTOMER', shifts: { $exists: true } },
-        { $unset: { shifts: '' } }
-      );
+      .updateMany({ shifts: { $exists: true } }, { $unset: { shifts: '' } });
   },
 
   async down(db) {
-    await db.collection('users').updateMany({ role: 'CUSTOMER' }, [
+    await db.collection('users').updateMany({ companies: { $exists: true } }, [
       {
         $set: {
           shifts: {
