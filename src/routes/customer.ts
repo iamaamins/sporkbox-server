@@ -76,7 +76,7 @@ router.post('/register-customer', async (req, res) => {
   }
 
   try {
-    const companies = await Company.find({
+    const activeCompanies = await Company.find({
       code: companyCode,
       status: 'ACTIVE',
     })
@@ -84,14 +84,11 @@ router.post('/register-customer', async (req, res) => {
       .lean()
       .orFail();
 
-    const shifts = [];
-    if (!companies.some((company) => company.shift === 'general')) {
-      for (const company of companies) {
-        if (company.status === 'ACTIVE') {
-          shifts.push(company.shift);
-        }
-        company.status = 'ARCHIVED';
-      }
+    if (
+      activeCompanies.length > 1 &&
+      !activeCompanies.some((company) => company.shift === 'GENERAL')
+    ) {
+      for (const company of activeCompanies) company.status = 'ARCHIVED';
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -100,10 +97,9 @@ router.post('/register-customer', async (req, res) => {
       firstName,
       lastName,
       email,
-      shifts,
-      companies,
       status: 'ACTIVE',
       role: 'CUSTOMER',
+      companies: activeCompanies,
       password: hashedPassword,
       subscribedTo: subscriptions,
     });
@@ -111,6 +107,7 @@ router.post('/register-customer', async (req, res) => {
 
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
+
     res.status(201).json(customer);
   } catch (err) {
     console.error(err);
@@ -131,11 +128,7 @@ router.patch(
 
     const { customerId, companyCode } = req.params;
     const { shift } = req.body;
-    if (!shift || typeof shift !== 'string') {
-      console.error(invalidShift);
-      res.status(400);
-      throw new Error(invalidShift);
-    }
+
     checkShift(res, shift);
 
     try {

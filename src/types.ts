@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { subscriptions } from './lib/utils';
+import { Shift } from './data/COMPANY';
 
 declare global {
   namespace Express {
@@ -22,8 +23,6 @@ export interface Address {
   addressLine1: string;
   addressLine2?: string;
 }
-
-type Shift = 'day' | 'night' | 'general';
 
 export interface CompanyDetails {
   name: string;
@@ -137,7 +136,6 @@ export interface UserSchema extends GenericUser {
   password: string;
   companies: UserCompany[];
   restaurant: Types.ObjectId;
-  shifts: Exclude<Shift, 'general'>[];
   subscribedTo: typeof subscriptions;
   foodPreferences?: string[];
   isCompanyAdmin?: boolean;
@@ -188,11 +186,6 @@ export interface DateTotal {
   date: number;
   total: number;
   companyId: string;
-}
-
-interface StatRestaurant {
-  id: string;
-  name: string;
 }
 
 export interface CompanySchema extends CompanyDetails {

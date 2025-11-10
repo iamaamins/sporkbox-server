@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const admins = await User.find({
       role: { $in: ['ADMIN', 'DRIVER'] },
-    }).select('-password -__v -companies -foodPreferences -updatedAt -shifts');
+    }).select('-password -__v -companies -foodPreferences -updatedAt');
 
     res.status(200).json(admins);
   } catch (err) {

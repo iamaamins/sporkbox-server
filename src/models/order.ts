@@ -7,6 +7,7 @@ import {
   OrderCustomer,
   OrderRestaurant,
 } from '../types';
+import { SHIFTS } from '../data/COMPANY';
 
 interface OrderSchema {
   customer: OrderCustomer;
@@ -76,8 +77,8 @@ const orderSchema = new Schema<OrderSchema>(
         type: String,
         trim: true,
         lowercase: true,
-        enum: ['day', 'night', 'general'],
-        required: [true, 'Please provide company name'],
+        enum: SHIFTS,
+        required: [true, 'Please provide company shift'],
       },
     },
     delivery: {
