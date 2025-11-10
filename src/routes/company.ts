@@ -49,16 +49,7 @@ router.post('/add', auth, async (req, res) => {
     addressLine2,
     slackChannel,
   } = req.body;
-  if (
-    !name ||
-    !code ||
-    !city ||
-    !state ||
-    !zip ||
-    !website ||
-    !shiftBudget ||
-    !addressLine1
-  ) {
+  if (!name || !code || !city || !state || !zip || !website || !addressLine1) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -141,15 +132,7 @@ router.patch('/:companyId/update', auth, async (req, res) => {
     slackChannel,
   } = req.body;
 
-  if (
-    !zip ||
-    !name ||
-    !city ||
-    !state ||
-    !website ||
-    !shiftBudget ||
-    !addressLine1
-  ) {
+  if (!zip || !name || !city || !state || !website || !addressLine1) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
