@@ -50,10 +50,7 @@ const companySchema = new Schema<CompanySchema>(
       lowercase: true,
       required: [true, 'Please provide a code'],
     },
-    shiftBudget: {
-      type: Number,
-      required: [true, 'Please provide a daily budget'],
-    },
+    shiftBudget: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['ACTIVE', 'ARCHIVED'],
@@ -61,9 +58,7 @@ const companySchema = new Schema<CompanySchema>(
     },
     slackChannel: { type: String, trim: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Company', companySchema);
