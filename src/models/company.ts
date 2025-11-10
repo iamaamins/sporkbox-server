@@ -12,7 +12,6 @@ const companySchema = new Schema<CompanySchema>(
     shift: {
       type: String,
       trim: true,
-      lowercase: true,
       enum: SHIFTS,
       required: [true, 'Please provide a shift'],
     },

@@ -245,9 +245,7 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   try {
     const updatedCustomer = await User.findByIdAndUpdate(
       customerId,
-      {
-        $set: { foodPreferences: preferences },
-      },
+      { $set: { foodPreferences: preferences } },
       { returnDocument: 'after' }
     )
       .select('-__v -password -updatedAt -createdAt')
