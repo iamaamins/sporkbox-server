@@ -28,7 +28,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add admin
-router.post('/add-admin', auth, async (req, res) => {
+router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);

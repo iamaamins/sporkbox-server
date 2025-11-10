@@ -19,14 +19,9 @@ const discountCodeSchema = new Schema<DiscountCodeSchema>(
       enum: ['once', 'unlimited'],
       required: [true, 'Please provide a redeemable value'],
     },
-    totalRedeem: {
-      type: Number,
-      default: 0,
-    },
+    totalRedeem: { type: Number, default: 0 },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('DiscountCode', discountCodeSchema);

@@ -39,8 +39,28 @@ interface ItemsIndexPayload {
 
 const router = Router();
 
-// Get customer's upcoming restaurants
-router.get('/upcoming-restaurants', auth, async (req, res) => {
+// Get all active restaurants' name and id for customer feedback
+router.get('/active/support', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const restaurants = await Restaurant.find({ status: 'ACTIVE' })
+      .select('name')
+      .lean();
+
+    res.status(200).json(restaurants);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get upcoming restaurants for the customer
+router.get('/me/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -63,8 +83,8 @@ router.get('/upcoming-restaurants', auth, async (req, res) => {
   }
 });
 
-// Get users's upcoming restaurants
-router.get('/upcoming-restaurants/:userId', auth, async (req, res) => {
+// Get upcoming restaurants of a user
+router.get('/upcoming/:userId', auth, async (req, res) => {
   if (
     !req.user ||
     (req.user.role !== 'ADMIN' &&
@@ -100,7 +120,7 @@ router.get('/upcoming-restaurants/:userId', auth, async (req, res) => {
 });
 
 // Get all scheduled restaurants
-router.get('/scheduled-restaurants', auth, async (req, res) => {
+router.get('/scheduled', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -109,6 +129,7 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
 
   try {
     const restaurants = await Restaurant.find({
+      status: 'ACTIVE',
       'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
 
@@ -138,8 +159,8 @@ router.get('/scheduled-restaurants', auth, async (req, res) => {
   }
 });
 
-// Get all scheduled restaurants by company
-router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
+// Get all the restaurants scheduled for a company
+router.get('/:companyCode/scheduled', auth, async (req, res) => {
   if (
     !req.user ||
     req.user.role !== 'CUSTOMER' ||
@@ -154,6 +175,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
   const { companyCode } = req.params;
   try {
     const restaurants = await Restaurant.find({
+      status: 'ACTIVE',
       'schedules.company.code': companyCode,
       'schedules.date': { $gt: getTodayTimestamp() },
     }).select('-__v -updatedAt -createdAt -address -items -logo');
@@ -189,7 +211,7 @@ router.get('/:companyCode/scheduled-restaurants', auth, async (req, res) => {
 });
 
 // Schedule restaurants
-router.post('/schedule-restaurants', auth, async (req, res) => {
+router.post('/schedule', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -210,21 +232,14 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
   try {
     // Remove past dates from the restaurants
     await Restaurant.updateMany(
-      {
-        _id: {
-          $in: restaurantIds,
-        },
-      },
-      {
-        $pull: {
-          schedules: {
-            date: { $lt: getTodayTimestamp() },
-          },
-        },
-      }
+      { _id: { $in: restaurantIds }, status: 'ACTIVE' },
+      { $pull: { schedules: { date: { $lt: getTodayTimestamp() } } } }
     );
 
-    const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } })
+    const restaurants = await Restaurant.find({
+      _id: { $in: restaurantIds },
+      status: 'ACTIVE',
+    })
       .select('name schedules')
       .orFail();
 
@@ -271,11 +286,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
     for (const restaurant of sortedRestaurants) {
       const updatedRestaurant = await Restaurant.findByIdAndUpdate(
         restaurant.id,
-        {
-          $push: {
-            schedules: schedule,
-          },
-        },
+        { $push: { schedules: schedule } },
         { returnDocument: 'after' }
       )
         .select('-__v -updatedAt -createdAt -address -items -logo')
@@ -297,6 +308,7 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
       deleteFields(scheduledRestaurant);
       scheduledRestaurants.push(scheduledRestaurant);
     }
+
     res.status(201).json(scheduledRestaurants);
   } catch (err) {
     console.error(err);
@@ -304,9 +316,9 @@ router.post('/schedule-restaurants', auth, async (req, res) => {
   }
 });
 
-// Change schedule statues
+// Update the status of a schedule
 router.patch(
-  '/:restaurantId/:date/:companyCode/change-schedule-status',
+  '/:restaurantId/:date/:companyCode/update-schedule-status',
   auth,
   async (req, res) => {
     if (
@@ -329,6 +341,7 @@ router.patch(
     try {
       const restaurant = await Restaurant.findOne({
         _id: restaurantId,
+        status: 'ACTIVE',
         'schedules.date': +date,
         'schedules.company.code': companyCode,
       })
@@ -393,71 +406,61 @@ router.patch(
 );
 
 // Remove a schedule
-router.patch(
-  '/:restaurantId/:scheduleId/remove-schedule',
-  auth,
-  async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      console.error(unAuthorized);
-      res.status(403);
-      throw new Error(unAuthorized);
-    }
-
-    const { restaurantId, scheduleId } = req.params;
-    try {
-      // Find the restaurant and remove the schedule
-      const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        { _id: restaurantId },
-        {
-          $pull: {
-            schedules: { _id: scheduleId },
-          },
-        }
-      )
-        .select('-__v -updatedAt -createdAt -address -items')
-        .lean()
-        .orFail();
-
-      const removedSchedule = updatedRestaurant.schedules.find(
-        (schedule) => schedule._id?.toString() === scheduleId
-      );
-      if (!removedSchedule) {
-        console.error('Please provide a valid schedule');
-        res.status(400);
-        throw new Error('Please provide a valid schedule');
-      }
-
-      const orders = await Order.find({
-        status: 'PROCESSING',
-        'delivery.date': removedSchedule.date,
-        'restaurant._id': updatedRestaurant._id,
-        'company._id': removedSchedule.company._id,
-      });
-      await Promise.all(
-        orders.map(
-          async (order) => await mail.send(orderCancel(docToObj(order)))
-        )
-      );
-      await Order.updateMany(
-        {
-          status: 'PROCESSING',
-          'restaurant._id': updatedRestaurant._id,
-          'delivery.date': removedSchedule.date,
-          'company._id': removedSchedule.company._id,
-        },
-        {
-          $set: { status: 'ARCHIVED' },
-        }
-      );
-      res.status(201).json('Schedule and orders removed successfully');
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+router.patch('/:restaurantId/:scheduleId/remove', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
 
-// Cerate an item
+  const { restaurantId, scheduleId } = req.params;
+  try {
+    // Find the restaurant and remove the schedule
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: restaurantId, status: 'ACTIVE' },
+      { $pull: { schedules: { _id: scheduleId } } }
+    )
+      .select('-__v -updatedAt -createdAt -address -items')
+      .lean()
+      .orFail();
+
+    const removedSchedule = updatedRestaurant.schedules.find(
+      (schedule) => schedule._id?.toString() === scheduleId
+    );
+    if (!removedSchedule) {
+      console.error('Please provide a valid schedule');
+      res.status(400);
+      throw new Error('Please provide a valid schedule');
+    }
+
+    const orders = await Order.find({
+      status: 'PROCESSING',
+      'delivery.date': removedSchedule.date,
+      'restaurant._id': updatedRestaurant._id,
+      'company._id': removedSchedule.company._id,
+    });
+    await Promise.all(
+      orders.map(async (order) => await mail.send(orderCancel(docToObj(order))))
+    );
+    await Order.updateMany(
+      {
+        status: 'PROCESSING',
+        'restaurant._id': updatedRestaurant._id,
+        'delivery.date': removedSchedule.date,
+        'company._id': removedSchedule.company._id,
+      },
+      {
+        $set: { status: 'ARCHIVED' },
+      }
+    );
+    res.status(201).json('Schedule and orders removed successfully');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Add an item to a restaurant
 router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -573,9 +576,9 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
   }
 });
 
-// Edit an item
+// Update an item
 router.patch(
-  '/:restaurantId/:itemId/update-item-details',
+  '/:restaurantId/:itemId/update',
   auth,
   upload,
   async (req, res) => {
@@ -727,50 +730,46 @@ router.patch(
 );
 
 // Change item status
-router.patch(
-  '/:restaurantId/:itemId/change-item-status',
-  auth,
-  async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      console.error(unAuthorized);
-      res.status(403);
-      throw new Error(unAuthorized);
-    }
-
-    const { restaurantId, itemId } = req.params;
-    const { action } = req.body;
-    if (!action) {
-      console.error(requiredAction);
-      res.status(400);
-      throw new Error(requiredAction);
-    }
-    checkActions(undefined, action, res);
-
-    try {
-      const updatedRestaurant = await Restaurant.findOneAndUpdate(
-        { _id: restaurantId, 'items._id': itemId },
-        {
-          $set: {
-            'items.$.status': action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-          },
-        },
-        {
-          returnDocument: 'after',
-        }
-      )
-        .select('-__v -updatedAt')
-        .lean()
-        .orFail();
-      res.status(200).json(updatedRestaurant);
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+router.patch('/:restaurantId/:itemId/change-status', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
+
+  const { restaurantId, itemId } = req.params;
+  const { action } = req.body;
+  if (!action) {
+    console.error(requiredAction);
+    res.status(400);
+    throw new Error(requiredAction);
+  }
+  checkActions(undefined, action, res);
+
+  try {
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: restaurantId, 'items._id': itemId },
+      {
+        $set: {
+          'items.$.status': action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
+        },
+      },
+      {
+        returnDocument: 'after',
+      }
+    )
+      .select('-__v -updatedAt')
+      .lean()
+      .orFail();
+    res.status(200).json(updatedRestaurant);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
 
 // Review item
-router.post('/:restaurantId/:itemId/add-a-review', auth, async (req, res) => {
+router.post('/:restaurantId/:itemId/review', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -872,7 +871,7 @@ router.patch('/:restaurantId/update-items-index', auth, async (req, res) => {
   }
 });
 
-// Get a vendor restaurant
+// Get the restaurant for the vendor
 router.get('/:id', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
     console.error(unAuthorized);
@@ -886,6 +885,7 @@ router.get('/:id', auth, async (req, res) => {
       .select('-__v -createdAt -updatedAt -items')
       .lean()
       .orFail();
+
     res.status(200).json(restaurant);
   } catch (err) {
     console.error(err);
@@ -894,39 +894,47 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Get item stat
-router.get('/items/count-and-average/:price?', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  const { price } = req.params;
-  try {
-    const restaurants = await Restaurant.find().select('items').lean();
-
-    let activeItemsTotal = 0;
-    let activeItemsCount = 0;
-    let itemsCount = 0;
-    for (const restaurant of restaurants) {
-      for (const item of restaurant.items) {
-        if (item.status === 'ACTIVE') {
-          activeItemsTotal += item.price;
-          activeItemsCount++;
-          if (price && item.price <= +price) itemsCount++;
-        }
-      }
+router.get(
+  '/items/active/count-percentage-and-average-price/:price?',
+  auth,
+  async (req, res) => {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      console.error(unAuthorized);
+      res.status(403);
+      throw new Error(unAuthorized);
     }
 
-    res.status(200).json({
-      itemsCount,
-      averagePrice: activeItemsTotal / activeItemsCount,
-    });
-  } catch (err) {
-    console.error(err);
-    throw err;
+    const { price } = req.params;
+    try {
+      const restaurants = await Restaurant.find().select('items').lean();
+
+      let totalActiveItemPrice = 0;
+      let totalActiveItemCount = 0;
+      let activeItemCountByPrice = 0;
+      for (const restaurant of restaurants) {
+        for (const item of restaurant.items) {
+          if (item.status === 'ACTIVE') {
+            totalActiveItemPrice += item.price;
+            totalActiveItemCount++;
+            if (price && item.price <= +price) activeItemCountByPrice++;
+          }
+        }
+      }
+
+      res.status(200).json({
+        activeItemCountByPrice,
+        activeItemPercentageByPrice: (
+          (activeItemCountByPrice / totalActiveItemCount) *
+          100
+        ).toFixed(2),
+        averageActiveItemPrice: totalActiveItemPrice / totalActiveItemCount,
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }
-});
+);
 
 // Get review stat
 router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
@@ -982,7 +990,7 @@ router.get('/items/review-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get review stat by company
+// Get review stat of a company
 router.get(
   '/items/review-stat/:companyCode/:start/:end',
   auth,

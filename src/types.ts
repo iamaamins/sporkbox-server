@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
-import { subscriptions } from './lib/utils';
 import { Shift } from './data/COMPANY';
+import { EmailSubscriptions } from './data/EMAIL_SUBSCRIPTIONS';
 
 declare global {
   namespace Express {
@@ -120,6 +120,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
+  status: 'ACTIVE' | 'ARCHIVED';
   isFeatured: boolean;
   orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
@@ -136,8 +137,9 @@ export interface UserSchema extends GenericUser {
   password: string;
   companies: UserCompany[];
   restaurant: Types.ObjectId;
-  subscribedTo: typeof subscriptions;
+  subscribedTo: EmailSubscriptions;
   foodPreferences?: string[];
+  foodVibe?: string;
   isCompanyAdmin?: boolean;
 }
 

@@ -51,10 +51,7 @@ const companySchema = new Schema<CompanySchema>(
       lowercase: true,
       required: [true, 'Please provide a code'],
     },
-    shiftBudget: {
-      type: Number,
-      required: [true, 'Please provide a daily budget'],
-    },
+    shiftBudget: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['ACTIVE', 'ARCHIVED'],

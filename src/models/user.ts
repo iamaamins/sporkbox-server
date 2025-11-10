@@ -97,19 +97,17 @@ const userSchema = new Schema<UserSchema>(
         },
       },
     ],
-    restaurant: {
-      type: Schema.Types.ObjectId,
-      ref: 'Restaurant',
-    },
+    restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
     subscribedTo: {
+      deliveryNotification: Boolean,
       orderReminder: Boolean,
+      newsletter: Boolean,
     },
     foodPreferences: [{ type: String, trim: true }],
-    isCompanyAdmin: { type: Boolean },
+    foodVibe: { type: String, trim: true },
+    isCompanyAdmin: Boolean,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('User', userSchema);

@@ -29,7 +29,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add a company
-router.post('/add-company', auth, async (req, res) => {
+router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -49,16 +49,7 @@ router.post('/add-company', auth, async (req, res) => {
     addressLine2,
     slackChannel,
   } = req.body;
-  if (
-    !name ||
-    !code ||
-    !city ||
-    !state ||
-    !zip ||
-    !website ||
-    !shiftBudget ||
-    !addressLine1
-  ) {
+  if (!name || !code || !city || !state || !zip || !website || !addressLine1) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -115,7 +106,7 @@ router.post('/add-company', auth, async (req, res) => {
 });
 
 // Update company details
-router.patch('/:companyId/update-company-details', auth, async (req, res) => {
+router.patch('/:companyId/update', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -135,15 +126,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     slackChannel,
   } = req.body;
 
-  if (
-    !zip ||
-    !name ||
-    !city ||
-    !state ||
-    !website ||
-    !shiftBudget ||
-    !addressLine1
-  ) {
+  if (!zip || !name || !city || !state || !website || !addressLine1) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -189,8 +172,8 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
   }
 });
 
-// Change company status
-router.patch('/:companyId/change-company-status', auth, async (req, res) => {
+// Update company status
+router.patch('/:companyId/update-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
