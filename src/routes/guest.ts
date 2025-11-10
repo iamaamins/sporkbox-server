@@ -99,6 +99,7 @@ router.post('/add/:companyId', auth, async (req, res) => {
 
     const guest = response.toObject();
     deleteFields(guest, ['createdAt', 'password']);
+
     res.status(201).json(guest);
   } catch (err) {
     console.error(err);

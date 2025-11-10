@@ -140,7 +140,6 @@ const scheduleSchema = new Schema<SchedulesSchema>(
       shift: {
         type: String,
         trim: true,
-        lowercase: true,
         enum: SHIFTS,
         required: [true, 'Please provide company shift'],
       },
