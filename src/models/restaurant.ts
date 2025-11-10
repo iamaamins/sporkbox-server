@@ -6,6 +6,7 @@ import {
   SchedulesSchema,
   SoldOutStatSchema,
 } from '../types';
+import { SHIFTS } from '../data/COMPANY';
 
 const soldOutStatSchema = new Schema<SoldOutStatSchema>({
   date: {
@@ -140,8 +141,8 @@ const scheduleSchema = new Schema<SchedulesSchema>(
         type: String,
         trim: true,
         lowercase: true,
-        enum: ['day', 'night', 'general'],
-        required: [true, 'Please provide a shift'],
+        enum: SHIFTS,
+        required: [true, 'Please provide company shift'],
       },
     },
     status: {

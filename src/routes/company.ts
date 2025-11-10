@@ -65,7 +65,7 @@ router.post('/add', auth, async (req, res) => {
       throw new Error('A company with the same shift already exists');
     }
 
-    if (companies.some((company) => company.shift === 'general')) {
+    if (companies.some((company) => company.shift === 'GENERAL')) {
       console.error('A non-shift company with the same code already exists');
       res.status(400);
       throw new Error('A non-shift company with the same code already exists');
@@ -82,27 +82,21 @@ router.post('/add', auth, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      shift: shift,
       shiftBudget,
       status: 'ACTIVE',
       slackChannel,
-      shift: shift || 'general',
     });
 
     const company = response.toObject();
     deleteFields(company);
     const { website: companyWebsite, createdAt, ...rest } = company;
 
-    if (shift) {
+    if (shift)
       await User.updateMany(
         { 'companies.code': code },
-        {
-          $push: {
-            shifts: company.shift,
-            companies: { ...rest, status: 'ARCHIVED' },
-          },
-        }
+        { $push: { companies: { ...rest, status: 'ARCHIVED' } } }
       );
-    }
 
     res.status(200).json(company);
   } catch (err) {
@@ -223,34 +217,12 @@ router.patch('/:companyId/update-status', auth, async (req, res) => {
       .lean()
       .orFail();
 
-    if (updatedCompany.status === 'ARCHIVED') {
-      await User.updateMany(
-        {
-          'companies._id': updatedCompany._id,
-        },
-        {
-          $pull: {
-            shifts: updatedCompany.shift,
-          },
-          $set: {
-            'companies.$.status': updatedCompany.status,
-          },
-        }
-      );
+    await User.updateMany(
+      { 'companies._id': updatedCompany._id },
+      { $set: { 'companies.$.status': updatedCompany.status } }
+    );
 
-      res.status(200).json(updatedCompany);
-    } else if (updatedCompany.status === 'ACTIVE') {
-      await User.updateMany(
-        { 'companies.code': updatedCompany.code },
-        {
-          $push: {
-            shifts: updatedCompany.shift,
-          },
-        }
-      );
-
-      res.status(200).json(updatedCompany);
-    }
+    res.status(200).json(updatedCompany);
   } catch (err) {
     console.error(err);
     throw err;

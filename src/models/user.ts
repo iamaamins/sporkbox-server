@@ -1,3 +1,4 @@
+import { SHIFTS } from '../data/COMPANY';
 import { UserSchema } from '../types';
 import { Schema, model } from 'mongoose';
 
@@ -50,7 +51,7 @@ const userSchema = new Schema<UserSchema>(
           type: String,
           trim: true,
           lowercase: true,
-          enum: ['day', 'night', 'general'],
+          enum: SHIFTS,
           required: [true, 'Please provide a shift'],
         },
         address: {
@@ -96,7 +97,6 @@ const userSchema = new Schema<UserSchema>(
         },
       },
     ],
-    shifts: [{ type: String, trim: true, enum: ['day', 'night'] }],
     restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant' },
     subscribedTo: {
       deliveryNotification: Boolean,

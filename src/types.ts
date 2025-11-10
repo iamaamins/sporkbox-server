@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { Shift } from './data/COMPANY';
 import { EmailSubscriptions } from './data/EMAIL_SUBSCRIPTIONS';
 
 declare global {
@@ -22,8 +23,6 @@ export interface Address {
   addressLine1: string;
   addressLine2?: string;
 }
-
-type Shift = 'day' | 'night' | 'general';
 
 export interface CompanyDetails {
   name: string;
@@ -138,7 +137,6 @@ export interface UserSchema extends GenericUser {
   password: string;
   companies: UserCompany[];
   restaurant: Types.ObjectId;
-  shifts: Exclude<Shift, 'general'>[];
   subscribedTo: EmailSubscriptions;
   foodPreferences?: string[];
   foodVibe?: string;
@@ -190,11 +188,6 @@ export interface DateTotal {
   date: number;
   total: number;
   companyId: string;
-}
-
-interface StatRestaurant {
-  id: string;
-  name: string;
 }
 
 export interface CompanySchema extends CompanyDetails {

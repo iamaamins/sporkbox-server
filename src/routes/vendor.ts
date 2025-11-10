@@ -241,7 +241,7 @@ router.get('/:limit', auth, async (req, res) => {
   try {
     const vendors = await User.find({ role: 'VENDOR' })
       .limit(+limit)
-      .select('-__v -password -shifts -companies -createdAt -updatedAt')
+      .select('-__v -password -companies -createdAt -updatedAt')
       .sort({ createdAt: -1 })
       .populate<{ restaurant: RestaurantSchema }>(
         'restaurant',

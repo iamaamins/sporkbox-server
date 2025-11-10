@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import moment from 'moment';
+import { Shift, SHIFTS } from '../data/COMPANY';
 
 type SortScheduledRestaurant = {
   schedule: {
@@ -153,8 +154,8 @@ export function checkActions(
   }
 }
 
-export function checkShift(res: Response, shift: string) {
-  if (!['day', 'night'].includes(shift)) {
+export function checkShift(res: Response, shift: Shift) {
+  if (!shift || !SHIFTS.includes(shift)) {
     console.log(invalidShift);
     res.status(400);
     throw new Error(invalidShift);
