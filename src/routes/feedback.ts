@@ -274,9 +274,10 @@ router.get('/general/:start/:end', auth, async (req, res) => {
       (acc, curr) => acc + (curr.rating || 0),
       0
     );
+    const satisfactionRate = (totalRating / (totalFeedbackCount * 5)) * 100;
 
     res.status(200).json({
-      satisfactionRate: (totalRating / (totalFeedbackCount * 5)) * 100,
+      satisfactionRate: toUSNumber(satisfactionRate),
       submissionCount: totalFeedbackCount,
     });
   } catch (err) {

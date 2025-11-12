@@ -58,7 +58,8 @@ export const deleteFields = (data: object, moreFields?: string[]): void => {
   fields.forEach((field) => delete data[field as keyof object]);
 };
 
-export const toUSNumber = (number: number) => +number.toLocaleString('en-US');
+export const toUSNumber = (number: number) =>
+  +number.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 export const dateToMS = (date: Date | string): number =>
   new Date(date).getTime();
