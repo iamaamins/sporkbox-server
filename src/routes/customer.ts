@@ -20,6 +20,7 @@ import {
   EMAIL_SUBSCRIPTIONS,
   EmailSubscriptions,
 } from '../data/EMAIL_SUBSCRIPTIONS';
+import { AVATARS } from '../data/AVATARS';
 
 const router = Router();
 
@@ -292,6 +293,40 @@ router.patch('/:customerId/update-company-admin', auth, async (req, res) => {
       .orFail();
 
     res.status(201).json(updatedCustomer);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Update customer avatar
+router.patch('/:customerId/update-avatar', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { customerId } = req.params;
+  const { avatar } = req.body;
+
+  if (!AVATARS.includes(avatar)) {
+    console.error('Invalid avatar');
+    res.status(400);
+    throw new Error('Invalid avatar');
+  }
+
+  try {
+    const updatedCustomer = await User.findOneAndUpdate(
+      { _id: customerId, role: 'CUSTOMER' },
+      { $set: { 'avatar.id': avatar } },
+      { returnDocument: 'after' }
+    )
+      .select('avatar')
+      .lean()
+      .orFail();
+
+    res.status(200).json(updatedCustomer);
   } catch (err) {
     console.error(err);
     throw err;
