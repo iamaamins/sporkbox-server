@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import { Shift } from './data/COMPANY';
 import { EmailSubscriptions } from './data/EMAIL_SUBSCRIPTIONS';
+import { Avatar } from './data/AVATARS';
 
 declare global {
   namespace Express {
@@ -140,6 +141,7 @@ export interface UserSchema extends GenericUser {
   subscribedTo: EmailSubscriptions;
   foodPreferences?: string[];
   foodVibe?: string;
+  avatar?: { id: Avatar };
   isCompanyAdmin?: boolean;
 }
 

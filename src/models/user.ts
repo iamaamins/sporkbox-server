@@ -62,6 +62,7 @@ const userSchema = new Schema<UserSchema>(
     foodPreferences: [{ type: String, trim: true }],
     foodVibe: { type: String, trim: true },
     isCompanyAdmin: Boolean,
+    avatar: { id: { type: String, lowercase: true, trim: true } },
   },
   { timestamps: true }
 );
