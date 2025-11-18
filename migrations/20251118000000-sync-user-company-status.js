@@ -27,7 +27,7 @@ module.exports = {
             userCompany._id.toString()
           );
 
-          // Compare only if the company exists in the map
+          // Update when the company's status differs
           if (companyStatus && userCompany.status !== companyStatus) {
             hasChanges = true;
             return { ...userCompany, status: companyStatus };
