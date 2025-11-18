@@ -811,8 +811,8 @@ router.post('/create', auth, async (req, res) => {
     }));
     const orderItemDetails = getDateTotal(orderDateTotalDetails);
 
-    const company = companies.find((company) => company.status === 'ACTIVE');
-    const shiftBudget = company?.shiftBudget || 0;
+    const enrolledCompany = companies.find((company) => company.isEnrolled);
+    const shiftBudget = enrolledCompany?.shiftBudget || 0;
     const payableDetails = orderItemDetails
       .map((orderItemDetail) => {
         const { total, ...rest } = orderItemDetail;
