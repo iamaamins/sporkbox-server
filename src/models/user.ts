@@ -1,4 +1,5 @@
 import { SHIFTS } from '../data/COMPANY';
+import { STATUS } from '../data/STATUS';
 import { UserSchema } from '../types';
 import { Schema, model } from 'mongoose';
 
@@ -33,7 +34,7 @@ const userSchema = new Schema<UserSchema>(
     },
     status: {
       type: String,
-      enum: ['ARCHIVED', 'ACTIVE'],
+      enum: STATUS,
       required: [true, 'Please provide a status'],
     },
     companies: [
@@ -41,7 +42,7 @@ const userSchema = new Schema<UserSchema>(
         _id: Schema.Types.ObjectId,
         name: { type: String, trim: true },
         code: { type: String, trim: true, lowercase: true },
-        status: { type: String, enum: ['ARCHIVED', 'ACTIVE'] },
+        status: { type: String, enum: STATUS },
         shift: { type: String, trim: true, enum: SHIFTS },
         shiftBudget: { type: Number },
         address: {
@@ -51,6 +52,8 @@ const userSchema = new Schema<UserSchema>(
           addressLine1: { type: String, trim: true },
           addressLine2: { type: String, trim: true },
         },
+        isEnrolled: Boolean,
+        isEnrollAble: Boolean,
       },
     ],
     restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant' },

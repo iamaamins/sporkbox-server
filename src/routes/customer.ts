@@ -9,12 +9,7 @@ import {
   checkActions,
 } from '../lib/utils';
 import { Router } from 'express';
-import {
-  invalidShift,
-  requiredAction,
-  requiredFields,
-  unAuthorized,
-} from '../lib/messages';
+import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
 import {
   EMAIL_SUBSCRIPTIONS,
@@ -80,19 +75,48 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const activeCompanies = await Company.find({
+    const companies = await Company.find({
       code: companyCode,
-      status: 'ACTIVE',
     })
       .select('-updatedAt -createdAt -website')
       .lean()
       .orFail();
 
-    if (
-      activeCompanies.length > 1 &&
-      !activeCompanies.some((company) => company.shift === 'GENERAL')
-    ) {
-      for (const company of activeCompanies) company.status = 'ARCHIVED';
+    const activeCompanies = companies.filter(
+      (company) => company.status === 'ACTIVE'
+    );
+    if (!activeCompanies.length) {
+      console.error('No active company found');
+      res.status(400);
+      throw new Error('No active company found');
+    }
+
+    const hasGeneralShift = companies.some(
+      (company) => company.shift === 'GENERAL'
+    );
+
+    let updatedCompanies = [];
+    if (hasGeneralShift) {
+      updatedCompanies = companies.map((company) => ({
+        ...company,
+        isEnrollAble: false,
+        isEnrolled:
+          activeCompanies[0]._id.toString() === company._id.toString(),
+      }));
+    } else {
+      if (activeCompanies.length > 1) {
+        updatedCompanies = companies.map((company) => ({
+          ...company,
+          isEnrollAble: company.status === 'ACTIVE',
+          isEnrolled: false,
+        }));
+      } else {
+        updatedCompanies = companies.map((company) => ({
+          ...company,
+          isEnrollAble: true,
+          isEnrolled: true,
+        }));
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -103,7 +127,7 @@ router.post('/register', async (req, res) => {
       email,
       status: 'ACTIVE',
       role: 'CUSTOMER',
-      companies: activeCompanies,
+      companies: updatedCompanies,
       password: hashedPassword,
       subscribedTo: EMAIL_SUBSCRIPTIONS,
     });
@@ -120,60 +144,37 @@ router.post('/register', async (req, res) => {
 });
 
 // Update customer shift
-router.patch(
-  '/:customerId/:companyCode/update-shift',
-  auth,
-  async (req, res) => {
-    if (!req.user || req.user.role !== 'CUSTOMER') {
-      console.error(unAuthorized);
-      res.status(403);
-      throw new Error(unAuthorized);
-    }
-
-    const { customerId, companyCode } = req.params;
-    const { shift } = req.body;
-
-    checkShift(res, shift);
-
-    try {
-      const response = await Company.find({
-        code: companyCode,
-      })
-        .select('-__v -updatedAt -createdAt -website')
-        .lean()
-        .orFail();
-
-      const activeCompanies = response.filter(
-        (company) => company.status === 'ACTIVE'
-      );
-      if (
-        !activeCompanies.some((activeCompany) => activeCompany.shift === shift)
-      ) {
-        console.error(invalidShift);
-        res.status(404);
-        throw new Error(invalidShift);
-      }
-
-      const updatedCompanies = activeCompanies.map((company) =>
-        company.shift === shift ? company : { ...company, status: 'ARCHIVED' }
-      );
-      const archivedCompanies = response.filter(
-        (company) => company.status !== 'ACTIVE'
-      );
-      const companies = [...archivedCompanies, ...updatedCompanies];
-
-      await User.findByIdAndUpdate(
-        { _id: customerId },
-        { $set: { companies: companies } }
-      ).orFail();
-
-      res.status(201).json(companies);
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+router.patch('/:customerId/update-shift', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
+
+  const { shift } = req.body;
+  checkShift(res, shift);
+
+  try {
+    const updatedCompanies = [];
+    for (const company of req.user.companies) {
+      if (company.shift === shift && company.isEnrollAble) {
+        updatedCompanies.push({ ...company, isEnrolled: true });
+      } else {
+        updatedCompanies.push({ ...company, isEnrolled: false });
+      }
+    }
+
+    await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { $set: { companies: updatedCompanies } }
+    ).orFail();
+
+    res.status(201).json(updatedCompanies);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
 
 // Update customer email subscriptions
 router.patch(

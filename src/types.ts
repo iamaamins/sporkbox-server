@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { Shift } from './data/COMPANY';
 import { EmailSubscriptions } from './data/EMAIL_SUBSCRIPTIONS';
 import { Avatar } from './data/AVATARS';
+import { Status } from './data/STATUS';
 
 declare global {
   namespace Express {
@@ -30,6 +31,7 @@ export interface CompanyDetails {
   website: string;
   code: string;
   shift: Shift;
+  status: Status;
   shiftBudget: number;
 }
 
@@ -121,7 +123,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
+  status: Status;
   isFeatured: boolean;
   orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
@@ -171,7 +173,8 @@ export interface OrdersPayload {
 export interface UserCompany extends CompanyDetails {
   _id: Types.ObjectId;
   address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
+  isEnrolled: boolean;
+  isEnrollAble: boolean;
 }
 
 export interface StatusChangePayload {
@@ -194,10 +197,9 @@ export interface DateTotal {
 
 export interface CompanySchema extends CompanyDetails {
   _id: Types.ObjectId;
-  createdAt: Date;
   address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
   slackChannel?: string;
+  createdAt: Date;
 }
 
 export type UpcomingDataMap = {

@@ -77,10 +77,8 @@ export async function getUpcomingRestaurants(
   companies: UserCompany[],
   getActiveSchedules?: boolean
 ) {
-  const activeCompany = companies.find(
-    (company) => company.status === 'ACTIVE'
-  );
-  if (!activeCompany) {
+  const enrolledCompany = companies.find((company) => company.isEnrolled);
+  if (!enrolledCompany) {
     console.log('No enrolled shift found');
     res.status(400);
     throw new Error('No enrolled shift found');
@@ -92,7 +90,7 @@ export async function getUpcomingRestaurants(
       schedules: {
         $elemMatch: {
           date: { $gt: getTodayTimestamp() },
-          'company._id': activeCompany._id,
+          'company._id': enrolledCompany._id,
           ...(getActiveSchedules && { status: 'ACTIVE' }),
         },
       },
@@ -117,7 +115,7 @@ export async function getUpcomingRestaurants(
         if (
           dateToMS(schedule.date) > getTodayTimestamp() &&
           (getActiveSchedules ? schedule.status === 'ACTIVE' : true) &&
-          activeCompany._id.toString() === schedule.company._id.toString()
+          enrolledCompany._id.toString() === schedule.company._id.toString()
         ) {
           const upcomingRestaurant = {
             ...rest,

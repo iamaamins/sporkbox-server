@@ -1,9 +1,9 @@
 import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { checkActions, deleteFields, generateRandomString } from '../lib/utils';
+import { deleteFields, generateRandomString } from '../lib/utils';
 import { Router } from 'express';
-import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
+import { requiredFields, unAuthorized } from '../lib/messages';
 import bcrypt from 'bcrypt';
 
 const router = Router();
@@ -93,8 +93,8 @@ router.post('/add/:companyId', auth, async (req, res) => {
       email,
       role: 'GUEST',
       status: 'ACTIVE',
-      companies: [company],
       password: hashedPassword,
+      companies: [{ ...company, isEnrolled: true, isEnrollAble: true }],
     });
 
     const guest = response.toObject();

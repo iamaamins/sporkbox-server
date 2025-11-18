@@ -7,6 +7,7 @@ import {
   SoldOutStatSchema,
 } from '../types';
 import { SHIFTS } from '../data/COMPANY';
+import { STATUS } from '../data/STATUS';
 
 const soldOutStatSchema = new Schema<SoldOutStatSchema>({
   date: {
@@ -66,7 +67,7 @@ const itemSchema = new Schema<ItemSchema>({
   },
   status: {
     type: String,
-    enum: ['ARCHIVED', 'ACTIVE'],
+    enum: STATUS,
     required: [true, 'Please provide a status'],
   },
   optionalAddons: {
