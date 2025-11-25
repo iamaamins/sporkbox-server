@@ -16,6 +16,7 @@ import {
   EmailSubscriptions,
 } from '../data/EMAIL_SUBSCRIPTIONS';
 import { AVATARS } from '../data/AVATARS';
+import { createHSContact, updateHSContact } from '../lib/hubspot';
 
 const router = Router();
 
@@ -133,6 +134,12 @@ router.post('/register', async (req, res) => {
     });
     const customer = response.toObject();
 
+    await createHSContact(
+      customer.email,
+      customer.firstName,
+      customer.lastName
+    );
+
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
 
@@ -210,9 +217,14 @@ router.patch(
         { $set: { subscribedTo: emailSubscriptions } },
         { returnDocument: 'after' }
       )
-        .select('subscribedTo')
+        .select('subscribedTo email')
         .lean()
         .orFail();
+
+      await updateHSContact(
+        updatedCustomer.email,
+        updatedCustomer.subscribedTo.newsletter
+      );
 
       res.status(201).json(updatedCustomer);
     } catch (err) {

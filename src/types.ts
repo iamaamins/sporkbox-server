@@ -89,9 +89,7 @@ export interface OrderForEmail {
     name: string;
   };
   customer: GenericUser;
-  restaurant: {
-    name: string;
-  };
+  restaurant: { name: string };
 }
 
 export interface ReviewSchema {
