@@ -4,21 +4,9 @@ import {
   RestaurantSchema,
   ReviewSchema,
   SchedulesSchema,
-  SoldOutStatSchema,
 } from '../types';
 import { SHIFTS } from '../data/COMPANY';
 import { STATUS } from '../data/STATUS';
-
-const soldOutStatSchema = new Schema<SoldOutStatSchema>({
-  date: {
-    type: Date,
-    required: [true, 'Please provide a date'],
-  },
-  company: {
-    type: Schema.Types.ObjectId,
-    required: [true, 'Please provide a company id'],
-  },
-});
 
 const reviewSchema = new Schema<ReviewSchema>(
   {
@@ -114,7 +102,6 @@ const itemSchema = new Schema<ItemSchema>({
   reviews: [reviewSchema],
   averageRating: Number,
   popularityIndex: Number,
-  soldOutStat: [soldOutStatSchema],
 });
 
 const scheduleSchema = new Schema<SchedulesSchema>(

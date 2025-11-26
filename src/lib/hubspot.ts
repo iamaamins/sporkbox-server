@@ -14,7 +14,7 @@ export async function createHSContact(
         email,
         firstname: firstName,
         lastname: lastName,
-        is_subscribed: 'true',
+        spork_box_newsletter_opt_in: 'true',
       },
     });
 
@@ -46,7 +46,9 @@ export async function updateHSContact(email: string, isSubscribed: boolean) {
       throw new Error(`HubSpot contact not found: ${email}`);
 
     await client.crm.contacts.basicApi.update(response.results[0].id, {
-      properties: { is_subscribed: isSubscribed ? 'true' : 'false' },
+      properties: {
+        spork_box_newsletter_opt_in: isSubscribed ? 'true' : 'false',
+      },
     });
 
     console.log(

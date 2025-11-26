@@ -11,8 +11,6 @@ import {
   getDateTotal,
   createAddons,
   getAddonsPrice,
-  getActiveOrders,
-  checkOrderCapacity,
   updateScheduleStatus,
   createOrders,
   docToObj,
@@ -331,32 +329,9 @@ router.post('/create', auth, async (req, res) => {
       throw new Error('Please provide valid order items');
     }
 
-    // Get upcoming week restaurants
-    // to validate the orders,
-    // to get the order item details, and
-    // to get scheduled dates and company ids
-    const upcomingRestaurants = await getUpcomingRestaurants(
-      res,
-      companies,
-      true
-    );
-    const deliveryDates: Date[] = [];
-    for (const restaurant of upcomingRestaurants) {
-      const deliveryDate = restaurant.schedule.date;
-      if (!deliveryDates.includes(deliveryDate))
-        deliveryDates.push(deliveryDate);
-    }
-    const restaurantIds: string[] = [];
-    for (const restaurant of upcomingRestaurants) {
-      const restaurantId = restaurant._id.toString();
-      if (!restaurantIds.includes(restaurantId))
-        restaurantIds.push(restaurantId);
-    }
-
-    // Get active orders for scheduled
-    // restaurants with companies and delivery dates
-    // to validate order capacity
-    const activeOrders = await getActiveOrders(restaurantIds, deliveryDates);
+    // Get upcoming week restaurants, restaurant ids, and delivery dates
+    const { upcomingRestaurants, restaurantIds, deliveryDates } =
+      await getUpcomingRestaurants(res, companies, true);
 
     // Create data map
     const upcomingDataMap: UpcomingDataMap = {};
@@ -373,6 +348,7 @@ router.post('/create', auth, async (req, res) => {
         upcomingDataMap[deliveryDate][company][restaurant] = {
           item: {},
           orderCapacity: upcomingRestaurant.orderCapacity,
+          activeOrderCount: upcomingRestaurant.activeOrderCount,
         };
 
       for (const item of upcomingRestaurant.items) {
@@ -390,17 +366,16 @@ router.post('/create', auth, async (req, res) => {
     // Validate order items
     for (const orderItem of orderItems) {
       // Validate delivery date
-      const isValidDate = upcomingDataMap[orderItem.deliveryDate];
-      if (!isValidDate) {
+      const validDeliveryDate = upcomingDataMap[orderItem.deliveryDate];
+      if (!validDeliveryDate) {
         console.error('Your cart contains an item from a day that is closed');
         res.status(400);
         throw new Error('Your cart contains an item from a day that is closed');
       }
 
       // Validate company
-      const isValidCompany =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
-      if (!isValidCompany) {
+      const validCompany = validDeliveryDate[orderItem.companyId];
+      if (!validCompany) {
         console.error(
           'Your cart contains an item from a restaurant that is not available for your company'
         );
@@ -411,11 +386,8 @@ router.post('/create', auth, async (req, res) => {
       }
 
       // Validate restaurant
-      const isValidRestaurant =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ];
-      if (!isValidRestaurant) {
+      const validRestaurant = validCompany[orderItem.restaurantId];
+      if (!validRestaurant) {
         console.error(
           'Your cart contains an item from a restaurant that is closed'
         );
@@ -433,17 +405,12 @@ router.post('/create', auth, async (req, res) => {
       }
 
       // Validate restaurant's order capacity
-      const orderCapacity =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ].orderCapacity;
-      const hasOrderCapacity = checkOrderCapacity(
-        orderItem.deliveryDate,
-        orderItem.restaurantId,
-        orderItem.quantity,
-        orderCapacity,
-        activeOrders
-      );
+      const orderCapacity = validRestaurant.orderCapacity;
+      const activeOrderCount = validRestaurant.activeOrderCount;
+
+      const hasOrderCapacity =
+        orderCapacity + 3 >= activeOrderCount + orderItem.quantity;
+
       if (!hasOrderCapacity) {
         const restaurant = upcomingRestaurants.find(
           (restaurant) =>
@@ -1022,7 +989,7 @@ router.post('/create', auth, async (req, res) => {
   }
 });
 
-// Get all upcoming orders
+// Get all upcoming orders for admin
 router.get('/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -1034,6 +1001,7 @@ router.get('/upcoming', auth, async (req, res) => {
     const upcomingOrders = await Order.find({ status: 'PROCESSING' })
       .sort({ 'delivery.date': 1 })
       .select('-__v -updatedAt');
+
     res.status(200).json(upcomingOrders);
   } catch (err) {
     console.error(err);
@@ -1041,7 +1009,7 @@ router.get('/upcoming', auth, async (req, res) => {
   }
 });
 
-// Get limited delivered orders
+// Get limited delivered orders for admin
 router.get('/delivered/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
@@ -1211,7 +1179,7 @@ router.patch('/deliver', auth, async (req, res) => {
   }
 });
 
-// Archive an order by admin and company admin
+// Archive an order by admin or company admin
 router.patch('/:orderId/archive', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1626,7 +1594,7 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
 });
 
 // Get today's orders for delivery driver
-router.get('/driver-orders', auth, async (req, res) => {
+router.get('/driver/today', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'DRIVER') {
     console.error(unAuthorized);
     res.status(403);
