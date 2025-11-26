@@ -73,7 +73,6 @@ export interface ItemSchema extends GenericItem {
   popularityIndex?: number;
   removableIngredients?: string;
   reviews: Types.DocumentArray<ReviewSchema>;
-  soldOutStat?: Types.DocumentArray<SoldOutStatSchema>;
 }
 
 export interface OrderCompany {
@@ -85,13 +84,9 @@ export interface OrderCompany {
 
 export interface OrderForEmail {
   _id: string;
-  item: {
-    name: string;
-  };
+  item: { name: string };
   customer: GenericUser;
-  restaurant: {
-    name: string;
-  };
+  restaurant: { name: string };
 }
 
 export interface ReviewSchema {
@@ -99,11 +94,6 @@ export interface ReviewSchema {
   rating: number;
   comment: string;
   createdAt: Date;
-}
-
-export interface SoldOutStatSchema {
-  date: Date;
-  company: Types.ObjectId;
 }
 
 export interface Addons {
@@ -207,20 +197,12 @@ export type UpcomingDataMap = {
     [company: string]: {
       [restaurant: string]: {
         orderCapacity: number;
+        activeOrderCount: number;
         item: {
           [id: string]: {
-            optionalAddons: {
-              addons: string;
-              addable: number;
-            };
-            requiredAddonsOne: {
-              addons: string;
-              addable: number;
-            };
-            requiredAddonsTwo: {
-              addons: string;
-              addable: number;
-            };
+            optionalAddons: { addons: string; addable: number };
+            requiredAddonsOne: { addons: string; addable: number };
+            requiredAddonsTwo: { addons: string; addable: number };
             removableIngredients?: string;
           };
         };
@@ -243,10 +225,7 @@ export type Order = {
     lastName: string;
     email: string;
   };
-  restaurant: {
-    _id: Types.ObjectId;
-    name: string;
-  };
+  restaurant: { _id: Types.ObjectId; name: string };
   company: OrderCompany;
   delivery: {
     date: number;

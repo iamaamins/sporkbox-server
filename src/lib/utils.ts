@@ -17,24 +17,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import moment from 'moment';
 import { Shift, SHIFTS } from '../data/COMPANY';
 
-type SortScheduledRestaurant = {
-  schedule: {
-    date: Date;
-  };
-};
-
-type ActiveOrder = {
-  _id: Types.ObjectId;
-  delivery: {
-    date: Date;
-  };
-  restaurant: {
-    _id: Types.ObjectId;
-  };
-  item: {
-    quantity: number;
-  };
-};
+type SortScheduledRestaurant = { schedule: { date: Date } };
 
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
@@ -72,12 +55,30 @@ export const sortByDate = (
 export const getTodayTimestamp = () =>
   dateToMS(moment().utc().format('YYYY-MM-DD'));
 
+async function getActiveOrders(restaurantIds: string[], deliveryDates: Date[]) {
+  try {
+    const activeOrders = await Order.find({
+      status: 'PROCESSING',
+      'delivery.date': { $in: deliveryDates },
+      'restaurant._id': { $in: restaurantIds },
+    })
+      .select('delivery.date restaurant._id item.quantity')
+      .lean();
+
+    return activeOrders;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
+
 export async function getUpcomingRestaurants(
   res: Response,
   companies: UserCompany[],
   getActiveSchedules?: boolean
 ) {
   const enrolledCompany = companies.find((company) => company.isEnrolled);
+
   if (!enrolledCompany) {
     console.log('No enrolled shift found');
     res.status(400);
@@ -98,7 +99,10 @@ export async function getUpcomingRestaurants(
       .select('-__v -updatedAt -createdAt -address')
       .lean();
 
+    const restaurantIds: string[] = [];
+    const deliveryDates: Date[] = [];
     const upcomingRestaurants = [];
+
     for (const scheduledRestaurant of scheduledRestaurants) {
       const items = scheduledRestaurant.items
         .filter((item) => item.status === 'ACTIVE')
@@ -111,6 +115,7 @@ export async function getUpcomingRestaurants(
         }));
 
       const { schedules, ...rest } = scheduledRestaurant;
+
       for (const schedule of schedules) {
         if (
           dateToMS(schedule.date) > getTodayTimestamp() &&
@@ -130,11 +135,46 @@ export async function getUpcomingRestaurants(
               createdAt: schedule.createdAt,
             },
           };
+
+          const restaurantId = upcomingRestaurant._id.toString();
+          if (!restaurantIds.includes(restaurantId))
+            restaurantIds.push(restaurantId);
+
+          const deliveryDate = upcomingRestaurant.schedule.date;
+          if (!deliveryDates.includes(deliveryDate))
+            deliveryDates.push(deliveryDate);
+
           upcomingRestaurants.push(upcomingRestaurant);
         }
       }
     }
-    return upcomingRestaurants.sort(sortByDate);
+
+    const activeOrders = await getActiveOrders(restaurantIds, deliveryDates);
+
+    const upcomingRestaurantsWithActiveOrderCount = upcomingRestaurants
+      .map((upcomingRestaurant) => {
+        let activeOrderCount = 0;
+
+        for (const activeOrder of activeOrders) {
+          if (
+            dateToMS(activeOrder.delivery.date) ===
+              dateToMS(upcomingRestaurant.schedule.date) &&
+            activeOrder.restaurant._id.toString() ===
+              upcomingRestaurant._id.toString()
+          ) {
+            activeOrderCount += activeOrder.item.quantity;
+          }
+        }
+
+        return { ...upcomingRestaurant, activeOrderCount };
+      })
+      .sort(sortByDate);
+
+    return {
+      restaurantIds,
+      deliveryDates,
+      upcomingRestaurants: upcomingRestaurantsWithActiveOrderCount,
+    };
   } catch (err) {
     console.log(err);
     throw err;
@@ -249,44 +289,6 @@ export const getAddonsPrice = (serverAddons: string, clientAddons: string[]) =>
         .filter((addon) => clientAddons.includes(addon[0]))
         .reduce((acc, curr) => acc + +curr[1], 0)
     : 0;
-
-export function checkOrderCapacity(
-  deliveryDate: number,
-  restaurantId: string,
-  currQuantity: number,
-  orderCapacity: number,
-  activeOrders: ActiveOrder[]
-) {
-  let orderedQuantity = 0;
-  for (const activeOrder of activeOrders) {
-    if (
-      dateToMS(activeOrder.delivery.date) === deliveryDate &&
-      activeOrder.restaurant._id.toString() === restaurantId
-    ) {
-      orderedQuantity += activeOrder.item.quantity;
-    }
-  }
-  return orderCapacity + 3 >= orderedQuantity + currQuantity;
-}
-
-export async function getActiveOrders(
-  restaurantIds: string[],
-  deliveryDates: Date[]
-): Promise<ActiveOrder[]> {
-  try {
-    const activeOrders = await Order.find({
-      status: 'PROCESSING',
-      'delivery.date': { $in: deliveryDates },
-      'restaurant._id': { $in: restaurantIds },
-    })
-      .select('delivery.date restaurant._id item.quantity')
-      .lean();
-    return activeOrders;
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-}
 
 export function updateScheduleStatus(
   restaurantIds: string[],

@@ -31,10 +31,7 @@ import {
 import User from '../models/user';
 
 interface ItemsIndexPayload {
-  reorderedItems: {
-    _id: string;
-    index: number;
-  }[];
+  reorderedItems: { _id: string; index: number }[];
 }
 
 const router = Router();
@@ -75,7 +72,11 @@ router.get('/me/upcoming', auth, async (req, res) => {
   }
 
   try {
-    const upcomingRestaurants = await getUpcomingRestaurants(res, companies);
+    const { upcomingRestaurants } = await getUpcomingRestaurants(
+      res,
+      companies
+    );
+
     res.status(200).json(upcomingRestaurants);
   } catch (err) {
     console.error(err);
@@ -107,7 +108,7 @@ router.get('/upcoming/:userId', auth, async (req, res) => {
   }
 
   try {
-    const upcomingRestaurants = await getUpcomingRestaurants(
+    const { upcomingRestaurants } = await getUpcomingRestaurants(
       res,
       user.companies
     );
@@ -561,9 +562,7 @@ router.post('/:restaurantId/add-item', auth, upload, async (req, res) => {
           },
         },
       },
-      {
-        returnDocument: 'after',
-      }
+      { returnDocument: 'after' }
     )
       .select('-__v -updatedAt')
       .lean()
