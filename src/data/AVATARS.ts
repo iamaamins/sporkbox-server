@@ -33,6 +33,8 @@ export const AVATARS = [
   'winter-spork',
   'wizard-spork',
   'yoga-spork',
+  'noodles-spork',
+  'scientist-spork',
 ] as const;
 
 export type Avatar = (typeof AVATARS)[number];
