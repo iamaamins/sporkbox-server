@@ -134,11 +134,11 @@ router.post('/register', async (req, res) => {
     });
     const customer = response.toObject();
 
-    await createHSContact(
-      customer.email,
-      customer.firstName,
-      customer.lastName
-    );
+    // await createHSContact(
+    //   customer.email,
+    //   customer.firstName,
+    //   customer.lastName
+    // );
 
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
@@ -221,10 +221,10 @@ router.patch(
         .lean()
         .orFail();
 
-      await updateHSContact(
-        updatedCustomer.email,
-        updatedCustomer.subscribedTo.newsletter
-      );
+      // await updateHSContact(
+      //   updatedCustomer.email,
+      //   updatedCustomer.subscribedTo.newsletter
+      // );
 
       res.status(201).json(updatedCustomer);
     } catch (err) {
