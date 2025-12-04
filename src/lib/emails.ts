@@ -150,3 +150,16 @@ export function timeToOrder(customer: GenericUser) {
         `,
   };
 }
+
+export function quickMessage(customer: GenericUser, message: string) {
+  return {
+    to: 'portland@sporkbytes.com',
+    from: process.env.SENDER_EMAIL as string,
+    subject: `Quick Message from ${customer.firstName} ${customer.lastName}`,
+    html: `
+        <p>Name: ${customer.firstName} ${customer.lastName}</p>
+        <p>Email: ${customer.email}</p>
+        <p>Message: ${message}</p>
+        `,
+  };
+}
