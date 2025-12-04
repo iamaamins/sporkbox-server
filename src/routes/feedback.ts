@@ -8,6 +8,8 @@ import Order from '../models/order';
 import { resizeImage, toUSNumber } from '../lib/utils';
 import { upload } from '../config/multer';
 import { uploadImage } from '../config/s3';
+import mail from '@sendgrid/mail';
+import { quickMessage } from '../lib/emails';
 
 const router = Router();
 
@@ -38,6 +40,30 @@ router.post('/general', auth, async (req, res) => {
     });
 
     res.status(200).json('Feedback submitted');
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Handle quick message
+router.post('/quick-message', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { message } = req.body;
+  if (!message) {
+    console.error('Message is required');
+    res.status(400);
+    throw new Error('Message is required');
+  }
+
+  try {
+    await mail.send(quickMessage(req.user, message));
+    res.status(200).json('Message submitted');
   } catch (err) {
     console.error(err);
     throw err;
