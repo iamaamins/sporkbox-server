@@ -9,7 +9,7 @@ import { resizeImage, toUSNumber } from '../lib/utils';
 import { upload } from '../config/multer';
 import { uploadImage } from '../config/s3';
 import mail from '@sendgrid/mail';
-import { quickMessage } from '../lib/emails';
+import { issueMessage, quickMessage } from '../lib/emails';
 
 const router = Router();
 
@@ -115,12 +115,14 @@ router.post('/issue', auth, upload, async (req, res) => {
       lastName: req.user.lastName,
     };
 
+    let restaurantDetail = null;
     if (restaurant === 'Not Applicable') {
       await Feedback.create({
         customer,
         type: 'ISSUE',
         issue: { ...issue, restaurant: null },
       });
+      restaurantDetail = restaurant;
     } else {
       const response = await Restaurant.findOne({
         _id: restaurant,
@@ -138,7 +140,19 @@ router.post('/issue', auth, upload, async (req, res) => {
           restaurant: { _id: response._id, name: response.name },
         },
       });
+      restaurantDetail = response.name;
     }
+
+    await mail.send(
+      issueMessage(
+        req.user,
+        category,
+        date,
+        restaurantDetail,
+        message,
+        imageUrl
+      )
+    );
 
     res.status(200).json('Issue submitted');
   } catch (err) {

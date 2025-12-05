@@ -163,3 +163,27 @@ export function quickMessage(customer: GenericUser, message: string) {
         `,
   };
 }
+
+export function issueMessage(
+  customer: GenericUser,
+  category: string,
+  date: string,
+  restaurant: string,
+  message: string,
+  imageUrl?: string
+) {
+  return {
+    to: 'portland@sporkbytes.com',
+    from: 'eat@sporkbytes.com',
+    subject: `Issue Message from ${customer.firstName} ${customer.lastName}`,
+    html: `
+        <p>Name: ${customer.firstName} ${customer.lastName}</p>
+        <p>Email: ${customer.email}</p>
+        <p>Category: ${category}</p>
+        <p>Date: ${date}</p>
+        <p>Restaurant: ${restaurant}</p>
+        ${imageUrl && `<p>Image: <a href='${imageUrl}'>View Image</a></p>`}
+        <p>Message: ${message}</p>
+        `,
+  };
+}
