@@ -3,7 +3,7 @@ import mail from '@sendgrid/mail';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/user';
 import auth from '../middleware/auth';
-import { setCookie, deleteFields, checkActions } from '../lib/utils';
+import { setCookie, deleteFields, checkActions, isLocal } from '../lib/utils';
 import { Router } from 'express';
 import { passwordReset, passwordResetConfirmation } from '../lib/emails';
 import {
@@ -65,7 +65,7 @@ router.post('/logout', async (req, res) => {
       maxAge: 0,
       httpOnly: true,
       sameSite: 'strict',
-      secure: process.env.NODE_ENV !== 'development',
+      secure: !isLocal,
     })
     .end();
 });

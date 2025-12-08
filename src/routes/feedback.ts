@@ -5,7 +5,7 @@ import { ISSUE_CATEGORIES } from '../data/FEEDBACK';
 import { unAuthorized } from '../lib/messages';
 import Restaurant from '../models/restaurant';
 import Order from '../models/order';
-import { resizeImage, toUSNumber } from '../lib/utils';
+import { isDev, isLocal, resizeImage, toUSNumber } from '../lib/utils';
 import { upload } from '../config/multer';
 import { uploadImage } from '../config/s3';
 import mail from '@sendgrid/mail';
@@ -62,7 +62,12 @@ router.post('/quick-message', auth, async (req, res) => {
   }
 
   try {
-    await mail.send(quickMessage(req.user, message));
+    if (isLocal || isDev) {
+      console.log(quickMessage(req.user, message));
+    } else {
+      await mail.send(quickMessage(req.user, message));
+    }
+
     res.status(200).json('Message submitted');
   } catch (err) {
     console.error(err);
@@ -143,16 +148,29 @@ router.post('/issue', auth, upload, async (req, res) => {
       restaurantDetail = response.name;
     }
 
-    await mail.send(
-      issueMessage(
-        req.user,
-        category,
-        date,
-        restaurantDetail,
-        message,
-        imageUrl
-      )
-    );
+    if (isLocal || isDev) {
+      console.log(
+        issueMessage(
+          req.user,
+          category,
+          date,
+          restaurantDetail,
+          message,
+          imageUrl
+        )
+      );
+    } else {
+      await mail.send(
+        issueMessage(
+          req.user,
+          category,
+          date,
+          restaurantDetail,
+          message,
+          imageUrl
+        )
+      );
+    }
 
     res.status(200).json('Issue submitted');
   } catch (err) {

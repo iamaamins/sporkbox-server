@@ -19,6 +19,9 @@ import { Shift, SHIFTS } from '../data/COMPANY';
 
 type SortScheduledRestaurant = { schedule: { date: Date } };
 
+export const isLocal = process.env.NODE_ENV === 'local';
+export const isDev = process.env.NODE_ENV === 'development';
+
 export const setCookie = (res: Response, _id: Types.ObjectId): void => {
   const jwtToken = jwt.sign({ _id }, process.env.JWT_SECRET as string, {
     expiresIn: '7d',
@@ -29,7 +32,7 @@ export const setCookie = (res: Response, _id: Types.ObjectId): void => {
     httpOnly: true,
     sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    secure: process.env.NODE_ENV !== 'development',
+    secure: !isLocal,
   });
 };
 
