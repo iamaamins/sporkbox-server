@@ -252,9 +252,7 @@ router.patch('/:userId/update-status', auth, async (req, res) => {
   try {
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
-      {
-        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-      },
+      { status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE' },
       { returnDocument: 'after' }
     )
       .select('-__v -password -updatedAt')
