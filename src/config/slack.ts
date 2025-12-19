@@ -1,9 +1,11 @@
-import { WebClient } from '@slack/web-api';
+import { retryPolicies, WebClient } from '@slack/web-api';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+const web = new WebClient(process.env.SLACK_BOT_TOKEN, {
+  retryConfig: retryPolicies.fiveRetriesInFiveMinutes,
+});
 
 export async function postSlackMessage(restaurant: string, channel: string) {
   try {

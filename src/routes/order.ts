@@ -11,8 +11,6 @@ import {
   getDateTotal,
   createAddons,
   getAddonsPrice,
-  getActiveOrders,
-  checkOrderCapacity,
   updateScheduleStatus,
   createOrders,
   docToObj,
@@ -36,8 +34,8 @@ import company from '../models/company';
 
 const router = Router();
 
-// Get vendor's all upcoming orders
-router.get('/vendor/upcoming-orders', auth, async (req, res) => {
+// Get all upcoming orders of a vendor
+router.get('/vendor/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'VENDOR') {
     console.error(unAuthorized);
     res.status(403);
@@ -60,8 +58,8 @@ router.get('/vendor/upcoming-orders', auth, async (req, res) => {
   }
 });
 
-// Get customer's all upcoming orders
-router.get('/me/upcoming-orders', auth, async (req, res) => {
+// Get all upcoming orders of a customer
+router.get('/me/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -82,8 +80,8 @@ router.get('/me/upcoming-orders', auth, async (req, res) => {
   }
 });
 
-// Get customer's limited delivered orders
-router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
+// Get limited delivered orders of a customer
+router.get('/me/delivered/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'CUSTOMER') {
     console.error(unAuthorized);
     res.status(403);
@@ -108,8 +106,187 @@ router.get('/me/delivered-orders/:limit', auth, async (req, res) => {
   }
 });
 
+// Get food stats of a customer
+router.get('/me/food-stats', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    const filters = {
+      'customer._id': req.user._id,
+      status: { $in: ['DELIVERED', 'PROCESSING'] },
+    };
+
+    const orderCount = await Order.countDocuments(filters);
+    const [{ itemCount, restaurantCount }] = await Order.aggregate([
+      { $match: filters },
+      {
+        $group: {
+          _id: null,
+          itemCount: { $sum: '$item.quantity' },
+          restaurantCount: { $addToSet: '$restaurant._id' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCount: 1,
+          restaurantCount: { $size: '$restaurantCount' },
+        },
+      },
+    ]).allowDiskUse(true);
+
+    res.status(200).json({ orderCount, itemCount, restaurantCount });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get most liked restaurants and items of a customer
+router.get('/me/most-liked-restaurants-and-items', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  try {
+    // Get the date 6 months past today
+    const start = new Date();
+    start.setMonth(start.getMonth() - 6);
+
+    // Get restaurant order history
+    const restaurants = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['DELIVERED', 'PROCESSING'] },
+          'customer._id': req.user._id,
+          createdAt: { $gte: start },
+        },
+      },
+      {
+        $group: {
+          _id: '$restaurant._id',
+          name: { $first: '$restaurant.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 5 },
+      { $project: { _id: 0, name: 1 } },
+    ]).allowDiskUse(true);
+
+    // Get item order history
+    const items = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['DELIVERED', 'PROCESSING'] },
+          'customer._id': req.user._id,
+          createdAt: { $gte: start },
+        },
+      },
+      {
+        $group: {
+          _id: '$item._id',
+          name: { $first: '$item.name' },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { orderCount: -1 } },
+      { $limit: 5 },
+      { $project: { _id: 0, name: 1 } },
+    ]).allowDiskUse(true);
+
+    res.status(200).json({
+      restaurants: restaurants.map((restaurant) => restaurant.name),
+      items: items.map((item) => item.name),
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Get reviewed orders' rating data of a customer
+router.post('/me/rating-data', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { orderIds }: { orderIds: string[] } = req.body;
+  if (!orderIds || !Array.isArray(orderIds) || !orderIds.length) {
+    console.error('Order Ids are required');
+    res.status(400);
+    throw new Error('Order Ids are required');
+  }
+
+  try {
+    const orders = await Order.find({
+      'customer._id': req.user._id,
+      _id: { $in: orderIds },
+      status: 'DELIVERED',
+      isReviewed: true,
+    })
+      .select('_id restaurant item')
+      .limit(5)
+      .lean();
+
+    const restaurantIds = orders
+      .map((order) => order.restaurant._id.toString())
+      .filter((id, index, ids) => ids.indexOf(id) === index);
+
+    const itemIds = orders
+      .map((order) => order.item._id.toString())
+      .filter((id, index, ids) => ids.indexOf(id) === index);
+
+    const restaurants = await Restaurant.find({
+      _id: { $in: restaurantIds },
+      'items._id': { $in: itemIds },
+    })
+      .select('items')
+      .lean();
+
+    const userId = req.user._id.toString();
+    const ratingData: { orderId: string; rating: number }[] = [];
+
+    for (const order of orders) {
+      const restaurant = restaurants.find(
+        (restaurant) =>
+          restaurant._id.toString() === order.restaurant._id.toString()
+      );
+      if (!restaurant) continue;
+
+      const item = restaurant.items.find(
+        (item) => item._id.toString() === order.item._id.toString()
+      );
+      if (!item) continue;
+
+      const latestReview = item.reviews
+        .filter((review) => review.customer?.toString() === userId)
+        .pop();
+      if (!latestReview) continue;
+
+      ratingData.push({
+        orderId: order._id.toString(),
+        rating: latestReview.rating,
+      });
+    }
+
+    res.status(200).json(ratingData);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
 // Create orders
-router.post('/create-orders', auth, async (req, res) => {
+router.post('/create', auth, async (req, res) => {
   if (
     !req.user ||
     (req.user.role !== 'ADMIN' && req.user.role !== 'CUSTOMER')
@@ -152,32 +329,9 @@ router.post('/create-orders', auth, async (req, res) => {
       throw new Error('Please provide valid order items');
     }
 
-    // Get upcoming week restaurants
-    // to validate the orders,
-    // to get the order item details, and
-    // to get scheduled dates and company ids
-    const upcomingRestaurants = await getUpcomingRestaurants(
-      res,
-      companies,
-      true
-    );
-    const deliveryDates: Date[] = [];
-    for (const restaurant of upcomingRestaurants) {
-      const deliveryDate = restaurant.schedule.date;
-      if (!deliveryDates.includes(deliveryDate))
-        deliveryDates.push(deliveryDate);
-    }
-    const restaurantIds: string[] = [];
-    for (const restaurant of upcomingRestaurants) {
-      const restaurantId = restaurant._id.toString();
-      if (!restaurantIds.includes(restaurantId))
-        restaurantIds.push(restaurantId);
-    }
-
-    // Get active orders for scheduled
-    // restaurants with companies and delivery dates
-    // to validate order capacity
-    const activeOrders = await getActiveOrders(restaurantIds, deliveryDates);
+    // Get upcoming week restaurants, restaurant ids, and delivery dates
+    const { upcomingRestaurants, restaurantIds, deliveryDates } =
+      await getUpcomingRestaurants(res, companies, true);
 
     // Create data map
     const upcomingDataMap: UpcomingDataMap = {};
@@ -194,6 +348,7 @@ router.post('/create-orders', auth, async (req, res) => {
         upcomingDataMap[deliveryDate][company][restaurant] = {
           item: {},
           orderCapacity: upcomingRestaurant.orderCapacity,
+          activeOrderCount: upcomingRestaurant.activeOrderCount,
         };
 
       for (const item of upcomingRestaurant.items) {
@@ -211,17 +366,16 @@ router.post('/create-orders', auth, async (req, res) => {
     // Validate order items
     for (const orderItem of orderItems) {
       // Validate delivery date
-      const isValidDate = upcomingDataMap[orderItem.deliveryDate];
-      if (!isValidDate) {
+      const validDeliveryDate = upcomingDataMap[orderItem.deliveryDate];
+      if (!validDeliveryDate) {
         console.error('Your cart contains an item from a day that is closed');
         res.status(400);
         throw new Error('Your cart contains an item from a day that is closed');
       }
 
       // Validate company
-      const isValidCompany =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId];
-      if (!isValidCompany) {
+      const validCompany = validDeliveryDate[orderItem.companyId];
+      if (!validCompany) {
         console.error(
           'Your cart contains an item from a restaurant that is not available for your company'
         );
@@ -232,11 +386,8 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate restaurant
-      const isValidRestaurant =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ];
-      if (!isValidRestaurant) {
+      const validRestaurant = validCompany[orderItem.restaurantId];
+      if (!validRestaurant) {
         console.error(
           'Your cart contains an item from a restaurant that is closed'
         );
@@ -254,17 +405,12 @@ router.post('/create-orders', auth, async (req, res) => {
       }
 
       // Validate restaurant's order capacity
-      const orderCapacity =
-        upcomingDataMap[orderItem.deliveryDate][orderItem.companyId][
-          orderItem.restaurantId
-        ].orderCapacity;
-      const hasOrderCapacity = checkOrderCapacity(
-        orderItem.deliveryDate,
-        orderItem.restaurantId,
-        orderItem.quantity,
-        orderCapacity,
-        activeOrders
-      );
+      const orderCapacity = validRestaurant.orderCapacity;
+      const activeOrderCount = validRestaurant.activeOrderCount;
+
+      const hasOrderCapacity =
+        orderCapacity + 3 >= activeOrderCount + orderItem.quantity;
+
       if (!hasOrderCapacity) {
         const restaurant = upcomingRestaurants.find(
           (restaurant) =>
@@ -632,8 +778,8 @@ router.post('/create-orders', auth, async (req, res) => {
     }));
     const orderItemDetails = getDateTotal(orderDateTotalDetails);
 
-    const company = companies.find((company) => company.status === 'ACTIVE');
-    const shiftBudget = company?.shiftBudget || 0;
+    const enrolledCompany = companies.find((company) => company.isEnrolled);
+    const shiftBudget = enrolledCompany?.shiftBudget || 0;
     const payableDetails = orderItemDetails
       .map((orderItemDetail) => {
         const { total, ...rest } = orderItemDetail;
@@ -843,8 +989,8 @@ router.post('/create-orders', auth, async (req, res) => {
   }
 });
 
-// Get all upcoming orders
-router.get('/all-upcoming-orders', auth, async (req, res) => {
+// Get all upcoming orders for admin
+router.get('/upcoming', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -855,6 +1001,7 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
     const upcomingOrders = await Order.find({ status: 'PROCESSING' })
       .sort({ 'delivery.date': 1 })
       .select('-__v -updatedAt');
+
     res.status(200).json(upcomingOrders);
   } catch (err) {
     console.error(err);
@@ -862,8 +1009,8 @@ router.get('/all-upcoming-orders', auth, async (req, res) => {
   }
 });
 
-// Get limited delivered orders
-router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
+// Get limited delivered orders for admin
+router.get('/delivered/:limit', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -903,7 +1050,7 @@ router.get('/all-delivered-orders/:limit', auth, async (req, res) => {
 });
 
 // Get all delivered orders of a customer
-router.get('/:customerId/all-delivered-orders', auth, async (req, res) => {
+router.get('/:customerId/delivered', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -988,7 +1135,7 @@ router.patch('/deliver', auth, async (req, res) => {
         $set: {
           status: 'DELIVERED',
           deliveredBy: {
-            id: req.user._id,
+            _id: req.user._id,
             firstName: req.user.firstName,
             lastName: req.user.lastName,
           },
@@ -1032,7 +1179,7 @@ router.patch('/deliver', auth, async (req, res) => {
   }
 });
 
-// Archive an order by admin and company admin
+// Archive an order by admin or company admin
 router.patch('/:orderId/archive', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1158,7 +1305,7 @@ router.get('/weekly-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get weekly order stat by company
+// Get weekly order stat of a company
 router.get('/:companyCode/weekly-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1244,7 +1391,7 @@ router.get('/payment-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get payment stat by company
+// Get payment stat of a company
 router.get('/:companyCode/payment-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1316,7 +1463,7 @@ router.get('/restaurant-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(restaurants);
   } catch (err) {
@@ -1350,7 +1497,7 @@ router.get('/item-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(items);
   } catch (err) {
@@ -1359,7 +1506,7 @@ router.get('/item-stat/:start/:end', auth, async (req, res) => {
   }
 });
 
-// Get most liked restaurants by company
+// Get most liked restaurants of a company
 router.get(
   '/:companyCode/restaurant-stat/:start/:end',
   auth,
@@ -1394,7 +1541,7 @@ router.get(
         { $sort: { orderCount: -1 } },
         { $limit: 10 },
         { $project: { _id: 0, name: 1, orderCount: 1 } },
-      ]);
+      ]).allowDiskUse(true);
 
       res.status(200).json(restaurants);
     } catch (err) {
@@ -1404,7 +1551,7 @@ router.get(
   }
 );
 
-// Get most liked items by company
+// Get most liked items of a company
 router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
   if (
     !req.user ||
@@ -1437,7 +1584,7 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
       { $sort: { orderCount: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, name: 1, restaurant: 1, orderCount: 1 } },
-    ]);
+    ]).allowDiskUse(true);
 
     res.status(200).json(items);
   } catch (err) {
@@ -1447,7 +1594,7 @@ router.get('/:companyCode/item-stat/:start/:end', auth, async (req, res) => {
 });
 
 // Get today's orders for delivery driver
-router.get('/driver-orders', auth, async (req, res) => {
+router.get('/driver/today', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'DRIVER') {
     console.error(unAuthorized);
     res.status(403);

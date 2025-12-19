@@ -1,5 +1,8 @@
 import { Types } from 'mongoose';
-import { subscriptions } from './lib/utils';
+import { Shift } from './data/COMPANY';
+import { EmailSubscriptions } from './data/EMAIL_SUBSCRIPTIONS';
+import { Avatar } from './data/AVATARS';
+import { Status } from './data/STATUS';
 
 declare global {
   namespace Express {
@@ -23,13 +26,12 @@ export interface Address {
   addressLine2?: string;
 }
 
-type Shift = 'day' | 'night' | 'general';
-
 export interface CompanyDetails {
   name: string;
   website: string;
   code: string;
   shift: Shift;
+  status: Status;
   shiftBudget: number;
 }
 
@@ -71,7 +73,6 @@ export interface ItemSchema extends GenericItem {
   popularityIndex?: number;
   removableIngredients?: string;
   reviews: Types.DocumentArray<ReviewSchema>;
-  soldOutStat?: Types.DocumentArray<SoldOutStatSchema>;
 }
 
 export interface OrderCompany {
@@ -83,13 +84,9 @@ export interface OrderCompany {
 
 export interface OrderForEmail {
   _id: string;
-  item: {
-    name: string;
-  };
+  item: { name: string };
   customer: GenericUser;
-  restaurant: {
-    name: string;
-  };
+  restaurant: { name: string };
 }
 
 export interface ReviewSchema {
@@ -97,11 +94,6 @@ export interface ReviewSchema {
   rating: number;
   comment: string;
   createdAt: Date;
-}
-
-export interface SoldOutStatSchema {
-  date: Date;
-  company: Types.ObjectId;
 }
 
 export interface Addons {
@@ -121,6 +113,7 @@ export interface RestaurantSchema {
   name: string;
   logo: string;
   address: Address;
+  status: Status;
   isFeatured: boolean;
   orderCapacity: number;
   items: Types.DocumentArray<ItemSchema>;
@@ -137,9 +130,10 @@ export interface UserSchema extends GenericUser {
   password: string;
   companies: UserCompany[];
   restaurant: Types.ObjectId;
-  shifts: Exclude<Shift, 'general'>[];
-  subscribedTo: typeof subscriptions;
+  subscribedTo: EmailSubscriptions;
   foodPreferences?: string[];
+  foodVibe?: string;
+  avatar?: { id: Avatar };
   isCompanyAdmin?: boolean;
 }
 
@@ -169,7 +163,8 @@ export interface OrdersPayload {
 export interface UserCompany extends CompanyDetails {
   _id: Types.ObjectId;
   address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
+  isEnrolled: boolean;
+  isEnrollAble: boolean;
 }
 
 export interface StatusChangePayload {
@@ -190,17 +185,11 @@ export interface DateTotal {
   companyId: string;
 }
 
-interface StatRestaurant {
-  id: string;
-  name: string;
-}
-
 export interface CompanySchema extends CompanyDetails {
   _id: Types.ObjectId;
-  createdAt: Date;
   address: Address;
-  status: 'ACTIVE' | 'ARCHIVED';
   slackChannel?: string;
+  createdAt: Date;
 }
 
 export type UpcomingDataMap = {
@@ -208,20 +197,12 @@ export type UpcomingDataMap = {
     [company: string]: {
       [restaurant: string]: {
         orderCapacity: number;
+        activeOrderCount: number;
         item: {
           [id: string]: {
-            optionalAddons: {
-              addons: string;
-              addable: number;
-            };
-            requiredAddonsOne: {
-              addons: string;
-              addable: number;
-            };
-            requiredAddonsTwo: {
-              addons: string;
-              addable: number;
-            };
+            optionalAddons: { addons: string; addable: number };
+            requiredAddonsOne: { addons: string; addable: number };
+            requiredAddonsTwo: { addons: string; addable: number };
             removableIngredients?: string;
           };
         };
@@ -244,10 +225,7 @@ export type Order = {
     lastName: string;
     email: string;
   };
-  restaurant: {
-    _id: Types.ObjectId;
-    name: string;
-  };
+  restaurant: { _id: Types.ObjectId; name: string };
   company: OrderCompany;
   delivery: {
     date: number;

@@ -1,19 +1,19 @@
 {
   "name": "sporkbox-server",
   "version": "1.0.0",
-  "description": "",
   "main": "app.js",
   "scripts": {
     "tsc": "tsc",
     "start": "node ./dist/app.js",
     "postinstall": "npm run tsc",
     "migrate-mongo": "migrate-mongo",
-    "dev": "nodemon --files ./src/app.ts"
+    "dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules --watch src src/app.ts"
   },
-  "author": "",
+  "author": "Alamin Shaikh",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.241.0",
+    "@hubspot/api-client": "^13.4.0",
     "@sendgrid/mail": "^7.7.0",
     "@slack/web-api": "^7.9.1",
     "bcrypt": "^5.0.1",
@@ -32,6 +32,7 @@
     "mongodb": "^5.9.2",
     "mongoose": "^8.7.0",
     "multer": "^1.4.5-lts.1",
+    "openai": "^6.3.0",
     "sharp": "^0.31.3",
     "stripe": "^11.6.0",
     "xss-clean": "^0.1.1"
@@ -46,8 +47,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "^18.11.5",
     "@types/sharp": "^0.31.1",
-    "nodemon": "^2.0.20",
-    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^4.8.4"
   },
   "engines": {

@@ -1,9 +1,9 @@
 import User from '../models/user';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { checkActions, deleteFields, generateRandomString } from '../lib/utils';
+import { deleteFields, generateRandomString } from '../lib/utils';
 import { Router } from 'express';
-import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
+import { requiredFields, unAuthorized } from '../lib/messages';
 import bcrypt from 'bcrypt';
 
 const router = Router();
@@ -27,7 +27,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get all guests by company
+// Get all guests of a company
 router.get('/:companyCode', auth, async (req, res) => {
   if (
     !req.user ||
@@ -53,7 +53,7 @@ router.get('/:companyCode', auth, async (req, res) => {
   }
 });
 
-// Add guest
+// Add a guest to a company
 router.post('/add/:companyId', auth, async (req, res) => {
   if (
     !req.user ||
@@ -93,49 +93,14 @@ router.post('/add/:companyId', auth, async (req, res) => {
       email,
       role: 'GUEST',
       status: 'ACTIVE',
-      companies: [company],
       password: hashedPassword,
+      companies: [{ ...company, isEnrolled: true, isEnrollAble: true }],
     });
 
     const guest = response.toObject();
     deleteFields(guest, ['createdAt', 'password']);
+
     res.status(201).json(guest);
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-});
-
-// Change guest status
-router.patch('/:guestId/change-guest-status', auth, async (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    console.error(unAuthorized);
-    res.status(403);
-    throw new Error(unAuthorized);
-  }
-
-  const { guestId } = req.params;
-  const { action } = req.body;
-  if (!action) {
-    console.error(requiredAction);
-    res.status(400);
-    throw new Error(requiredAction);
-  }
-  checkActions(undefined, action, res);
-
-  try {
-    const updatedGuest = await User.findOneAndUpdate(
-      { _id: guestId, role: 'GUEST' },
-      {
-        status: action === 'Archive' ? 'ARCHIVED' : 'ACTIVE',
-      },
-      { returnDocument: 'after' }
-    )
-      .select('-__v -password -updatedAt -role')
-      .lean()
-      .orFail();
-
-    res.status(201).json(updatedGuest);
   } catch (err) {
     console.error(err);
     throw err;

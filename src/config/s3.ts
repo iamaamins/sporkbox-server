@@ -34,7 +34,7 @@ export async function uploadImage(
     await s3Client.send(new PutObjectCommand(params));
     return `${process.env.CLOUDFRONT_DOMAIN}/${name}`;
   } catch (err) {
-    console.log('Failed to upload image');
+    console.error(err);
     res.status(500);
     throw new Error('Failed to upload image');
   }
@@ -49,7 +49,7 @@ export async function deleteImage(res: Response, name: string) {
   try {
     await s3Client.send(new DeleteObjectCommand(params));
   } catch (err) {
-    console.log('Failed to delete image');
+    console.error(err);
     res.status(500);
     throw new Error('Failed to delete image');
   }

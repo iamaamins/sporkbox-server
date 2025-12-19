@@ -29,7 +29,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add a company
-router.post('/add-company', auth, async (req, res) => {
+router.post('/add', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -52,32 +52,25 @@ router.post('/add-company', auth, async (req, res) => {
   if (
     !name ||
     !code ||
+    !shift ||
     !city ||
     !state ||
     !zip ||
     !website ||
-    !shiftBudget ||
     !addressLine1
   ) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
   }
-  if (shift) checkShift(res, shift);
+  checkShift(res, shift);
 
   try {
-    const companies = await Company.find({ code }).lean();
-
-    if (companies.some((company) => company.shift === shift)) {
+    const sameShiftCompany = await Company.findOne({ code, shift }).lean();
+    if (sameShiftCompany) {
       console.error('A company with the same shift already exists');
       res.status(400);
       throw new Error('A company with the same shift already exists');
-    }
-
-    if (companies.some((company) => company.shift === 'general')) {
-      console.error('A non-shift company with the same code already exists');
-      res.status(400);
-      throw new Error('A non-shift company with the same code already exists');
     }
 
     const response = await Company.create({
@@ -91,27 +84,29 @@ router.post('/add-company', auth, async (req, res) => {
         addressLine1,
         addressLine2,
       },
+      shift,
       shiftBudget,
       status: 'ACTIVE',
       slackChannel,
-      shift: shift || 'general',
     });
 
     const company = response.toObject();
     deleteFields(company);
-    const { website: companyWebsite, createdAt, ...rest } = company;
+    const {
+      website: companyWebsite,
+      slackChannel: companySlack,
+      createdAt,
+      ...rest
+    } = company;
 
-    if (shift) {
-      await User.updateMany(
-        { 'companies.code': code },
-        {
-          $push: {
-            shifts: company.shift,
-            companies: { ...rest, status: 'ARCHIVED' },
-          },
-        }
-      );
-    }
+    await User.updateMany(
+      { 'companies.code': code },
+      {
+        $push: {
+          companies: { ...rest, isEnrolled: false, isEnrollAble: true },
+        },
+      }
+    );
 
     res.status(200).json(company);
   } catch (err) {
@@ -121,7 +116,7 @@ router.post('/add-company', auth, async (req, res) => {
 });
 
 // Update company details
-router.patch('/:companyId/update-company-details', auth, async (req, res) => {
+router.patch('/:companyId/update', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -141,15 +136,7 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
     slackChannel,
   } = req.body;
 
-  if (
-    !zip ||
-    !name ||
-    !city ||
-    !state ||
-    !website ||
-    !shiftBudget ||
-    !addressLine1
-  ) {
+  if (!zip || !name || !city || !state || !website || !addressLine1) {
     console.error(requiredFields);
     res.status(400);
     throw new Error(requiredFields);
@@ -195,8 +182,8 @@ router.patch('/:companyId/update-company-details', auth, async (req, res) => {
   }
 });
 
-// Change company status
-router.patch('/:companyId/change-company-status', auth, async (req, res) => {
+// Update company status
+router.patch('/:companyId/update-status', auth, async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     console.error(unAuthorized);
     res.status(403);
@@ -240,34 +227,20 @@ router.patch('/:companyId/change-company-status', auth, async (req, res) => {
       .lean()
       .orFail();
 
-    if (updatedCompany.status === 'ARCHIVED') {
-      await User.updateMany(
-        {
-          'companies._id': updatedCompany._id,
+    await User.updateMany(
+      { 'companies._id': updatedCompany._id },
+      {
+        $set: {
+          'companies.$.status': updatedCompany.status,
+          ...(updatedCompany.status === 'ARCHIVED' && {
+            'companies.$.isEnrolled': false,
+          }),
+          'companies.$.isEnrollAble': updatedCompany.status === 'ACTIVE',
         },
-        {
-          $pull: {
-            shifts: updatedCompany.shift,
-          },
-          $set: {
-            'companies.$.status': updatedCompany.status,
-          },
-        }
-      );
+      }
+    );
 
-      res.status(200).json(updatedCompany);
-    } else if (updatedCompany.status === 'ACTIVE') {
-      await User.updateMany(
-        { 'companies.code': updatedCompany.code },
-        {
-          $push: {
-            shifts: updatedCompany.shift,
-          },
-        }
-      );
-
-      res.status(200).json(updatedCompany);
-    }
+    res.status(200).json(updatedCompany);
   } catch (err) {
     console.error(err);
     throw err;

@@ -6,17 +6,17 @@ import {
   setCookie,
   deleteFields,
   checkShift,
-  subscriptions,
   checkActions,
 } from '../lib/utils';
 import { Router } from 'express';
-import {
-  invalidShift,
-  requiredAction,
-  requiredFields,
-  unAuthorized,
-} from '../lib/messages';
+import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 import { DIETARY_TAGS } from '../data/DIETARY_TAGS';
+import {
+  EMAIL_SUBSCRIPTIONS,
+  EmailSubscriptions,
+} from '../data/EMAIL_SUBSCRIPTIONS';
+import { AVATARS } from '../data/AVATARS';
+import { createHSContact, updateHSContact } from '../lib/hubspot';
 
 const router = Router();
 
@@ -67,7 +67,7 @@ router.get('/:companyCode', auth, async (req, res) => {
 });
 
 // Register customer
-router.post('/register-customer', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { firstName, lastName, email, password, companyCode } = req.body;
   if (!firstName || !lastName || !email || !password) {
     console.error(requiredFields);
@@ -78,19 +78,45 @@ router.post('/register-customer', async (req, res) => {
   try {
     const companies = await Company.find({
       code: companyCode,
-      status: 'ACTIVE',
     })
       .select('-updatedAt -createdAt -website')
       .lean()
       .orFail();
 
-    const shifts = [];
-    if (!companies.some((company) => company.shift === 'general')) {
-      for (const company of companies) {
-        if (company.status === 'ACTIVE') {
-          shifts.push(company.shift);
-        }
-        company.status = 'ARCHIVED';
+    const activeCompanies = companies.filter(
+      (company) => company.status === 'ACTIVE'
+    );
+    if (!activeCompanies.length) {
+      console.error('No active company found');
+      res.status(400);
+      throw new Error('No active company found');
+    }
+
+    const hasGeneralShift = companies.some(
+      (company) => company.shift === 'GENERAL'
+    );
+
+    let updatedCompanies = [];
+    if (hasGeneralShift) {
+      updatedCompanies = companies.map((company) => ({
+        ...company,
+        isEnrollAble: false,
+        isEnrolled:
+          activeCompanies[0]._id.toString() === company._id.toString(),
+      }));
+    } else {
+      if (activeCompanies.length > 1) {
+        updatedCompanies = companies.map((company) => ({
+          ...company,
+          isEnrollAble: company.status === 'ACTIVE',
+          isEnrolled: false,
+        }));
+      } else {
+        updatedCompanies = companies.map((company) => ({
+          ...company,
+          isEnrollAble: true,
+          isEnrolled: true,
+        }));
       }
     }
 
@@ -100,17 +126,23 @@ router.post('/register-customer', async (req, res) => {
       firstName,
       lastName,
       email,
-      shifts,
-      companies,
       status: 'ACTIVE',
       role: 'CUSTOMER',
+      companies: updatedCompanies,
       password: hashedPassword,
-      subscribedTo: subscriptions,
+      subscribedTo: EMAIL_SUBSCRIPTIONS,
     });
     const customer = response.toObject();
 
+    // await createHSContact(
+    //   customer.email,
+    //   customer.firstName,
+    //   customer.lastName
+    // );
+
     setCookie(res, customer._id);
     deleteFields(customer, ['createdAt', 'password']);
+
     res.status(201).json(customer);
   } catch (err) {
     console.error(err);
@@ -118,65 +150,38 @@ router.post('/register-customer', async (req, res) => {
   }
 });
 
-// Change customer shift
-router.patch(
-  '/:customerId/:companyCode/change-customer-shift',
-  auth,
-  async (req, res) => {
-    if (!req.user || req.user.role !== 'CUSTOMER') {
-      console.error(unAuthorized);
-      res.status(403);
-      throw new Error(unAuthorized);
-    }
-
-    const { customerId, companyCode } = req.params;
-    const { shift } = req.body;
-    if (!shift || typeof shift !== 'string') {
-      console.error(invalidShift);
-      res.status(400);
-      throw new Error(invalidShift);
-    }
-    checkShift(res, shift);
-
-    try {
-      const response = await Company.find({
-        code: companyCode,
-      })
-        .select('-__v -updatedAt -createdAt -website')
-        .lean()
-        .orFail();
-
-      const activeCompanies = response.filter(
-        (company) => company.status === 'ACTIVE'
-      );
-      if (
-        !activeCompanies.some((activeCompany) => activeCompany.shift === shift)
-      ) {
-        console.error(invalidShift);
-        res.status(404);
-        throw new Error(invalidShift);
-      }
-
-      const updatedCompanies = activeCompanies.map((company) =>
-        company.shift === shift ? company : { ...company, status: 'ARCHIVED' }
-      );
-      const archivedCompanies = response.filter(
-        (company) => company.status !== 'ACTIVE'
-      );
-      const companies = [...archivedCompanies, ...updatedCompanies];
-
-      await User.findByIdAndUpdate(
-        { _id: customerId },
-        { $set: { companies: companies } }
-      ).orFail();
-
-      res.status(201).json(companies);
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+// Update customer shift
+router.patch('/:customerId/update-shift', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
   }
-);
+
+  const { shift } = req.body;
+  checkShift(res, shift);
+
+  try {
+    const updatedCompanies = [];
+    for (const company of req.user.companies) {
+      if (company.shift === shift && company.isEnrollAble) {
+        updatedCompanies.push({ ...company, isEnrolled: true });
+      } else {
+        updatedCompanies.push({ ...company, isEnrolled: false });
+      }
+    }
+
+    await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { $set: { companies: updatedCompanies } }
+    ).orFail();
+
+    res.status(201).json(updatedCompanies);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
 
 // Update customer email subscriptions
 router.patch(
@@ -190,31 +195,36 @@ router.patch(
     }
 
     const { customerId } = req.params;
-    const { isSubscribed } = req.body;
+    const { emailSubscriptions } = req.body;
 
-    let updatedSubscriptions = {};
-    for (let subscription in subscriptions) {
-      updatedSubscriptions = {
-        ...updatedSubscriptions,
-        [subscription]: !isSubscribed,
-      };
+    if (!emailSubscriptions) {
+      console.error('Email subscriptions are required');
+      res.status(400);
+      throw new Error('Email subscriptions are required');
+    }
+
+    for (const key in emailSubscriptions) {
+      if (!EMAIL_SUBSCRIPTIONS[key as keyof EmailSubscriptions]) {
+        console.error('Invalid email subscriptions');
+        res.status(400);
+        throw new Error('Invalid email subscriptions');
+      }
     }
 
     try {
       const updatedCustomer = await User.findByIdAndUpdate(
         customerId,
-        {
-          $set: {
-            subscribedTo: updatedSubscriptions,
-          },
-        },
-        {
-          returnDocument: 'after',
-        }
+        { $set: { subscribedTo: emailSubscriptions } },
+        { returnDocument: 'after' }
       )
-        .select('-__v -password -updatedAt -createdAt')
+        .select('subscribedTo email')
         .lean()
         .orFail();
+
+      // await updateHSContact(
+      //   updatedCustomer.email,
+      //   updatedCustomer.subscribedTo.newsletter
+      // );
 
       res.status(201).json(updatedCustomer);
     } catch (err) {
@@ -249,9 +259,7 @@ router.patch('/:customerId/update-food-preferences', auth, async (req, res) => {
   try {
     const updatedCustomer = await User.findByIdAndUpdate(
       customerId,
-      {
-        $set: { foodPreferences: preferences },
-      },
+      { $set: { foodPreferences: preferences } },
       { returnDocument: 'after' }
     )
       .select('-__v -password -updatedAt -createdAt')
@@ -298,6 +306,40 @@ router.patch('/:customerId/update-company-admin', auth, async (req, res) => {
       .orFail();
 
     res.status(201).json(updatedCustomer);
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+});
+
+// Update customer avatar
+router.patch('/:customerId/update-avatar', auth, async (req, res) => {
+  if (!req.user || req.user.role !== 'CUSTOMER') {
+    console.error(unAuthorized);
+    res.status(403);
+    throw new Error(unAuthorized);
+  }
+
+  const { customerId } = req.params;
+  const { avatar } = req.body;
+
+  if (!AVATARS.includes(avatar)) {
+    console.error('Invalid avatar');
+    res.status(400);
+    throw new Error('Invalid avatar');
+  }
+
+  try {
+    const updatedCustomer = await User.findOneAndUpdate(
+      { _id: customerId, role: 'CUSTOMER' },
+      { $set: { 'avatar.id': avatar } },
+      { returnDocument: 'after' }
+    )
+      .select('avatar')
+      .lean()
+      .orFail();
+
+    res.status(200).json(updatedCustomer);
   } catch (err) {
     console.error(err);
     throw err;

@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { CompanySchema } from '../types';
+import { SHIFTS } from '../data/COMPANY';
 
 const companySchema = new Schema<CompanySchema>(
   {
@@ -11,8 +12,7 @@ const companySchema = new Schema<CompanySchema>(
     shift: {
       type: String,
       trim: true,
-      lowercase: true,
-      enum: ['day', 'night', 'general'],
+      enum: SHIFTS,
       required: [true, 'Please provide a shift'],
     },
     website: {
@@ -50,10 +50,7 @@ const companySchema = new Schema<CompanySchema>(
       lowercase: true,
       required: [true, 'Please provide a code'],
     },
-    shiftBudget: {
-      type: Number,
-      required: [true, 'Please provide a daily budget'],
-    },
+    shiftBudget: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['ACTIVE', 'ARCHIVED'],
@@ -61,9 +58,7 @@ const companySchema = new Schema<CompanySchema>(
     },
     slackChannel: { type: String, trim: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Company', companySchema);

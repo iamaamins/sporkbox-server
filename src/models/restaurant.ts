@@ -4,19 +4,9 @@ import {
   RestaurantSchema,
   ReviewSchema,
   SchedulesSchema,
-  SoldOutStatSchema,
 } from '../types';
-
-const soldOutStatSchema = new Schema<SoldOutStatSchema>({
-  date: {
-    type: Date,
-    required: [true, 'Please provide a date'],
-  },
-  company: {
-    type: Schema.Types.ObjectId,
-    required: [true, 'Please provide a company id'],
-  },
-});
+import { SHIFTS } from '../data/COMPANY';
+import { STATUS } from '../data/STATUS';
 
 const reviewSchema = new Schema<ReviewSchema>(
   {
@@ -65,7 +55,7 @@ const itemSchema = new Schema<ItemSchema>({
   },
   status: {
     type: String,
-    enum: ['ARCHIVED', 'ACTIVE'],
+    enum: STATUS,
     required: [true, 'Please provide a status'],
   },
   optionalAddons: {
@@ -112,7 +102,6 @@ const itemSchema = new Schema<ItemSchema>({
   reviews: [reviewSchema],
   averageRating: Number,
   popularityIndex: Number,
-  soldOutStat: [soldOutStatSchema],
 });
 
 const scheduleSchema = new Schema<SchedulesSchema>(
@@ -139,9 +128,8 @@ const scheduleSchema = new Schema<SchedulesSchema>(
       shift: {
         type: String,
         trim: true,
-        lowercase: true,
-        enum: ['day', 'night', 'general'],
-        required: [true, 'Please provide a shift'],
+        enum: SHIFTS,
+        required: [true, 'Please provide company shift'],
       },
     },
     status: {
@@ -192,20 +180,21 @@ const restaurantSchema = new Schema<RestaurantSchema>(
         trim: true,
       },
     },
+    status: {
+      type: String,
+      trim: true,
+      enum: ['ACTIVE', 'ARCHIVED'],
+      required: [true, 'Please provide a status'],
+    },
     isFeatured: {
       type: Boolean,
       required: [true, 'Please provide featured value'],
     },
-    orderCapacity: {
-      type: Number,
-      default: Infinity,
-    },
+    orderCapacity: { type: Number, default: Infinity },
     items: [itemSchema],
     schedules: [scheduleSchema],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model('Restaurant', restaurantSchema);
