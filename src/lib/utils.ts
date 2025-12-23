@@ -392,3 +392,13 @@ export function docToObj<T extends Document>(input: T) {
     _id: (input._id as Types.ObjectId).toString(),
   };
 }
+
+export function validateURL(res: Response, url: string, urlName: string) {
+  try {
+    new URL(url);
+  } catch (err) {
+    console.error(`Invalid ${urlName} URL`);
+    res.status(400);
+    throw new Error(`Invalid ${urlName} URL`);
+  }
+}
