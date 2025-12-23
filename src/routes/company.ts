@@ -92,12 +92,7 @@ router.post('/add', auth, async (req, res) => {
 
     const company = response.toObject();
     deleteFields(company);
-    const {
-      website: companyWebsite,
-      slackChannel: companySlack,
-      createdAt,
-      ...rest
-    } = company;
+    const { website: companyWebsite, createdAt, ...rest } = company;
 
     await User.updateMany(
       { 'companies.code': code },
@@ -170,6 +165,7 @@ router.patch('/:companyId/update', auth, async (req, res) => {
           'companies.$.name': updatedCompany.name,
           'companies.$.address': updatedCompany.address,
           'companies.$.shiftBudget': updatedCompany.shiftBudget,
+          'companies.$.slackChannel': updatedCompany.slackChannel,
         },
       }
     );
@@ -228,7 +224,7 @@ router.patch('/:companyId/update-status', auth, async (req, res) => {
       .orFail();
 
     await User.updateMany(
-      { 'companies._id': updatedCompany._id },
+      { 'companies._id': companyId },
       {
         $set: {
           'companies.$.status': updatedCompany.status,
