@@ -3,7 +3,12 @@ import { Router } from 'express';
 import Order from '../models/order';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { checkActions, checkShift, deleteFields } from '../lib/utils';
+import {
+  checkActions,
+  checkShift,
+  deleteFields,
+  validateURL,
+} from '../lib/utils';
 import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 
 const router = Router();
@@ -64,6 +69,7 @@ router.post('/add', auth, async (req, res) => {
     throw new Error(requiredFields);
   }
   checkShift(res, shift);
+  if (slackChannel) validateURL(res, slackChannel, 'Slack channel');
 
   try {
     const sameShiftCompany = await Company.findOne({ code, shift }).lean();
@@ -136,6 +142,7 @@ router.patch('/:companyId/update', auth, async (req, res) => {
     res.status(400);
     throw new Error(requiredFields);
   }
+  if (slackChannel) validateURL(res, slackChannel, 'Slack channel');
 
   try {
     const updatedCompany = await Company.findOneAndUpdate(
