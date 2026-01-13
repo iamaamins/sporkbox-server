@@ -52,6 +52,7 @@ const userSchema = new Schema<UserSchema>(
           addressLine1: { type: String, trim: true },
           addressLine2: { type: String, trim: true },
         },
+        slackChannel: { type: String, trim: true },
         isEnrolled: Boolean,
         isEnrollAble: Boolean,
       },

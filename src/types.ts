@@ -33,6 +33,7 @@ export interface CompanyDetails {
   shift: Shift;
   status: Status;
   shiftBudget: number;
+  slackChannel?: string;
 }
 
 export interface OrderCustomer extends GenericUser {
@@ -188,7 +189,6 @@ export interface DateTotal {
 export interface CompanySchema extends CompanyDetails {
   _id: Types.ObjectId;
   address: Address;
-  slackChannel?: string;
   createdAt: Date;
 }
 

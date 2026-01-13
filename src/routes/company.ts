@@ -3,7 +3,12 @@ import { Router } from 'express';
 import Order from '../models/order';
 import Company from '../models/company';
 import auth from '../middleware/auth';
-import { checkActions, checkShift, deleteFields } from '../lib/utils';
+import {
+  checkActions,
+  checkShift,
+  deleteFields,
+  validateURL,
+} from '../lib/utils';
 import { requiredAction, requiredFields, unAuthorized } from '../lib/messages';
 
 const router = Router();
@@ -64,6 +69,7 @@ router.post('/add', auth, async (req, res) => {
     throw new Error(requiredFields);
   }
   checkShift(res, shift);
+  if (slackChannel) validateURL(res, slackChannel, 'Slack channel');
 
   try {
     const sameShiftCompany = await Company.findOne({ code, shift }).lean();
@@ -92,12 +98,7 @@ router.post('/add', auth, async (req, res) => {
 
     const company = response.toObject();
     deleteFields(company);
-    const {
-      website: companyWebsite,
-      slackChannel: companySlack,
-      createdAt,
-      ...rest
-    } = company;
+    const { website: companyWebsite, createdAt, ...rest } = company;
 
     await User.updateMany(
       { 'companies.code': code },
@@ -141,6 +142,7 @@ router.patch('/:companyId/update', auth, async (req, res) => {
     res.status(400);
     throw new Error(requiredFields);
   }
+  if (slackChannel) validateURL(res, slackChannel, 'Slack channel');
 
   try {
     const updatedCompany = await Company.findOneAndUpdate(
@@ -170,6 +172,7 @@ router.patch('/:companyId/update', auth, async (req, res) => {
           'companies.$.name': updatedCompany.name,
           'companies.$.address': updatedCompany.address,
           'companies.$.shiftBudget': updatedCompany.shiftBudget,
+          'companies.$.slackChannel': updatedCompany.slackChannel,
         },
       }
     );
@@ -228,7 +231,7 @@ router.patch('/:companyId/update-status', auth, async (req, res) => {
       .orFail();
 
     await User.updateMany(
-      { 'companies._id': updatedCompany._id },
+      { 'companies._id': companyId },
       {
         $set: {
           'companies.$.status': updatedCompany.status,
