@@ -1,3 +1,4 @@
+import { CompanySchema } from './../types';
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import Company from '../models/company';
@@ -95,6 +96,8 @@ router.post('/register', async (req, res) => {
     const hasGeneralShift = companies.some(
       (company) => company.shift === 'GENERAL'
     );
+    const isActiveCompany = (company: CompanySchema) =>
+      company.status === 'ACTIVE';
 
     let updatedCompanies = [];
     if (hasGeneralShift) {
@@ -108,14 +111,14 @@ router.post('/register', async (req, res) => {
       if (activeCompanies.length > 1) {
         updatedCompanies = companies.map((company) => ({
           ...company,
-          isEnrollAble: company.status === 'ACTIVE',
+          isEnrollAble: isActiveCompany(company),
           isEnrolled: false,
         }));
       } else {
         updatedCompanies = companies.map((company) => ({
           ...company,
-          isEnrollAble: true,
-          isEnrolled: true,
+          isEnrollAble: isActiveCompany(company),
+          isEnrolled: isActiveCompany(company),
         }));
       }
     }
